@@ -1,0 +1,120 @@
+{
+  "items": 5,
+  "recall@1": 1.0,
+  "recall@3": 1.0,
+  "mrr": 1.0,
+  "falsePositiveRate": 0.0,
+  "falsePositiveRateSemantics": "top-1-selected-facet-not-in-expected-set",
+  "refusedRate": 0.0,
+  "selectionSet": {
+    "precisionMacro": 1.0,
+    "recallMacro": 1.0,
+    "f1Macro": 1.0,
+    "exactMatchRate": 1.0,
+    "overSelectionRate": 0.0,
+    "underSelectionRate": 0.0,
+    "extraneousFacetCount": {
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "max": 0.0
+    },
+    "missingExpectedFacetCount": {
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "max": 0.0
+    }
+  },
+  "decisionsByLayer": {
+    "1": {
+      "accepted": 0,
+      "passed": 5,
+      "refused": 0
+    },
+    "2": {
+      "accepted": 0,
+      "passed": 5,
+      "refused": 0
+    },
+    "3": {
+      "accepted": 0,
+      "passed": 5,
+      "refused": 0
+    }
+  },
+  "confidenceDecay": {
+    "min": 0.0,
+    "p50": 0.0,
+    "p95": 0.0012147593895593944,
+    "max": 0.0012147593895593944
+  },
+  "confidence": {
+    "min": 0.6188461742674312,
+    "p50": 0.729974652454257,
+    "p95": 0.7530036717032393,
+    "max": 0.7530036717032393
+  },
+  "weight": {
+    "min": 0.5077712199117383,
+    "p50": 0.5989535609881083,
+    "p95": 0.6178491665257348,
+    "max": 0.6178491665257348
+  },
+  "selectedFacetCount": {
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0,
+    "max": 1.0
+  },
+  "separation": {
+    "min": 0.0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0
+  },
+  "separationRatio": {
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0,
+    "max": 1.0
+  },
+  "lexicalScore": {
+    "min": 0.0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0
+  },
+  "genericPenalty": {
+    "min": 0.0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0
+  },
+  "repetitionPenalty": {
+    "min": 0.0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0
+  },
+  "entropy": {
+    "min": 0.6074297280239422,
+    "p50": 0.6256469466437998,
+    "p95": 0.7055727962313156,
+    "max": 0.7055727962313156
+  },
+  "latencyMs": {
+    "p50": 81.43439999548718,
+    "p95": 81.55569998780265,
+    "p99": 81.55569998780265
+  },
+  "memoryMb": {
+    "before": 1496.359375,
+    "after": 1498.6953125
+  },
+  "loadedVectorBytes": 0,
+  "thresholds": {
+    "pass": null,
+    "accept": null
+  }
+}

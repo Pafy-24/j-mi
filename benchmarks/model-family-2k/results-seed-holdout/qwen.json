@@ -1,0 +1,538 @@
+{
+  "schemaVersion": "mi-model-family-benchmark-v1",
+  "benchmark": "model-family-data2k-seed-holdout",
+  "profile": "data2k",
+  "family": "qwen",
+  "createdAt": "2026-08-23T20:13:45.979996+00:00",
+  "hardware": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.15",
+    "torch": "2.11.0+cu128",
+    "cudaAvailable": true,
+    "cuda": {
+      "torchCuda": "12.8",
+      "device": "NVIDIA GeForce RTX 5070 Laptop GPU",
+      "totalMemoryBytes": 8546484224,
+      "computeCapability": "12.0",
+      "bfloat16Supported": true
+    }
+  },
+  "baseModelDirectory": "E:\\Licenta\\Proiect\\base-models\\downloaded\\qwen\\Qwen2.5-1.5B-Instruct",
+  "baseModelBytes": 3087467144,
+  "facetVersion": "data2k-2026-08-23",
+  "trainingData": {
+    "continuedPretrainingPerFacet": 2000,
+    "supervisedPerFacet": 2500,
+    "supervisedRepeat": 2,
+    "logicalTrainExamplesPerFacet": 7000,
+    "optimizerStepsPerFacet": 256,
+    "batchSize": 1,
+    "maximumSequenceLength": 512,
+    "testExamplesPerFacet": 2000,
+    "nllEvaluationSamplePerFacet": 128,
+    "generationSamplePerFacet": 0,
+    "warning": "bounded single-GPU experiment, not a full epoch or a claim of frontier-model quality",
+    "externalSeedHoldoutPerFacet": 6
+  },
+  "evaluation": {
+    "base": {
+      "modelId": "E:\\Licenta\\Proiect\\base-models\\downloaded\\qwen\\Qwen2.5-1.5B-Instruct",
+      "revision": null,
+      "modelType": "qwen2",
+      "configSha256": "410c359dfa799e4d52a9f6926ab7103568c9963fe44830806facd222d712533c",
+      "layerPath": "model.layers",
+      "baseLayerCount": 28,
+      "device": "cuda:0",
+      "parameters": {
+        "total": 1543714304,
+        "trainable": 1543714304
+      }
+    },
+    "baseParameters": 1543714304,
+    "holdoutPolicy": "all six manually authored seed SFT records per facet from the pre-generation snapshot; these rows were not present in the data2k training corpus and use the older v2 contracts",
+    "evaluationRecordsPerFacet": {
+      "coder": 6,
+      "coder.python": 6
+    },
+    "generationRecordsPerFacet": 0,
+    "states": [
+      {
+        "state": "base",
+        "requestedFacets": [],
+        "resolvedFacets": [],
+        "expandedBlockCount": 0,
+        "activeFacetParameters": 0,
+        "loss": {
+          "coder": {
+            "loss": 3.08405172,
+            "perplexity": 21.84674028,
+            "targetTokens": 928,
+            "records": [
+              {
+                "id": "coder_train_0001",
+                "loss": 2.18333333,
+                "targetTokens": 120,
+                "sequenceTokens": 187,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0002",
+                "loss": 3.12068966,
+                "targetTokens": 116,
+                "sequenceTokens": 182,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0003",
+                "loss": 3.05633803,
+                "targetTokens": 142,
+                "sequenceTokens": 206,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0004",
+                "loss": 3.09090909,
+                "targetTokens": 198,
+                "sequenceTokens": 281,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0005",
+                "loss": 3.10344828,
+                "targetTokens": 174,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 3.66292135,
+                "targetTokens": 178,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 1.64198783,
+            "perplexity": 5.1654273,
+            "targetTokens": 986,
+            "records": [
+              {
+                "id": "coder_python_train_0001",
+                "loss": 1.05769231,
+                "targetTokens": 208,
+                "sequenceTokens": 283,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0002",
+                "loss": 1.3880597,
+                "targetTokens": 134,
+                "sequenceTokens": 199,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0003",
+                "loss": 1.7254902,
+                "targetTokens": 153,
+                "sequenceTokens": 221,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0004",
+                "loss": 1.82954545,
+                "targetTokens": 176,
+                "sequenceTokens": 276,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0005",
+                "loss": 1.60714286,
+                "targetTokens": 140,
+                "sequenceTokens": 234,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.29714286,
+                "targetTokens": 175,
+                "sequenceTokens": 258,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "coder.python": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "all": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            }
+          },
+          "examples": {
+            "coder": [],
+            "coder.python": []
+          }
+        },
+        "cudaAllocatedBytes": 3097915392,
+        "peakCudaAllocatedBytes": 4821355520
+      },
+      {
+        "state": "base+facet",
+        "requestedFacets": [
+          "coder@data2k-2026-08-23"
+        ],
+        "resolvedFacets": [
+          "coder@data2k-2026-08-23"
+        ],
+        "expandedBlockCount": 2,
+        "activeFacetParameters": 93595648,
+        "loss": {
+          "coder": {
+            "loss": 2.99784483,
+            "perplexity": 20.04229574,
+            "targetTokens": 928,
+            "records": [
+              {
+                "id": "coder_train_0001",
+                "loss": 2.3,
+                "targetTokens": 120,
+                "sequenceTokens": 187,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0002",
+                "loss": 2.94827586,
+                "targetTokens": 116,
+                "sequenceTokens": 182,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0003",
+                "loss": 2.98591549,
+                "targetTokens": 142,
+                "sequenceTokens": 206,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0004",
+                "loss": 2.94949495,
+                "targetTokens": 198,
+                "sequenceTokens": 281,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0005",
+                "loss": 3.01149425,
+                "targetTokens": 174,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 3.5505618,
+                "targetTokens": 178,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 1.60141988,
+            "perplexity": 4.96007012,
+            "targetTokens": 986,
+            "records": [
+              {
+                "id": "coder_python_train_0001",
+                "loss": 1.04807692,
+                "targetTokens": 208,
+                "sequenceTokens": 283,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0002",
+                "loss": 1.37313433,
+                "targetTokens": 134,
+                "sequenceTokens": 199,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0003",
+                "loss": 1.65359477,
+                "targetTokens": 153,
+                "sequenceTokens": 221,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0004",
+                "loss": 1.77272727,
+                "targetTokens": 176,
+                "sequenceTokens": 276,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0005",
+                "loss": 1.58571429,
+                "targetTokens": 140,
+                "sequenceTokens": 234,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.22857143,
+                "targetTokens": 175,
+                "sequenceTokens": 258,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "coder.python": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "all": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            }
+          },
+          "examples": {
+            "coder": [],
+            "coder.python": []
+          }
+        },
+        "cudaAllocatedBytes": 3285106688,
+        "peakCudaAllocatedBytes": 5008546816
+      },
+      {
+        "state": "base+parent+child",
+        "requestedFacets": [
+          "coder.python@data2k-2026-08-23"
+        ],
+        "resolvedFacets": [
+          "coder@data2k-2026-08-23",
+          "coder.python@data2k-2026-08-23"
+        ],
+        "expandedBlockCount": 3,
+        "activeFacetParameters": 140393472,
+        "loss": {
+          "coder": {
+            "loss": 2.9612069,
+            "perplexity": 19.32127647,
+            "targetTokens": 928,
+            "records": [
+              {
+                "id": "coder_train_0001",
+                "loss": 2.23333333,
+                "targetTokens": 120,
+                "sequenceTokens": 187,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0002",
+                "loss": 2.93103448,
+                "targetTokens": 116,
+                "sequenceTokens": 182,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0003",
+                "loss": 2.90140845,
+                "targetTokens": 142,
+                "sequenceTokens": 206,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0004",
+                "loss": 2.92929293,
+                "targetTokens": 198,
+                "sequenceTokens": 281,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0005",
+                "loss": 2.98850575,
+                "targetTokens": 174,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 3.52808989,
+                "targetTokens": 178,
+                "sequenceTokens": 259,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 1.4969574,
+            "perplexity": 4.46807382,
+            "targetTokens": 986,
+            "records": [
+              {
+                "id": "coder_python_train_0001",
+                "loss": 0.83173077,
+                "targetTokens": 208,
+                "sequenceTokens": 283,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0002",
+                "loss": 1.23880597,
+                "targetTokens": 134,
+                "sequenceTokens": 199,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0003",
+                "loss": 1.55555556,
+                "targetTokens": 153,
+                "sequenceTokens": 221,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0004",
+                "loss": 1.73863636,
+                "targetTokens": 176,
+                "sequenceTokens": 276,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0005",
+                "loss": 1.56428571,
+                "targetTokens": 140,
+                "sequenceTokens": 234,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.13714286,
+                "targetTokens": 175,
+                "sequenceTokens": 258,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "coder.python": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            },
+            "all": {
+              "examples": 0,
+              "validContractJsonRate": null,
+              "requiredFieldCoverage": null,
+              "requiredFieldMentionCoverage": null,
+              "pythonParseRate": null,
+              "lexicalF1": null,
+              "strictContractScore": null,
+              "structureScore": null,
+              "generatedTokens": 0,
+              "generationSeconds": 0.0,
+              "tokensPerSecond": null
+            }
+          },
+          "examples": {
+            "coder": [],
+            "coder.python": []
+          }
+        },
+        "cudaAllocatedBytes": 3378702336,
+        "peakCudaAllocatedBytes": 5102142464
+      }
+    ]
+  }
+}

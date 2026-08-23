@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ast
 import gc
+import hashlib
 import json
 import math
 import os
@@ -11,7 +12,7 @@ import re
 import sys
 import tempfile
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,8 @@ from mixed_inference.training.trainer import MixedInferenceTrainer
 
 
 VERSION = "smoke-2026-08-23"
+PROFILE = "smoke"
+BENCHMARK_NAME = "model-family-smoke"
 RESULTS = BENCHMARK_ROOT / "results"
 MODELS: dict[str, dict[str, Any]] = {
     "qwen": {
@@ -81,6 +84,113 @@ STATES = (
     ("base+facet", [f"coder@{VERSION}"]),
     ("base+parent+child", [f"coder.python@{VERSION}"]),
 )
+EVALUATION_SAMPLE_SIZE = 2
+GENERATION_SAMPLE_SIZE = 2
+LOSS_BATCH_SIZE = 1
+EVAL_MAX_SEQUENCE_LENGTH = 512
+MAX_NEW_TOKENS = 256
+HOLDOUT_POLICY = "last two SFT records per facet; never included in training configs"
+TRAINING_DATA = {
+    "continuedPretrainingPerFacet": 10,
+    "sftTrainingPerFacet": 4,
+    "heldoutSftPerFacet": 2,
+    "warning": "integration smoke benchmark; dataset is too small for quality claims",
+}
+
+
+def configure_profile(profile: str) -> None:
+    global PROFILE, BENCHMARK_NAME, VERSION, RESULTS, HOLDOUTS, REQUIRED_FIELDS, STATES
+    global EVALUATION_SAMPLE_SIZE, GENERATION_SAMPLE_SIZE, LOSS_BATCH_SIZE
+    global EVAL_MAX_SEQUENCE_LENGTH, MAX_NEW_TOKENS, HOLDOUT_POLICY, TRAINING_DATA
+    PROFILE = profile
+    if profile == "smoke":
+        return
+    if profile != "data2k":
+        raise ValueError(f"Unknown benchmark profile: {profile}")
+
+    BENCHMARK_NAME = "model-family-data2k"
+    VERSION = "data2k-2026-08-23"
+    profile_root = BENCHMARK_ROOT.parent / "model-family-2k"
+    RESULTS = profile_root / "results"
+    for family, spec in MODELS.items():
+        spec["registry"] = WORKSPACE / f"facets/mi-benchmark-2k/{family}"
+        spec["configs"] = [
+            profile_root / f"configs/{family}-coder.json",
+            profile_root / f"configs/{family}-coder-python.json",
+        ]
+    HOLDOUTS = {
+        "coder": WORKSPACE / "datasets/facet-infrastructure/facets/coder/test.jsonl",
+        "coder.python": WORKSPACE / "datasets/facet-infrastructure/facets/coder.python/test.jsonl",
+    }
+    REQUIRED_FIELDS = {
+        "coder": (
+            "contract",
+            "requirements",
+            "components",
+            "data_model",
+            "invariants",
+            "control_flow",
+            "pseudocode",
+            "errors",
+            "complexity",
+            "test_strategy",
+            "assumptions",
+        ),
+        "coder.python": ("contract", "files", "compatibility", "assumptions", "limits"),
+    }
+    STATES = (
+        ("base", []),
+        ("base+facet", [f"coder@{VERSION}"]),
+        ("base+parent+child", [f"coder.python@{VERSION}"]),
+    )
+    EVALUATION_SAMPLE_SIZE = 128
+    GENERATION_SAMPLE_SIZE = 1
+    LOSS_BATCH_SIZE = 4
+    EVAL_MAX_SEQUENCE_LENGTH = 512
+    MAX_NEW_TOKENS = 128
+    HOLDOUT_POLICY = (
+        "128-record deterministic proportional sample per facet from the canonical test split, "
+        "stratified by language and domain; no selected test record is used for training"
+    )
+    TRAINING_DATA = {
+        "continuedPretrainingPerFacet": 2000,
+        "supervisedPerFacet": 2500,
+        "supervisedRepeat": 2,
+        "logicalTrainExamplesPerFacet": 7000,
+        "optimizerStepsPerFacet": 256,
+        "batchSize": 1,
+        "maximumSequenceLength": 512,
+        "testExamplesPerFacet": 2000,
+        "nllEvaluationSamplePerFacet": EVALUATION_SAMPLE_SIZE,
+        "generationSamplePerFacet": GENERATION_SAMPLE_SIZE,
+        "warning": "bounded single-GPU experiment, not a full epoch or a claim of frontier-model quality",
+    }
+
+
+def configure_seed_holdout() -> None:
+    global BENCHMARK_NAME, RESULTS, HOLDOUTS, EVALUATION_SAMPLE_SIZE
+    global GENERATION_SAMPLE_SIZE, HOLDOUT_POLICY, TRAINING_DATA
+    if PROFILE != "data2k":
+        raise ValueError("The frozen seed holdout is only valid with --profile data2k")
+    profile_root = BENCHMARK_ROOT.parent / "model-family-2k"
+    BENCHMARK_NAME = "model-family-data2k-seed-holdout"
+    RESULTS = profile_root / "results-seed-holdout"
+    snapshot = WORKSPACE / "datasets/facet-infrastructure/seed-snapshots/initial-2026-08-23"
+    HOLDOUTS = {
+        "coder": snapshot / "coder/training.jsonl",
+        "coder.python": snapshot / "coder.python/training.jsonl",
+    }
+    EVALUATION_SAMPLE_SIZE = 6
+    GENERATION_SAMPLE_SIZE = 0
+    HOLDOUT_POLICY = (
+        "all six manually authored seed SFT records per facet from the pre-generation snapshot; "
+        "these rows were not present in the data2k training corpus and use the older v2 contracts"
+    )
+    TRAINING_DATA = {
+        **TRAINING_DATA,
+        "externalSeedHoldoutPerFacet": EVALUATION_SAMPLE_SIZE,
+        "generationSamplePerFacet": 0,
+    }
 
 
 def atomic_json(path: Path, value: Any) -> None:
@@ -148,13 +258,59 @@ def train_family(family: str, spec: dict[str, Any], torch: Any) -> list[dict[str
     return runs
 
 
+def deterministic_stratified_sample(
+    records: list[dict[str, Any]],
+    sample_size: int,
+    *,
+    salt: str,
+) -> list[dict[str, Any]]:
+    if sample_size >= len(records):
+        return list(records)
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        coverage = record.get("coverage") or {}
+        key = (str(coverage.get("language", "unknown")), str(coverage.get("domainContext", "unknown")))
+        groups[key].append(record)
+    for key, items in groups.items():
+        items.sort(
+            key=lambda record: hashlib.sha256(
+                f"{salt}|{key[0]}|{key[1]}|{record.get('id')}".encode("utf-8")
+            ).hexdigest()
+        )
+    exact = {key: sample_size * len(items) / len(records) for key, items in groups.items()}
+    quotas = {key: math.floor(value) for key, value in exact.items()}
+    remaining = sample_size - sum(quotas.values())
+    remainder_order = sorted(
+        groups,
+        key=lambda key: (-(exact[key] - quotas[key]), key[0], key[1]),
+    )
+    for key in remainder_order[:remaining]:
+        quotas[key] += 1
+    selected = [record for key in sorted(groups) for record in groups[key][: quotas[key]]]
+    return sorted(
+        selected,
+        key=lambda record: hashlib.sha256(f"{salt}|final|{record.get('id')}".encode("utf-8")).hexdigest(),
+    )
+
+
 def heldout_records() -> dict[str, list[dict[str, Any]]]:
     result: dict[str, list[dict[str, Any]]] = {}
     for facet, path in HOLDOUTS.items():
         records = list(read_records(path))
-        if len(records) < 6:
-            raise RuntimeError(f"Expected at least six SFT records in {path}, found {len(records)}")
-        result[facet] = records[4:6]
+        if PROFILE == "smoke":
+            if len(records) < 6:
+                raise RuntimeError(f"Expected at least six SFT records in {path}, found {len(records)}")
+            result[facet] = records[4:6]
+        else:
+            if len(records) < EVALUATION_SAMPLE_SIZE:
+                raise RuntimeError(
+                    f"Expected at least {EVALUATION_SAMPLE_SIZE} test records in {path}, found {len(records)}"
+                )
+            result[facet] = deterministic_stratified_sample(
+                records,
+                EVALUATION_SAMPLE_SIZE,
+                salt=f"{BENCHMARK_NAME}:{facet}",
+            )
     return result
 
 
@@ -191,19 +347,15 @@ def extract_json_object(text: str) -> dict[str, Any] | None:
     candidates.append(stripped)
     decoder = json.JSONDecoder()
     for candidate in candidates:
+        root_start = candidate.find("{")
+        if root_start < 0:
+            continue
         try:
-            value = json.loads(candidate)
+            value, _ = decoder.raw_decode(candidate[root_start:])
             if isinstance(value, dict):
                 return value
         except json.JSONDecodeError:
-            pass
-        for match in re.finditer(r"\{", candidate):
-            try:
-                value, _ = decoder.raw_decode(candidate[match.start() :])
-            except json.JSONDecodeError:
-                continue
-            if isinstance(value, dict):
-                return value
+            continue
     return None
 
 
@@ -298,7 +450,7 @@ def evaluate_loss(
 ) -> dict[str, Any]:
     assert runtime.base is not None
     base = runtime.base
-    data_config = DataConfig(train=(), max_sequence_length=512, mask_prompt=True)
+    data_config = DataConfig(train=(), max_sequence_length=EVAL_MAX_SEQUENCE_LENGTH, mask_prompt=True)
     collator = CausalCollator(base.tokenizer.pad_token_id)
 
     def provide(block: PlannedBlock) -> Any:
@@ -312,32 +464,46 @@ def evaluate_loss(
             total_nll = 0.0
             total_tokens = 0
             per_record = []
-            for record in items:
-                tokenized = tokenize_record(base.tokenizer, record, data_config)
+            for start in range(0, len(items), LOSS_BATCH_SIZE):
+                item_batch = items[start : start + LOSS_BATCH_SIZE]
+                tokenized_items = [tokenize_record(base.tokenizer, record, data_config) for record in item_batch]
                 batch = collator(
                     [
                         {
-                            "input_ids": tokenized.input_ids,
-                            "labels": tokenized.labels,
-                            "record_id": tokenized.record_id,
+                            "input_ids": item.input_ids,
+                            "labels": item.labels,
+                            "record_id": item.record_id,
                         }
+                        for item in tokenized_items
                     ]
                 )
                 batch = {name: tensor.to(base.device) for name, tensor in batch.items()}
                 output = base.model(**batch, use_cache=False)
-                valid_tokens = int((batch["labels"][:, 1:] != -100).sum().item())
-                loss = float(output.loss.detach().float().item())
-                total_nll += loss * valid_tokens
-                total_tokens += valid_tokens
-                per_record.append(
-                    {
-                        "id": tokenized.record_id,
-                        "loss": round(loss, 8),
-                        "targetTokens": valid_tokens,
-                        "sequenceTokens": len(tokenized.input_ids),
-                        "hitMaxSequenceLength": len(tokenized.input_ids) == data_config.max_sequence_length,
-                    }
+                shift_logits = output.logits[:, :-1, :].contiguous()
+                shift_labels = batch["labels"][:, 1:].contiguous()
+                token_losses = torch.nn.functional.cross_entropy(
+                    shift_logits.transpose(1, 2),
+                    shift_labels,
+                    ignore_index=-100,
+                    reduction="none",
                 )
+                valid_mask = shift_labels != -100
+                for row_index, item in enumerate(tokenized_items):
+                    valid_tokens = int(valid_mask[row_index].sum().item())
+                    nll_sum = float(token_losses[row_index][valid_mask[row_index]].sum().detach().float().item())
+                    loss = nll_sum / max(1, valid_tokens)
+                    total_nll += nll_sum
+                    total_tokens += valid_tokens
+                    per_record.append(
+                        {
+                            "id": item.record_id,
+                            "loss": round(loss, 8),
+                            "targetTokens": valid_tokens,
+                            "sequenceTokens": len(item.input_ids),
+                            "hitMaxSequenceLength": len(item.input_ids) == data_config.max_sequence_length,
+                        }
+                    )
+                del output, shift_logits, shift_labels, token_losses, valid_mask, batch
             average = total_nll / max(1, total_tokens)
             result[facet] = {
                 "loss": round(average, 8),
@@ -374,12 +540,12 @@ def evaluate_state(
     generated: dict[str, list[dict[str, Any]]] = {}
     for facet, items in records.items():
         generated[facet] = []
-        for record in items:
+        for record in items[:GENERATION_SAMPLE_SIZE]:
             response = runtime.generate(
                 {
                     "messages": prompt_messages(record),
                     "facets": requested,
-                    "generation": {"max_new_tokens": 256, "do_sample": False},
+                    "generation": {"max_new_tokens": MAX_NEW_TOKENS, "do_sample": False},
                     "seed": 42,
                 }
             )
@@ -435,7 +601,9 @@ def evaluate_family(family: str, spec: dict[str, Any], torch: Any) -> dict[str, 
     return {
         "base": base_summary,
         "baseParameters": base_parameters,
-        "holdoutPolicy": "last two SFT records per facet; never included in training configs",
+        "holdoutPolicy": HOLDOUT_POLICY,
+        "evaluationRecordsPerFacet": {facet: len(items) for facet, items in records.items()},
+        "generationRecordsPerFacet": GENERATION_SAMPLE_SIZE,
         "states": states,
     }
 
@@ -466,19 +634,15 @@ def run_family(family: str, *, do_training: bool, do_evaluation: bool, torch: An
         raise FileNotFoundError(f"Missing model checkpoint: {model_file}")
     result: dict[str, Any] = {
         "schemaVersion": "mi-model-family-benchmark-v1",
-        "benchmark": "model-family-smoke",
+        "benchmark": BENCHMARK_NAME,
+        "profile": PROFILE,
         "family": family,
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "hardware": hardware(torch),
         "baseModelDirectory": str(Path(spec["base"]).resolve()),
         "baseModelBytes": model_file.stat().st_size,
         "facetVersion": VERSION,
-        "trainingData": {
-            "continuedPretrainingPerFacet": 10,
-            "sftTrainingPerFacet": 4,
-            "heldoutSftPerFacet": 2,
-            "warning": "integration smoke benchmark; dataset is too small for quality claims",
-        },
+        "trainingData": TRAINING_DATA,
     }
     output_path = RESULTS / f"{family}.json"
     if do_training:
@@ -504,18 +668,56 @@ def write_summary() -> None:
         RESULTS / "summary.json",
         {
             "schemaVersion": "mi-model-family-benchmark-summary-v1",
+            "benchmark": BENCHMARK_NAME,
+            "profile": PROFILE,
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "families": available,
         },
     )
 
 
+def rescore_existing_results(families: list[str]) -> None:
+    for family in families:
+        path = RESULTS / f"{family}.json"
+        if not path.exists():
+            raise FileNotFoundError(f"Missing benchmark result to rescore: {path}")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        states = ((payload.get("evaluation") or {}).get("states") or [])
+        for state in states:
+            generation = state.get("generation") or {}
+            examples = generation.get("examples") or {}
+            for facet, items in examples.items():
+                for item in items:
+                    item["scores"] = score_generation(
+                        str(facet),
+                        str(item.get("output", "")),
+                        str(item.get("reference", "")),
+                    )
+            aggregates = {facet: aggregate_examples(items) for facet, items in examples.items()}
+            all_examples = [item for items in examples.values() for item in items]
+            generation["aggregate"] = {**aggregates, "all": aggregate_examples(all_examples)}
+            generation["scorerVersion"] = "root-json-v2"
+        payload["rescoredAt"] = datetime.now(timezone.utc).isoformat()
+        atomic_json(path, payload)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Train and compare MI facets on Qwen, Gemma and Llama.")
+    parser.add_argument("--profile", choices=("smoke", "data2k"), default="smoke")
     parser.add_argument("--model", action="append", choices=tuple(MODELS), help="Family to run; repeatable. Default: all.")
     parser.add_argument("--skip-training", action="store_true")
     parser.add_argument("--skip-evaluation", action="store_true")
+    parser.add_argument("--rescore-only", action="store_true", help="Recompute generation metrics from saved outputs without loading a model.")
+    parser.add_argument("--seed-holdout", action="store_true", help="Evaluate data2k facets on the frozen pre-generation seed SFT rows.")
     args = parser.parse_args()
+    configure_profile(args.profile)
+    if args.seed_holdout:
+        configure_seed_holdout()
+    families = args.model or list(MODELS)
+    if args.rescore_only:
+        rescore_existing_results(families)
+        write_summary()
+        return 0
     if args.skip_training and args.skip_evaluation:
         parser.error("At least one of training or evaluation must remain enabled")
 
@@ -523,7 +725,6 @@ def main() -> int:
 
     if not torch.cuda.is_available():
         raise RuntimeError("This benchmark configuration requires CUDA; use the licenta conda environment")
-    families = args.model or list(MODELS)
     for family in families:
         print(f"[benchmark] family={family}", flush=True)
         run_family(
