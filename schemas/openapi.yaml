@@ -1,0 +1,146 @@
+openapi: 3.1.0
+info:
+  title: Jester Mixed Inference API
+  version: 0.1.0
+  description: Component 2/4, dynamic block-facet training and generation.
+servers:
+  - url: http://127.0.0.1:8120
+paths:
+  /health:
+    get:
+      summary: Runtime and training health
+      responses:
+        "200": {description: Health payload}
+  /facets:
+    get:
+      summary: List registered facets
+      responses:
+        "200": {description: Facet list}
+  /base/load:
+    post:
+      summary: Load or replace the base model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/BaseModel"}
+      responses:
+        "200": {description: Loaded base summary}
+  /base/unload:
+    post:
+      summary: Unload base and facet weights
+      responses:
+        "200": {description: Unload result}
+  /registry/refresh:
+    post:
+      summary: Rescan facet manifests
+      responses:
+        "200": {description: Updated registry}
+  /compose:
+    post:
+      summary: Resolve the requested facet dependency DAG
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/FacetSelection"}
+      responses:
+        "200": {description: Deterministic composition plan}
+  /facets/load:
+    post:
+      summary: Preload facets and dependencies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/FacetSelection"}
+      responses:
+        "200": {description: Loaded facets and composition}
+  /facets/unload:
+    post:
+      summary: Unload selected or all facet weights
+      responses:
+        "200": {description: Unload result}
+  /generate:
+    post:
+      summary: Compose facets and generate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GenerateRequest"}
+      responses:
+        "200": {description: Generated output, composition, usage and timing}
+  /training/jobs:
+    get:
+      summary: List asynchronous training jobs
+      responses:
+        "200": {description: Job summaries}
+    post:
+      summary: Submit a training job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [configPath]
+                  properties: {configPath: {type: string}}
+                - type: object
+                  required: [config]
+                  properties: {config: {type: object}}
+      responses:
+        "202": {description: Queued job}
+  /training/jobs/{jobId}:
+    get:
+      summary: Get job state, events and result
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: Complete job record}
+  /training/jobs/{jobId}/cancel:
+    post:
+      summary: Request cooperative job cancellation
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: Updated job record}
+components:
+  schemas:
+    BaseModel:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        revision: {type: [string, "null"]}
+        layerPath: {type: string}
+        dtype: {enum: [auto, float32, float16, bfloat16]}
+        device: {type: string}
+        allowDownload: {type: boolean}
+        trustRemoteCode: {type: boolean}
+        modelKwargs: {type: object}
+        tokenizerKwargs: {type: object}
+    FacetSelection:
+      type: object
+      required: [facets]
+      properties:
+        facets: {type: array, items: {type: string}}
+        allowModelIdMismatch: {type: boolean}
+    GenerateRequest:
+      type: object
+      properties:
+        prompt: {type: string}
+        messages: {type: array, items: {type: object}}
+        facets: {type: array, items: {type: string}}
+        generation: {type: object}
+        seed: {type: integer}
+      oneOf:
+        - required: [prompt]
+        - required: [messages]

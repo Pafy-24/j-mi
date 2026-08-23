@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jester.local/schemas/mi-generate-v1.schema.json",
+  "title": "Jester MI generation request",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {"const": "mi-generate-v1"},
+    "requestId": {"type": "string"},
+    "prompt": {"type": "string", "minLength": 1},
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {"type": "string"},
+          "content": {}
+        },
+        "additionalProperties": true
+      }
+    },
+    "facets": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "object", "properties": {"reference": {"type": "string"}}}
+        ]
+      }
+    },
+    "generation": {"type": "object"},
+    "seed": {"type": "integer"},
+    "continueFinalMessage": {"type": "boolean"},
+    "returnFullText": {"type": "boolean"},
+    "allowModelIdMismatch": {"type": "boolean"}
+  },
+  "oneOf": [{"required": ["prompt"]}, {"required": ["messages"]}],
+  "additionalProperties": true
+}

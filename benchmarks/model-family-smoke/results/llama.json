@@ -1,0 +1,1068 @@
+{
+  "schemaVersion": "mi-model-family-benchmark-v1",
+  "benchmark": "model-family-smoke",
+  "family": "llama",
+  "createdAt": "2026-08-23T18:34:48.775646+00:00",
+  "hardware": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.15",
+    "torch": "2.11.0+cu128",
+    "cudaAvailable": true,
+    "cuda": {
+      "torchCuda": "12.8",
+      "device": "NVIDIA GeForce RTX 5070 Laptop GPU",
+      "totalMemoryBytes": 8546484224,
+      "computeCapability": "12.0",
+      "bfloat16Supported": true
+    }
+  },
+  "baseModelDirectory": "E:\\Licenta\\Proiect\\base-models\\downloaded\\llama\\Llama-3.2-1B-Instruct",
+  "baseModelBytes": 2471645608,
+  "facetVersion": "smoke-2026-08-23",
+  "trainingData": {
+    "continuedPretrainingPerFacet": 10,
+    "sftTrainingPerFacet": 4,
+    "heldoutSftPerFacet": 2,
+    "warning": "integration smoke benchmark; dataset is too small for quality claims"
+  },
+  "training": [
+    {
+      "role": "parent",
+      "config": "E:\\Licenta\\Proiect\\MI\\benchmarks\\model-family-smoke\\configs\\llama-coder.json",
+      "wallSeconds": 7.053063,
+      "peakCudaAllocatedBytes": 3782347776,
+      "artifactBytes": 243288320,
+      "result": {
+        "schemaVersion": "mi-training-result-v1",
+        "status": "succeeded",
+        "component": 2,
+        "facet": {
+          "schemaVersion": "mi-facet-v1",
+          "id": "coder",
+          "version": "smoke-2026-08-23",
+          "description": "Parent code-design facet for the three-family MI smoke benchmark",
+          "status": "trained",
+          "base": {
+            "modelId": "E:\\Licenta\\Proiect\\base-models\\downloaded\\llama\\Llama-3.2-1B-Instruct",
+            "revision": null,
+            "configSha256": "27eab91a7d32e089351991353f4a468c01d65fb479defa0cfe7153e76830ac2a",
+            "layerPath": "model.layers",
+            "baseLayerCount": 16,
+            "modelType": "llama"
+          },
+          "dependencies": {
+            "requires": [],
+            "after": [],
+            "before": [],
+            "conflicts": [],
+            "priority": 20
+          },
+          "module": {
+            "type": "full-decoder-block",
+            "slots": [
+              {
+                "id": "coder-early",
+                "afterLayer": 4,
+                "order": 10,
+                "blocks": [
+                  {
+                    "sourceLayer": 4,
+                    "initializer": "identity-copy",
+                    "checkpointPrefix": "slots.coder-early.blocks.0000"
+                  }
+                ]
+              },
+              {
+                "id": "coder-middle",
+                "afterLayer": 9,
+                "order": 10,
+                "blocks": [
+                  {
+                    "sourceLayer": 9,
+                    "initializer": "identity-copy",
+                    "checkpointPrefix": "slots.coder-middle.blocks.0000"
+                  }
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "benchmark": "model-family-smoke",
+            "family": "llama",
+            "role": "parent",
+            "datasetFacet": "coder",
+            "createdAt": "2026-08-23T18:34:54.619297Z",
+            "method": "LLaMA-Pro-style block expansion",
+            "trainableScope": "inserted-blocks-only",
+            "initialization": {
+              "coder-early": [
+                {
+                  "initializer": "identity-copy",
+                  "zeroedParameters": [
+                    "self_attn.o_proj.weight",
+                    "mlp.down_proj.weight"
+                  ]
+                }
+              ],
+              "coder-middle": [
+                {
+                  "initializer": "identity-copy",
+                  "zeroedParameters": [
+                    "self_attn.o_proj.weight",
+                    "mlp.down_proj.weight"
+                  ]
+                }
+              ]
+            },
+            "completedAt": "2026-08-23T18:34:55.687740Z",
+            "globalStep": 6,
+            "metrics": {
+              "globalStep": 6,
+              "microStep": 6,
+              "epochsTraversed": 1,
+              "meanTrainingLoss": 4.091349641482036,
+              "lastTrainingLoss": 2.5184762477874756,
+              "validationLoss": null,
+              "validationPerplexity": null,
+              "elapsedSeconds": 6.670503,
+              "warmupSteps": 0,
+              "trainExamples": 14,
+              "validationExamples": 0,
+              "trainableParameters": 121643008,
+              "baseAndFacetParameters": 1357457408,
+              "identityCheck": {
+                "enabled": true,
+                "passed": true,
+                "maxAbsoluteLogitDifference": 0.0,
+                "meanAbsoluteLogitDifference": 0.0,
+                "atol": 0.005,
+                "rtol": 0.0001
+              }
+            },
+            "parentsUsedDuringTraining": []
+          },
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "8597a97f7eff9fce8438d36c53b5ead254f4d0f857929a3252f80379a050491a"
+          }
+        },
+        "outputDirectory": "E:\\Licenta\\Proiect\\facets\\mi-benchmark\\llama\\coder\\smoke-2026-08-23",
+        "composition": {
+          "schemaVersion": "mi-composition-v1",
+          "requestedFacets": [
+            "coder@smoke-2026-08-23"
+          ],
+          "resolvedFacets": [
+            "coder@smoke-2026-08-23"
+          ],
+          "slots": [
+            {
+              "id": "coder-early",
+              "afterLayer": 4,
+              "order": 10,
+              "executionIndex": 0,
+              "blocks": [
+                {
+                  "facet": "coder",
+                  "version": "smoke-2026-08-23",
+                  "blockIndex": 0,
+                  "sourceLayer": 4,
+                  "executionIndex": 0
+                }
+              ]
+            },
+            {
+              "id": "coder-middle",
+              "afterLayer": 9,
+              "order": 10,
+              "executionIndex": 1,
+              "blocks": [
+                {
+                  "facet": "coder",
+                  "version": "smoke-2026-08-23",
+                  "blockIndex": 0,
+                  "sourceLayer": 9,
+                  "executionIndex": 1
+                }
+              ]
+            }
+          ],
+          "expandedBlockCount": 2
+        },
+        "metrics": {
+          "globalStep": 6,
+          "microStep": 6,
+          "epochsTraversed": 1,
+          "meanTrainingLoss": 4.091349641482036,
+          "lastTrainingLoss": 2.5184762477874756,
+          "validationLoss": null,
+          "validationPerplexity": null,
+          "elapsedSeconds": 6.670503,
+          "warmupSteps": 0,
+          "trainExamples": 14,
+          "validationExamples": 0,
+          "trainableParameters": 121643008,
+          "baseAndFacetParameters": 1357457408,
+          "identityCheck": {
+            "enabled": true,
+            "passed": true,
+            "maxAbsoluteLogitDifference": 0.0,
+            "meanAbsoluteLogitDifference": 0.0,
+            "atol": 0.005,
+            "rtol": 0.0001
+          }
+        }
+      }
+    },
+    {
+      "role": "child",
+      "config": "E:\\Licenta\\Proiect\\MI\\benchmarks\\model-family-smoke\\configs\\llama-coder-python.json",
+      "wallSeconds": 3.562263,
+      "peakCudaAllocatedBytes": 3683586560,
+      "artifactBytes": 121644152,
+      "result": {
+        "schemaVersion": "mi-training-result-v1",
+        "status": "succeeded",
+        "component": 2,
+        "facet": {
+          "schemaVersion": "mi-facet-v1",
+          "id": "coder.python",
+          "version": "smoke-2026-08-23",
+          "description": "Python child facet trained with the coder parent frozen and active",
+          "status": "trained",
+          "base": {
+            "modelId": "E:\\Licenta\\Proiect\\base-models\\downloaded\\llama\\Llama-3.2-1B-Instruct",
+            "revision": null,
+            "configSha256": "27eab91a7d32e089351991353f4a468c01d65fb479defa0cfe7153e76830ac2a",
+            "layerPath": "model.layers",
+            "baseLayerCount": 16,
+            "modelType": "llama"
+          },
+          "dependencies": {
+            "requires": [
+              "coder@smoke-2026-08-23"
+            ],
+            "after": [
+              "coder@smoke-2026-08-23"
+            ],
+            "before": [],
+            "conflicts": [],
+            "priority": 30
+          },
+          "module": {
+            "type": "full-decoder-block",
+            "slots": [
+              {
+                "id": "python-late",
+                "afterLayer": 12,
+                "order": 20,
+                "blocks": [
+                  {
+                    "sourceLayer": 12,
+                    "initializer": "identity-copy",
+                    "checkpointPrefix": "slots.python-late.blocks.0000"
+                  }
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "benchmark": "model-family-smoke",
+            "family": "llama",
+            "role": "child",
+            "datasetFacet": "coder.python",
+            "parentTrainingMode": "frozen-active",
+            "createdAt": "2026-08-23T18:34:58.686177Z",
+            "method": "LLaMA-Pro-style block expansion",
+            "trainableScope": "inserted-blocks-only",
+            "initialization": {
+              "python-late": [
+                {
+                  "initializer": "identity-copy",
+                  "zeroedParameters": [
+                    "self_attn.o_proj.weight",
+                    "mlp.down_proj.weight"
+                  ]
+                }
+              ]
+            },
+            "completedAt": "2026-08-23T18:34:59.783886Z",
+            "globalStep": 6,
+            "metrics": {
+              "globalStep": 6,
+              "microStep": 6,
+              "epochsTraversed": 1,
+              "meanTrainingLoss": 3.654963254928589,
+              "lastTrainingLoss": 1.252964735031128,
+              "validationLoss": null,
+              "validationPerplexity": null,
+              "elapsedSeconds": 3.365584,
+              "warmupSteps": 0,
+              "trainExamples": 14,
+              "validationExamples": 0,
+              "trainableParameters": 60821504,
+              "baseAndFacetParameters": 1418278912,
+              "identityCheck": {
+                "enabled": true,
+                "passed": true,
+                "maxAbsoluteLogitDifference": 0.0,
+                "meanAbsoluteLogitDifference": 0.0,
+                "atol": 0.005,
+                "rtol": 0.0001
+              }
+            },
+            "parentsUsedDuringTraining": [
+              "coder@smoke-2026-08-23"
+            ]
+          },
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "a439ab1bc76482a06c6ef2c314972b7b72571d203307ab2fc6fe2476b56129c2"
+          }
+        },
+        "outputDirectory": "E:\\Licenta\\Proiect\\facets\\mi-benchmark\\llama\\coder.python\\smoke-2026-08-23",
+        "composition": {
+          "schemaVersion": "mi-composition-v1",
+          "requestedFacets": [
+            "coder.python@smoke-2026-08-23"
+          ],
+          "resolvedFacets": [
+            "coder@smoke-2026-08-23",
+            "coder.python@smoke-2026-08-23"
+          ],
+          "slots": [
+            {
+              "id": "coder-early",
+              "afterLayer": 4,
+              "order": 10,
+              "executionIndex": 0,
+              "blocks": [
+                {
+                  "facet": "coder",
+                  "version": "smoke-2026-08-23",
+                  "blockIndex": 0,
+                  "sourceLayer": 4,
+                  "executionIndex": 0
+                }
+              ]
+            },
+            {
+              "id": "coder-middle",
+              "afterLayer": 9,
+              "order": 10,
+              "executionIndex": 1,
+              "blocks": [
+                {
+                  "facet": "coder",
+                  "version": "smoke-2026-08-23",
+                  "blockIndex": 0,
+                  "sourceLayer": 9,
+                  "executionIndex": 1
+                }
+              ]
+            },
+            {
+              "id": "python-late",
+              "afterLayer": 12,
+              "order": 20,
+              "executionIndex": 2,
+              "blocks": [
+                {
+                  "facet": "coder.python",
+                  "version": "smoke-2026-08-23",
+                  "blockIndex": 0,
+                  "sourceLayer": 12,
+                  "executionIndex": 2
+                }
+              ]
+            }
+          ],
+          "expandedBlockCount": 3
+        },
+        "metrics": {
+          "globalStep": 6,
+          "microStep": 6,
+          "epochsTraversed": 1,
+          "meanTrainingLoss": 3.654963254928589,
+          "lastTrainingLoss": 1.252964735031128,
+          "validationLoss": null,
+          "validationPerplexity": null,
+          "elapsedSeconds": 3.365584,
+          "warmupSteps": 0,
+          "trainExamples": 14,
+          "validationExamples": 0,
+          "trainableParameters": 60821504,
+          "baseAndFacetParameters": 1418278912,
+          "identityCheck": {
+            "enabled": true,
+            "passed": true,
+            "maxAbsoluteLogitDifference": 0.0,
+            "meanAbsoluteLogitDifference": 0.0,
+            "atol": 0.005,
+            "rtol": 0.0001
+          }
+        }
+      }
+    }
+  ],
+  "evaluation": {
+    "base": {
+      "modelId": "E:\\Licenta\\Proiect\\base-models\\downloaded\\llama\\Llama-3.2-1B-Instruct",
+      "revision": null,
+      "modelType": "llama",
+      "configSha256": "27eab91a7d32e089351991353f4a468c01d65fb479defa0cfe7153e76830ac2a",
+      "layerPath": "model.layers",
+      "baseLayerCount": 16,
+      "device": "cuda:0",
+      "parameters": {
+        "total": 1235814400,
+        "trainable": 1235814400
+      }
+    },
+    "baseParameters": 1235814400,
+    "holdoutPolicy": "last two SFT records per facet; never included in training configs",
+    "states": [
+      {
+        "state": "base",
+        "requestedFacets": [],
+        "resolvedFacets": [],
+        "expandedBlockCount": 0,
+        "activeFacetParameters": 0,
+        "loss": {
+          "coder": {
+            "loss": 3.85227669,
+            "perplexity": 47.10017361,
+            "targetTokens": 348,
+            "records": [
+              {
+                "id": "coder_train_0005",
+                "loss": 3.66969776,
+                "targetTokens": 171,
+                "sequenceTokens": 278,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 4.0286665,
+                "targetTokens": 177,
+                "sequenceTokens": 280,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 2.76254657,
+            "perplexity": 15.84012962,
+            "targetTokens": 311,
+            "records": [
+              {
+                "id": "coder_python_train_0005",
+                "loss": 2.72079349,
+                "targetTokens": 137,
+                "sequenceTokens": 252,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.79542112,
+                "targetTokens": 174,
+                "sequenceTokens": 279,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": null,
+              "lexicalF1": 0.075677,
+              "strictContractScore": 0.0,
+              "structureScore": 0.0,
+              "generatedTokens": 512,
+              "generationSeconds": 8.370268,
+              "tokensPerSecond": 61.16889
+            },
+            "coder.python": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": 0.5,
+              "lexicalF1": 0.18901400000000002,
+              "strictContractScore": 0.1666665,
+              "structureScore": 0.1666665,
+              "generatedTokens": 512,
+              "generationSeconds": 8.271586,
+              "tokensPerSecond": 61.898649
+            },
+            "all": {
+              "examples": 4,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": 0.5,
+              "lexicalF1": 0.1323455,
+              "strictContractScore": 0.08333325,
+              "structureScore": 0.08333325,
+              "generatedTokens": 1024,
+              "generationSeconds": 16.641854,
+              "tokensPerSecond": 61.531606
+            }
+          },
+          "examples": {
+            "coder": [
+              {
+                "id": "coder_train_0005",
+                "language": "ro",
+                "output": "**Complexitate:**\n\n- **Cerere 1:** O cerere care se potrivește unui set de date care conține numere între 1 și 100, și care are un set de operări sau funcții care se potrivește unui set de date care conține numere între 1 și 100.\n\n- **Cerere 2:** O cerere care se potrivește unui set de date care conține numere între 1 și 100, și care are un set de operări sau funcții care se potrivește unui set de date care conține numere între 1 și 100.\n\n**Invarianță:**\n\n- **Cerere 1:** Invarianța este garantată deoarece cererea se potrivește unui set de date care conține numere între 1 și 100, și care are un set de operări sau funcții care se potrivește unui set de date care conține numere între 1 și 100.\n\n- **Cerere 2:** Invarian",
+                "reference": "{\"requirements\":[\"un singur job per cheie logică\",\"chei diferite rămân concurente\"],\"invariants\":[\"unicitatea este impusă în componenta care serializează tranzacțiile\"],\"algorithm\":\"înlocuiește verificarea urmată de inserare cu o tranziție atomică bazată pe o constrângere unică\",\"pseudocode\":[\"attempt atomic insert for logical_key\",\"if uniqueness conflict: load existing job\",\"return the canonical job identity\"],\"edge_cases\":[\"două inserări simultane\",\"retry după timeout\",\"chei diferite\"],\"complexity\":\"costul unei inserări indexate\",\"test_strategy\":[\"barieră concurentă\",\"un singur rând rezultat\",\"paralelism pentru chei distincte\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.067633,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 107,
+                  "outputTokens": 256,
+                  "totalTokens": 363,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.033,
+                  "composition": 0.713,
+                  "generation": 4243.722,
+                  "total": 4248.048
+                }
+              },
+              {
+                "id": "coder_train_0006",
+                "language": "ro",
+                "output": "Înțeleg problema. Acest lucru poate fi ca o vulnerabilitate de cod care permite execuția codului din fișierul furnizat de utilizator fără a trebui să se folosească de comanda shell.\n\nÎn acest caz, puteți folosi un sistem de control de fișiere care poate detecta și trimisă comanda shell. Un exemplu este sistemul de control de fișiere `file` din Python.\n\nAici este un exemplu de cod design pentru un sistem de control de fișiere care detectează și trimisă comanda shell:\n```python\nimport os\nimport re\n\ndef detect_shell_command(file_name):\n    # Verifică dacă fișiera este o comandă shell\n    if re.search(r'^/bin/sh$', file_name):\n        return True\n    elif re.search(r'^/bin/bash$', file_name):\n        return True\n    elif re.search(r'^/bin/zsh$', file_name):\n        return True\n    elif re.search(r'^/bin/ksh$', file_name):\n        return True\n    elif re.search(r'^/bin/csh$', file_name):\n        return True\n   ",
+                "reference": "{\"requirements\":[\"numele rămâne dată, nu sintaxă shell\",\"căile rămân în directoarele permise\"],\"invariants\":[\"procesul primește executable și argumente separate\",\"calea rezolvată este în rădăcina autorizată\"],\"algorithm\":\"elimină shell-ul, validează calea și construiește vectorul de argumente\",\"pseudocode\":[\"resolved_input := resolve within allowed_root\",\"reject if resolved_input escapes allowed_root\",\"arguments := [input_flag, resolved_input, output_path]\",\"spawn executable with arguments and shell disabled\"],\"edge_cases\":[\"spații\",\"metacaractere\",\"traversal\",\"link simbolic\"],\"complexity\":\"constant outside filesystem resolution\",\"test_strategy\":[\"adversarial filenames\",\"path-boundary checks\",\"valid filename regression\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.083721,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 103,
+                  "outputTokens": 256,
+                  "totalTokens": 359,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.025,
+                  "composition": 0.703,
+                  "generation": 4126.546,
+                  "total": 4130.538
+                }
+              }
+            ],
+            "coder.python": [
+              {
+                "id": "coder_python_train_0005",
+                "language": "ro",
+                "output": "Aici este un cod implementare-v2 pentru facet-runtime, care se bază pe Python 3.11, folosește numpy la runtime și pytest plus ruff în development.\n\n**facet-runtime-v2.py**\n```python\nimport numpy as np\nimport pytest_plus_ruff as rp\nfrom facet_runtime import FacetRuntime\n\n# Definirea unei funcții care returnează un număr random\ndef random_number():\n    return np.random.randint(0, 100)\n\n# Definirea unei funcții care returnează o matrice cu dimensiunea 2x2\ndef matrix():\n    return np.array([[1, 2], [3, 4]])\n\n# Definirea unei funcții care returnează o funcție care calculează suma unui număr random\ndef sum_function():\n    return random_number() + random_number()\n\n# Definirea unei funcții care returnează o funcție care calculează productul unui număr random și unul din matrice\ndef product_function():\n    return random_number() * matrix()[0, 0]\n\n# Definirea unei funcții care",
+                "reference": "{\"files\":{\"pyproject.toml\":\"[build-system]\\nrequires = ['hatchling']\\nbuild-backend = 'hatchling.build'\\n\\n[project]\\nname = 'facet-runtime'\\nversion = '0.1.0'\\nrequires-python = '>=3.11'\\ndependencies = ['numpy']\\n\\n[project.optional-dependencies]\\ndev = ['pytest', 'ruff']\\n\"},\"tests\":[\"build wheel in a clean environment\",\"install runtime dependencies only\",\"install development extra and run pytest\"],\"compatibility\":\"Python 3.11+\",\"assumptions\":[\"source layout is compatible with hatchling discovery\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": 1.0,
+                  "lexicalF1": 0.15873,
+                  "strictContractScore": 0.333333,
+                  "structureScore": 0.333333
+                },
+                "usage": {
+                  "inputTokens": 115,
+                  "outputTokens": 256,
+                  "totalTokens": 371,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.024,
+                  "composition": 0.69,
+                  "generation": 4159.581,
+                  "total": 4163.17
+                }
+              },
+              {
+                "id": "coder_python_train_0006",
+                "language": "ro",
+                "output": "Aici este un design de code-design-v2 independent de limbaj care atinge obiectivele duse de părintele tău:\n\n**Code-implementation-v2**\n```python\nimport os\nimport sys\nimport argparse\n\n# Supunere\nALLOWED_ROOT = '/path/to/allowed/root'\nSHELL = '/path/to/shell'\n\ndef is_allowed_root(path):\n    \"\"\"Verifică dacă un fișier este într-un director sau într-un fișier\"\"\"\n    return os.path.isdir(path) or os.path.isfile(path)\n\ndef get_args():\n    \"\"\"Obține argumentele de comandă\"\"\"\n    parser = argparse.ArgumentParser(description='Code-design-v2')\n    parser.add_argument('--allowed-root', required=True, help='Directorul în care se pot crea fișiere')\n    parser.add_argument('--shell', required=True, help='Directorul unde se pot executa comandele')\n    return parser.parse_args()\n\ndef create_directory(path):\n    \"\"\"Creează un director\"\"\"\n    if not is_allowed_root(path):\n        raise ValueError(f'{path} nu este într-un director sau într-un fișier')\n\ndef create_file(path, content):\n    \"\"\"Creează un fi",
+                "reference": "{\"files\":{\"runner.py\":\"from pathlib import Path\\nimport subprocess\\n\\ndef run_ffmpeg(filename: str, allowed_root: Path, output: Path) -> None:\\n    root = allowed_root.resolve(strict=True)\\n    source = (root / filename).resolve(strict=True)\\n    if not source.is_relative_to(root):\\n        raise ValueError('input escapes allowed root')\\n    subprocess.run(['ffmpeg', '-i', str(source), str(output)], check=True, shell=False)\\n\"},\"tests\":[\"nume cu spații rămâne un singur argument\",\"traversal este refuzat\",\"metacaracterele nu sunt interpretate de shell\"],\"compatibility\":\"Python 3.9+ pentru Path.is_relative_to\",\"assumptions\":[\"output este validat de apelant printr-un contract separat\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": 0.0,
+                  "lexicalF1": 0.219298,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 105,
+                  "outputTokens": 256,
+                  "totalTokens": 361,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.023,
+                  "composition": 0.698,
+                  "generation": 4112.005,
+                  "total": 4115.55
+                }
+              }
+            ]
+          }
+        },
+        "cudaAllocatedBytes": 2489717760,
+        "peakCudaAllocatedBytes": 2922246656
+      },
+      {
+        "state": "base+facet",
+        "requestedFacets": [
+          "coder@smoke-2026-08-23"
+        ],
+        "resolvedFacets": [
+          "coder@smoke-2026-08-23"
+        ],
+        "expandedBlockCount": 2,
+        "activeFacetParameters": 121643008,
+        "loss": {
+          "coder": {
+            "loss": 3.63702859,
+            "perplexity": 37.97881807,
+            "targetTokens": 348,
+            "records": [
+              {
+                "id": "coder_train_0005",
+                "loss": 3.51340985,
+                "targetTokens": 171,
+                "sequenceTokens": 278,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 3.75645685,
+                "targetTokens": 177,
+                "sequenceTokens": 280,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 2.73099068,
+            "perplexity": 15.34808454,
+            "targetTokens": 311,
+            "records": [
+              {
+                "id": "coder_python_train_0005",
+                "loss": 2.74465346,
+                "targetTokens": 137,
+                "sequenceTokens": 252,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.7202332,
+                "targetTokens": 174,
+                "sequenceTokens": 279,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": null,
+              "lexicalF1": 0.0347855,
+              "strictContractScore": 0.0,
+              "structureScore": 0.0,
+              "generatedTokens": 512,
+              "generationSeconds": 9.022814,
+              "tokensPerSecond": 56.745047
+            },
+            "coder.python": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.1666665,
+              "pythonParseRate": 0.0,
+              "lexicalF1": 0.1445705,
+              "strictContractScore": 0.0,
+              "structureScore": 0.0555555,
+              "generatedTokens": 512,
+              "generationSeconds": 9.023172,
+              "tokensPerSecond": 56.742795
+            },
+            "all": {
+              "examples": 4,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.08333325,
+              "pythonParseRate": 0.0,
+              "lexicalF1": 0.089678,
+              "strictContractScore": 0.0,
+              "structureScore": 0.02777775,
+              "generatedTokens": 1024,
+              "generationSeconds": 18.045986,
+              "tokensPerSecond": 56.743921
+            }
+          },
+          "examples": {
+            "coder": [
+              {
+                "id": "coder_train_0005",
+                "language": "ro",
+                "output": "Cererea 1: `insert` sau `insertAt`\n```c\ninsertAt(0, value) {\n  if (value < 0) {\n    throw \"Value cannot be negative\"\n  }\n  if (value == 0) {\n    return\n  }\n  if (value > size) {\n    throw \"Value is out of range\"\n  }\n  if (size == 0) {\n    size = 1\n  } else {\n    size++\n  }\n  at(0, value)\n}\n```\n\nCererea 2: `insert` sau `insertAt`\n```c\ninsert(value) {\n  if (value < 0) {\n    throw \"Value cannot be negative\"\n  }\n  if (value == 0) {\n    return\n  }\n  if (value > size) {\n    throw \"Value is out of range\"\n  }\n  if (size == 0) {\n    size = 1\n  } else {\n    size++\n  }\n  at(size - 1, value)\n}\n```\n\nCererea 3: `delete`\n```c\ndelete(0) {\n  if (value < 0) {\n    throw \"Value cannot be negative\"\n  }\n",
+                "reference": "{\"requirements\":[\"un singur job per cheie logică\",\"chei diferite rămân concurente\"],\"invariants\":[\"unicitatea este impusă în componenta care serializează tranzacțiile\"],\"algorithm\":\"înlocuiește verificarea urmată de inserare cu o tranziție atomică bazată pe o constrângere unică\",\"pseudocode\":[\"attempt atomic insert for logical_key\",\"if uniqueness conflict: load existing job\",\"return the canonical job identity\"],\"edge_cases\":[\"două inserări simultane\",\"retry după timeout\",\"chei diferite\"],\"complexity\":\"costul unei inserări indexate\",\"test_strategy\":[\"barieră concurentă\",\"un singur rând rezultat\",\"paralelism pentru chei distincte\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.035088,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 107,
+                  "outputTokens": 256,
+                  "totalTokens": 363,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.075,
+                  "composition": 1.025,
+                  "generation": 4488.218,
+                  "total": 4492.125
+                }
+              },
+              {
+                "id": "coder_train_0006",
+                "language": "ro",
+                "output": "Înaintea codului design, este necesar să se definiți:\n\n- Numele fișierului.\n- Tipul de fișier (file text, binary, etc.).\n- Numele de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de comandă.\n- Tipul de interfeția de comandă.\n- Numele de interfeția de com",
+                "reference": "{\"requirements\":[\"numele rămâne dată, nu sintaxă shell\",\"căile rămân în directoarele permise\"],\"invariants\":[\"procesul primește executable și argumente separate\",\"calea rezolvată este în rădăcina autorizată\"],\"algorithm\":\"elimină shell-ul, validează calea și construiește vectorul de argumente\",\"pseudocode\":[\"resolved_input := resolve within allowed_root\",\"reject if resolved_input escapes allowed_root\",\"arguments := [input_flag, resolved_input, output_path]\",\"spawn executable with arguments and shell disabled\"],\"edge_cases\":[\"spații\",\"metacaractere\",\"traversal\",\"link simbolic\"],\"complexity\":\"constant outside filesystem resolution\",\"test_strategy\":[\"adversarial filenames\",\"path-boundary checks\",\"valid filename regression\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.034483,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 103,
+                  "outputTokens": 256,
+                  "totalTokens": 359,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.057,
+                  "composition": 0.994,
+                  "generation": 4534.596,
+                  "total": 4538.494
+                }
+              }
+            ],
+            "coder.python": [
+              {
+                "id": "coder_python_train_0005",
+                "language": "ro",
+                "output": "**facet-runtime.py**\n```python\nimport numpy as np\nimport pytest\nfrom facet.runtime import facet_runtime\n\n# Supunere\ndef supune(x):\n    return x * 2\n\ndef supune_2(x):\n    return x + 1\n\n# Implementare\ndef implementare(x):\n    return supune(x)\n\ndef implementare_2(x):\n    return supune_2(x)\n\n# Teste\ndef test_supune():\n    assert implementare(5) == 10\n    assert implementare_2(5) == 6\n\ndef test_supune_2():\n    assert implementare(5) == 6\n    assert implementare_2(5) == 7\n\ndef test_supune_3():\n    assert implementare(5) == 10\n    assert implementare_2(5) == 7\n    assert implementare_3(5) == 11\n\ndef test_supune_4():\n    assert implementare(5) == 10\n    assert implementare_2(5) == 6\n    assert implementare_3(5) == 7\n    assert implementare_4(5) == 11\n\ndef test_supune_5",
+                "reference": "{\"files\":{\"pyproject.toml\":\"[build-system]\\nrequires = ['hatchling']\\nbuild-backend = 'hatchling.build'\\n\\n[project]\\nname = 'facet-runtime'\\nversion = '0.1.0'\\nrequires-python = '>=3.11'\\ndependencies = ['numpy']\\n\\n[project.optional-dependencies]\\ndev = ['pytest', 'ruff']\\n\"},\"tests\":[\"build wheel in a clean environment\",\"install runtime dependencies only\",\"install development extra and run pytest\"],\"compatibility\":\"Python 3.11+\",\"assumptions\":[\"source layout is compatible with hatchling discovery\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": 0.0,
+                  "lexicalF1": 0.111801,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 115,
+                  "outputTokens": 256,
+                  "totalTokens": 371,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.057,
+                  "composition": 1.003,
+                  "generation": 4503.68,
+                  "total": 4507.408
+                }
+              },
+              {
+                "id": "coder_python_train_0006",
+                "language": "ro",
+                "output": "Aici este un design de code-design-v2 pentru un script Python care respectă presupuneri:\n\n```python\nimport os\nimport sys\nimport re\nimport argparse\nimport logging\n\n# Supunere\nALLOWED_ROOT = True\nALLOWED_FILES = True\nALLOWED_INPUTS = True\nALLOWED_OUTPUTS = True\nALLOWED_INPUTS = True\nALLOWED_OUTPUTS = True\n\n# Definirea structurii de input\ndef get_input():\n    if ALLOWED_INPUTS:\n        return sys.stdin.read()\n    else:\n        return None\n\n# Definirea structurii de output\ndef get_output():\n    if ALLOWED_OUTPUTS:\n        return sys.stdout.write()\n    else:\n        return None\n\n# Definirea structurii de input și output\ndef get_input_struct():\n    if ALLOWED_INPUTS:\n        return (get_input(), get_input())\n    else:\n        return (None, None)\n\n# Definirea structurii de input și output\ndef get_output_struct():\n    if ALLOWED_OUTPUTS:\n        return (get_output(), get_output())\n    else:\n        return (None, None)\n\n# Definirea structurii de input și output\ndef",
+                "reference": "{\"files\":{\"runner.py\":\"from pathlib import Path\\nimport subprocess\\n\\ndef run_ffmpeg(filename: str, allowed_root: Path, output: Path) -> None:\\n    root = allowed_root.resolve(strict=True)\\n    source = (root / filename).resolve(strict=True)\\n    if not source.is_relative_to(root):\\n        raise ValueError('input escapes allowed root')\\n    subprocess.run(['ffmpeg', '-i', str(source), str(output)], check=True, shell=False)\\n\"},\"tests\":[\"nume cu spații rămâne un singur argument\",\"traversal este refuzat\",\"metacaracterele nu sunt interpretate de shell\"],\"compatibility\":\"Python 3.9+ pentru Path.is_relative_to\",\"assumptions\":[\"output este validat de apelant printr-un contract separat\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.333333,
+                  "pythonParseRate": 0.0,
+                  "lexicalF1": 0.17734,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.111111
+                },
+                "usage": {
+                  "inputTokens": 105,
+                  "outputTokens": 256,
+                  "totalTokens": 361,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.06,
+                  "composition": 0.979,
+                  "generation": 4519.492,
+                  "total": 4523.327
+                }
+              }
+            ]
+          }
+        },
+        "cudaAllocatedBytes": 2733003776,
+        "peakCudaAllocatedBytes": 3165532672
+      },
+      {
+        "state": "base+parent+child",
+        "requestedFacets": [
+          "coder.python@smoke-2026-08-23"
+        ],
+        "resolvedFacets": [
+          "coder@smoke-2026-08-23",
+          "coder.python@smoke-2026-08-23"
+        ],
+        "expandedBlockCount": 3,
+        "activeFacetParameters": 182464512,
+        "loss": {
+          "coder": {
+            "loss": 3.62164273,
+            "perplexity": 37.39895359,
+            "targetTokens": 348,
+            "records": [
+              {
+                "id": "coder_train_0005",
+                "loss": 3.49403572,
+                "targetTokens": 171,
+                "sequenceTokens": 278,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_train_0006",
+                "loss": 3.74492407,
+                "targetTokens": 177,
+                "sequenceTokens": 280,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          },
+          "coder.python": {
+            "loss": 2.68180055,
+            "perplexity": 14.61137811,
+            "targetTokens": 311,
+            "records": [
+              {
+                "id": "coder_python_train_0005",
+                "loss": 2.71748924,
+                "targetTokens": 137,
+                "sequenceTokens": 252,
+                "hitMaxSequenceLength": false
+              },
+              {
+                "id": "coder_python_train_0006",
+                "loss": 2.65370083,
+                "targetTokens": 174,
+                "sequenceTokens": 279,
+                "hitMaxSequenceLength": false
+              }
+            ]
+          }
+        },
+        "generation": {
+          "aggregate": {
+            "coder": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": null,
+              "lexicalF1": 0.044414999999999996,
+              "strictContractScore": 0.0,
+              "structureScore": 0.0,
+              "generatedTokens": 37,
+              "generationSeconds": 0.763795,
+              "tokensPerSecond": 48.442318
+            },
+            "coder.python": {
+              "examples": 2,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": 0.375,
+              "lexicalF1": 0.1466515,
+              "strictContractScore": 0.125,
+              "structureScore": 0.125,
+              "generatedTokens": 512,
+              "generationSeconds": 9.471033,
+              "tokensPerSecond": 54.059573
+            },
+            "all": {
+              "examples": 4,
+              "validContractJsonRate": 0.0,
+              "requiredFieldCoverage": 0.0,
+              "requiredFieldMentionCoverage": 0.0,
+              "pythonParseRate": 0.375,
+              "lexicalF1": 0.09553325,
+              "strictContractScore": 0.0625,
+              "structureScore": 0.0625,
+              "generatedTokens": 549,
+              "generationSeconds": 10.234828,
+              "tokensPerSecond": 53.640374
+            }
+          },
+          "examples": {
+            "coder": [
+              {
+                "id": "coder_train_0005",
+                "language": "ro",
+                "output": "Cererea 1: `insert`",
+                "reference": "{\"requirements\":[\"un singur job per cheie logică\",\"chei diferite rămân concurente\"],\"invariants\":[\"unicitatea este impusă în componenta care serializează tranzacțiile\"],\"algorithm\":\"înlocuiește verificarea urmată de inserare cu o tranziție atomică bazată pe o constrângere unică\",\"pseudocode\":[\"attempt atomic insert for logical_key\",\"if uniqueness conflict: load existing job\",\"return the canonical job identity\"],\"edge_cases\":[\"două inserări simultane\",\"retry după timeout\",\"chei diferite\"],\"complexity\":\"costul unei inserări indexate\",\"test_strategy\":[\"barieră concurentă\",\"un singur rând rezultat\",\"paralelism pentru chei distincte\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.025,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 107,
+                  "outputTokens": 10,
+                  "totalTokens": 117,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.084,
+                  "composition": 1.12,
+                  "generation": 233.619,
+                  "total": 238.132
+                }
+              },
+              {
+                "id": "coder_train_0006",
+                "language": "ro",
+                "output": "În acest caz, utilizatorul a trimis un script de la shell, care include un nom de fișier.",
+                "reference": "{\"requirements\":[\"numele rămâne dată, nu sintaxă shell\",\"căile rămân în directoarele permise\"],\"invariants\":[\"procesul primește executable și argumente separate\",\"calea rezolvată este în rădăcina autorizată\"],\"algorithm\":\"elimină shell-ul, validează calea și construiește vectorul de argumente\",\"pseudocode\":[\"resolved_input := resolve within allowed_root\",\"reject if resolved_input escapes allowed_root\",\"arguments := [input_flag, resolved_input, output_path]\",\"spawn executable with arguments and shell disabled\"],\"edge_cases\":[\"spații\",\"metacaractere\",\"traversal\",\"link simbolic\"],\"complexity\":\"constant outside filesystem resolution\",\"test_strategy\":[\"adversarial filenames\",\"path-boundary checks\",\"valid filename regression\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": null,
+                  "lexicalF1": 0.06383,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 103,
+                  "outputTokens": 27,
+                  "totalTokens": 130,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.065,
+                  "composition": 1.115,
+                  "generation": 530.176,
+                  "total": 533.977
+                }
+              }
+            ],
+            "coder.python": [
+              {
+                "id": "coder_python_train_0005",
+                "language": "ro",
+                "output": "**facet-runtime.py**\n```python\nimport numpy as np\nimport pytest\nfrom facet.runtime import facet_runtime\n\n# Supunere\ndef test_facet_runtime():\n    # Supune funcția facet_runtime la un cod de test\n    facet_runtime()\n    assert True\n```\n**facet_runtime.py**\n```python\nimport numpy as np\nimport pytest\nfrom facet.runtime import facet_runtime\n\n# Supunere\ndef facet_runtime():\n    # Implementarea funcției facet_runtime\n    # Supune funcția la un cod de test\n    np.random.seed(42)\n    x = np.random.rand(10)\n    y = np.random.rand(10)\n    facet_runtime(x, y)\n```\n**tests.py**\n```python\nimport pytest\nfrom facet_runtime import facet_runtime\n\ndef test_facet_runtime():\n    # Testarea funcției facet_runtime\n    facet_runtime()\n    assert True\n```\n**setup.py**\n```python\nfrom setuptools import setup\n\nsetup(\n    name='facet-runtime',\n    version='2.0.0',\n    packages=['facet_runtime'],\n    install_requires=['numpy'],\n    extras_require={'pytest': ['pytest-ruff']},\n    tests_require=['pytest-ruff'],\n    tests_suite",
+                "reference": "{\"files\":{\"pyproject.toml\":\"[build-system]\\nrequires = ['hatchling']\\nbuild-backend = 'hatchling.build'\\n\\n[project]\\nname = 'facet-runtime'\\nversion = '0.1.0'\\nrequires-python = '>=3.11'\\ndependencies = ['numpy']\\n\\n[project.optional-dependencies]\\ndev = ['pytest', 'ruff']\\n\"},\"tests\":[\"build wheel in a clean environment\",\"install runtime dependencies only\",\"install development extra and run pytest\"],\"compatibility\":\"Python 3.11+\",\"assumptions\":[\"source layout is compatible with hatchling discovery\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": 0.75,
+                  "lexicalF1": 0.131868,
+                  "strictContractScore": 0.25,
+                  "structureScore": 0.25
+                },
+                "usage": {
+                  "inputTokens": 115,
+                  "outputTokens": 256,
+                  "totalTokens": 371,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.067,
+                  "composition": 1.102,
+                  "generation": 4729.549,
+                  "total": 4733.63
+                }
+              },
+              {
+                "id": "coder_python_train_0006",
+                "language": "ro",
+                "output": "Aici este un design de code-design-v2 pentru un script Python care respectă presupuneri:\n\n```python\nimport os\nimport sys\nimport argparse\nimport logging\n\n# Definirea de tipuri\nINT = int\nSTR = str\nFLOAT = float\nBOOL = bool\n\n# Definirea de tipuri de argumente\ndef parse_args():\n    parser = argparse.ArgumentParser(description='Scriptul')\n    parser.add_argument('--allowed-root', type=INT, default=0, help='Root-ul să fie acceptat sau ignorat')\n    parser.add_argument('--shell', action='store_true', help='Shell să fie activată sau dezactivată')\n    parser.add_argument('--input', type=STR, help='Inputul să fie rezolvat sub allowed_root')\n    return parser.parse_args()\n\n# Definirea de funcții\ndef is_allowed_root(arg):\n    return arg == 0 or arg == 1\n\ndef is_shell(arg):\n    return arg == 'shell'\n\ndef is_input(arg):\n    return arg == 'input'\n\ndef is_allowed_root_value(arg):\n    return arg == 0 or arg == 1\n\n# Definirea de funcții de implementare\ndef is_allowed",
+                "reference": "{\"files\":{\"runner.py\":\"from pathlib import Path\\nimport subprocess\\n\\ndef run_ffmpeg(filename: str, allowed_root: Path, output: Path) -> None:\\n    root = allowed_root.resolve(strict=True)\\n    source = (root / filename).resolve(strict=True)\\n    if not source.is_relative_to(root):\\n        raise ValueError('input escapes allowed root')\\n    subprocess.run(['ffmpeg', '-i', str(source), str(output)], check=True, shell=False)\\n\"},\"tests\":[\"nume cu spații rămâne un singur argument\",\"traversal este refuzat\",\"metacaracterele nu sunt interpretate de shell\"],\"compatibility\":\"Python 3.9+ pentru Path.is_relative_to\",\"assumptions\":[\"output este validat de apelant printr-un contract separat\"]}",
+                "scores": {
+                  "validContractJson": false,
+                  "requiredFieldCoverage": 0.0,
+                  "requiredFieldMentionCoverage": 0.0,
+                  "pythonParseRate": 0.0,
+                  "lexicalF1": 0.161435,
+                  "strictContractScore": 0.0,
+                  "structureScore": 0.0
+                },
+                "usage": {
+                  "inputTokens": 105,
+                  "outputTokens": 256,
+                  "totalTokens": 361,
+                  "sequences": 1
+                },
+                "timingMs": {
+                  "facetLoad": 0.074,
+                  "composition": 1.112,
+                  "generation": 4741.484,
+                  "total": 4745.707
+                }
+              }
+            ]
+          }
+        },
+        "cudaAllocatedBytes": 2854646784,
+        "peakCudaAllocatedBytes": 3287175680
+      }
+    ]
+  }
+}

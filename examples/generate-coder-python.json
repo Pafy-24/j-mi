@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "mi-generate-v1",
+  "requestId": "demo-coder-python",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Scrie o funcție Python care grupează obiectele după o cheie și explică complexitatea."
+    }
+  ],
+  "facets": ["coder.python@0.1.0"],
+  "generation": {
+    "max_new_tokens": 384,
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "do_sample": true
+  },
+  "seed": 42,
+  "returnFullText": false
+}

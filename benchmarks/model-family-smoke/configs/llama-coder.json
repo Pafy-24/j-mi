@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "mi-training-v1",
+  "baseModel": {
+    "id": "../../../../base-models/downloaded/llama/Llama-3.2-1B-Instruct",
+    "revision": null,
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "allowDownload": false
+  },
+  "registry": "../../../../facets/mi-benchmark/llama",
+  "facet": {
+    "id": "coder",
+    "version": "smoke-2026-08-23",
+    "description": "Parent code-design facet for the three-family MI smoke benchmark",
+    "dependencies": {"requires": [], "priority": 20},
+    "module": {
+      "type": "full-decoder-block",
+      "slots": [
+        {"id": "coder-early", "afterLayer": 4, "order": 10, "blocks": [{"sourceLayer": 4, "initializer": "identity-copy"}]},
+        {"id": "coder-middle", "afterLayer": 9, "order": 10, "blocks": [{"sourceLayer": 9, "initializer": "identity-copy"}]}
+      ]
+    },
+    "metadata": {"benchmark": "model-family-smoke", "family": "llama", "role": "parent", "datasetFacet": "coder"}
+  },
+  "data": {
+    "train": [
+      {"path": "../../../../datasets/facet-infrastructure/facets/coder/pretraining.jsonl", "stages": ["continued-pretraining"]},
+      {"path": "../../../../datasets/facet-infrastructure/facets/coder/training.jsonl", "stages": ["sft"], "limit": 4}
+    ],
+    "maxSequenceLength": 256,
+    "maskPrompt": true,
+    "packing": false,
+    "shuffle": true,
+    "numWorkers": 0
+  },
+  "algorithm": {"type": "causal-lm"},
+  "optimizer": {"type": "adamw", "learningRate": 0.00005, "weightDecay": 0.01, "betas": [0.9, 0.95]},
+  "scheduler": {"type": "constant", "warmupSteps": 0},
+  "training": {"epochs": 1, "maxSteps": 6, "batchSize": 1, "gradientAccumulationSteps": 1, "precision": "bfloat16", "gradientCheckpointing": true, "maxGradNorm": 1.0, "seed": 42, "logEverySteps": 1, "evaluateEverySteps": 0, "identityCheck": true},
+  "checkpoint": {"outputDirectory": "../../../../facets/mi-benchmark/llama/coder/smoke-2026-08-23", "overwrite": true, "saveEverySteps": 0, "saveOptimizer": false}
+}

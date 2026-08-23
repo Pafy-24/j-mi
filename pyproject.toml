@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jester-mixed-inference"
+version = "0.1.0"
+description = "Dynamic block-expansion training and inference for Jester"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.2",
+  "transformers>=4.46",
+  "safetensors>=0.4",
+]
+
+[project.scripts]
+j-mi = "mixed_inference.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mixed_inference*"]
+

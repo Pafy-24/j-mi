@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "mi-benchmark-trial-summary-v1",
+  "family": "gemma",
+  "status": "unstable-rejected",
+  "reason": "The common 5e-5 learning rate caused catastrophic held-out degradation and frequent immediate EOS after only six steps.",
+  "configuration": {
+    "learningRate": 0.00005,
+    "maxStepsPerFacet": 6,
+    "precision": "bfloat16",
+    "topologyChangedForRetry": false
+  },
+  "observations": {
+    "maximumObservedGradientNorm": 9536.0,
+    "identityMaximumAbsoluteLogitDifference": 0.0,
+    "baseCoderNll": 4.21853,
+    "parentCoderNll": 8.27215362,
+    "stackCoderNll": 7.09268938,
+    "basePythonNll": 3.65763494,
+    "parentPythonNll": 6.79357375,
+    "stackPythonNll": 5.91842116
+  },
+  "retry": {
+    "learningRate": 0.000002,
+    "rationale": "Keep the same architecture and data while reducing the model-family-specific update magnitude."
+  }
+}

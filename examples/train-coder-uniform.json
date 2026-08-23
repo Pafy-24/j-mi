@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "mi-training-v1",
+  "baseModel": {
+    "id": "../models/base-1b",
+    "revision": null,
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "allowDownload": false
+  },
+  "registry": "../artifacts/facets",
+  "facet": {
+    "id": "coder",
+    "version": "0.1.0",
+    "description": "General code planning and pseudocode facet",
+    "dependencies": {"requires": [], "priority": 20},
+    "module": {
+      "type": "full-decoder-block",
+      "placement": {
+        "strategy": "uniform",
+        "slotCount": 4,
+        "blocksPerSlot": [1, 1, 2, 2],
+        "sourceLayer": "preceding",
+        "initializer": "identity-copy"
+      }
+    },
+    "metadata": {"domain": "software", "competence": "code-reasoning"}
+  },
+  "data": {
+    "train": [
+      {
+        "path": "../../datasets/facet-infrastructure/facets/coder",
+        "stages": ["continued-pretraining", "sft"]
+      }
+    ],
+    "maxSequenceLength": 1024,
+    "maskPrompt": true,
+    "packing": false,
+    "shuffle": true,
+    "numWorkers": 0
+  },
+  "algorithm": {"type": "causal-lm"},
+  "optimizer": {
+    "type": "adamw",
+    "learningRate": 0.0002,
+    "weightDecay": 0.01,
+    "betas": [0.9, 0.95]
+  },
+  "scheduler": {"type": "cosine", "warmupRatio": 0.03},
+  "training": {
+    "epochs": 1.0,
+    "batchSize": 1,
+    "gradientAccumulationSteps": 16,
+    "precision": "bfloat16",
+    "gradientCheckpointing": true,
+    "maxGradNorm": 1.0,
+    "seed": 42,
+    "logEverySteps": 5,
+    "evaluateEverySteps": 50,
+    "identityCheck": true
+  },
+  "checkpoint": {
+    "outputDirectory": "../artifacts/facets/coder/0.1.0",
+    "overwrite": false,
+    "saveEverySteps": 100,
+    "saveOptimizer": true
+  }
+}

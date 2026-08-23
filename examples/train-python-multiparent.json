@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "mi-training-v1",
+  "baseModel": {
+    "id": "../models/base-1b",
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "allowDownload": false
+  },
+  "registry": "../artifacts/facets",
+  "facet": {
+    "id": "coder.python",
+    "version": "0.1.0",
+    "description": "Python implementation facet trained over coder and reasoner",
+    "dependencies": {
+      "requires": ["coder@0.1.0", "reasoner@0.1.0"],
+      "after": ["coder@0.1.0"],
+      "conflicts": [],
+      "priority": 30
+    },
+    "module": {
+      "type": "full-decoder-block",
+      "slots": [
+        {
+          "id": "python-early",
+          "afterLayer": 3,
+          "order": 20,
+          "blocks": [
+            {"sourceLayer": 3, "initializer": "identity-copy"},
+            {"sourceLayer": 3, "initializer": "identity-copy"}
+          ]
+        },
+        {
+          "id": "python-late",
+          "afterLayer": 11,
+          "order": 20,
+          "blocks": [
+            {"sourceLayer": 11, "initializer": "identity-copy"}
+          ]
+        }
+      ]
+    },
+    "metadata": {"language": "python", "parentTrainingMode": "frozen-active"}
+  },
+  "data": {
+    "train": [
+      {"path": "../../datasets/facet-infrastructure/facets/coder.python", "repeat": 1}
+    ],
+    "maxSequenceLength": 1024,
+    "maskPrompt": true,
+    "packing": false
+  },
+  "optimizer": {"type": "adamw", "learningRate": 0.0001, "weightDecay": 0.01},
+  "scheduler": {"type": "linear", "warmupRatio": 0.05},
+  "training": {
+    "epochs": 2,
+    "batchSize": 1,
+    "gradientAccumulationSteps": 16,
+    "precision": "bfloat16",
+    "gradientCheckpointing": true,
+    "identityCheck": true,
+    "logEverySteps": 5
+  },
+  "checkpoint": {
+    "outputDirectory": "../artifacts/facets/coder.python/0.1.0",
+    "overwrite": false,
+    "saveEverySteps": 100,
+    "saveOptimizer": true
+  }
+}

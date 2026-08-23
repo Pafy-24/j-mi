@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jester.local/schemas/mi-training-v1.schema.json",
+  "title": "Jester MI training configuration",
+  "type": "object",
+  "required": ["schemaVersion", "baseModel", "facet", "data", "checkpoint"],
+  "properties": {
+    "schemaVersion": {"const": "mi-training-v1"},
+    "allowCustomClasses": {"type": "boolean"},
+    "registry": {"type": "string"},
+    "baseModel": {"$ref": "#/$defs/baseModel"},
+    "facet": {"$ref": "#/$defs/facetDraft"},
+    "data": {"$ref": "#/$defs/data"},
+    "algorithm": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string"},
+        "trainerClassPath": {"type": "string", "minLength": 3},
+        "kwargs": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "optimizer": {
+      "type": "object",
+      "properties": {
+        "type": {"enum": ["adamw", "adam", "sgd", "adagrad", "rmsprop"]},
+        "learningRate": {"type": "number", "exclusiveMinimum": 0},
+        "weightDecay": {"type": "number", "minimum": 0},
+        "betas": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}},
+        "eps": {"type": "number", "exclusiveMinimum": 0},
+        "momentum": {"type": "number"},
+        "classPath": {"type": "string"},
+        "kwargs": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "scheduler": {
+      "type": "object",
+      "properties": {
+        "type": {"enum": ["constant", "linear", "cosine"]},
+        "warmupSteps": {"type": "integer", "minimum": 0},
+        "warmupRatio": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+        "classPath": {"type": "string"},
+        "kwargs": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "training": {
+      "type": "object",
+      "properties": {
+        "epochs": {"type": "number", "exclusiveMinimum": 0},
+        "maxSteps": {"type": "integer", "minimum": 1},
+        "batchSize": {"type": "integer", "minimum": 1},
+        "gradientAccumulationSteps": {"type": "integer", "minimum": 1},
+        "precision": {"enum": ["float32", "float16", "bfloat16"]},
+        "gradientCheckpointing": {"type": "boolean"},
+        "maxGradNorm": {"type": "number", "minimum": 0},
+        "seed": {"type": "integer"},
+        "logEverySteps": {"type": "integer", "minimum": 0},
+        "evaluateEverySteps": {"type": "integer", "minimum": 0},
+        "identityCheck": {"type": "boolean"},
+        "identityAtol": {"type": "number", "minimum": 0},
+        "identityRtol": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "checkpoint": {
+      "type": "object",
+      "required": ["outputDirectory"],
+      "properties": {
+        "outputDirectory": {"type": "string", "minLength": 1},
+        "overwrite": {"type": "boolean"},
+        "saveEverySteps": {"type": "integer", "minimum": 0},
+        "saveOptimizer": {"type": "boolean"},
+        "resumeFrom": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "baseModel": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": ["string", "null"]},
+        "layerPath": {"type": "string"},
+        "dtype": {"enum": ["auto", "float32", "float16", "bfloat16"]},
+        "device": {"type": "string"},
+        "allowDownload": {"type": "boolean"},
+        "trustRemoteCode": {"type": "boolean"},
+        "modelKwargs": {"type": "object"},
+        "tokenizerKwargs": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "requires": {"type": "array", "items": {"type": "string"}},
+        "after": {"type": "array", "items": {"type": "string"}},
+        "before": {"type": "array", "items": {"type": "string"}},
+        "conflicts": {"type": "array", "items": {"type": "string"}},
+        "priority": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "block": {
+      "type": "object",
+      "required": ["sourceLayer"],
+      "properties": {
+        "sourceLayer": {"type": "integer", "minimum": 0},
+        "initializer": {"enum": ["identity-copy", "copy", "reset", "zero"]},
+        "identityTargets": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "slot": {
+      "type": "object",
+      "required": ["id", "afterLayer", "blocks"],
+      "properties": {
+        "id": {"type": "string"},
+        "afterLayer": {"type": "integer", "minimum": -1},
+        "order": {"type": "integer"},
+        "blocks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/block"}}
+      },
+      "additionalProperties": false
+    },
+    "placement": {
+      "type": "object",
+      "required": ["strategy", "slotCount"],
+      "properties": {
+        "strategy": {"const": "uniform"},
+        "slotCount": {"type": "integer", "minimum": 1},
+        "blocksPerSlot": {
+          "oneOf": [
+            {"type": "integer", "minimum": 1},
+            {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}}
+          ]
+        },
+        "sourceLayer": {"oneOf": [{"const": "preceding"}, {"type": "integer", "minimum": 0}]},
+        "initializer": {"enum": ["identity-copy", "copy", "reset", "zero"]},
+        "identityTargets": {"type": "array", "items": {"type": "string"}},
+        "order": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "facetDraft": {
+      "type": "object",
+      "required": ["id", "version", "module"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "version": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "dependencies": {"$ref": "#/$defs/dependencies"},
+        "module": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "full-decoder-block"},
+            "slots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/slot"}},
+            "placement": {"$ref": "#/$defs/placement"}
+          },
+          "oneOf": [{"required": ["slots"]}, {"required": ["placement"]}],
+          "additionalProperties": false
+        },
+        "metadata": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "datasetSource": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "required": ["path"],
+          "properties": {
+            "path": {"type": "string", "minLength": 1},
+            "stages": {"type": "array", "items": {"type": "string"}},
+            "repeat": {"type": "integer", "minimum": 1},
+            "limit": {"type": "integer", "minimum": 1}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "data": {
+      "type": "object",
+      "required": ["train"],
+      "properties": {
+        "train": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/datasetSource"}},
+        "validation": {"type": "array", "items": {"$ref": "#/$defs/datasetSource"}},
+        "maxSequenceLength": {"type": "integer", "minimum": 8},
+        "maskPrompt": {"type": "boolean"},
+        "packing": {"type": "boolean"},
+        "shuffle": {"type": "boolean"},
+        "numWorkers": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  }
+}
