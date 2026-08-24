@@ -3,7 +3,7 @@
   "baseModel": {
     "id": "../models/base-1b",
     "dtype": "bfloat16",
-    "device": "cuda:0",
+    "device": "managed",
     "allowDownload": false
   },
   "registry": "../artifacts/facets",

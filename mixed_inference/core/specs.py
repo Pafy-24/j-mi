@@ -46,12 +46,19 @@ class BaseModelRequest:
             raise ConfigurationError(
                 "baseModel.dtype must be auto, float32, float16 or bfloat16"
             )
+        device = str(data.get("device", "auto")).lower()
+        if device == "managed" or device == "auto" or device == "cpu" or device == "mps" or re.fullmatch(r"cuda(?::\d+)?", device):
+            pass
+        else:
+            raise ConfigurationError(
+                "baseModel.device must be managed, auto, cpu, mps, cuda or cuda:N"
+            )
         return cls(
             model_id=model_id,
             revision=str(data["revision"]) if data.get("revision") is not None else None,
             layer_path=str(data["layerPath"]) if data.get("layerPath") else None,
             dtype=dtype,
-            device=str(data.get("device", "auto")),
+            device=device,
             allow_download=bool(data.get("allowDownload", False)),
             trust_remote_code=bool(data.get("trustRemoteCode", False)),
             model_kwargs=optional_mapping(data.get("modelKwargs"), "baseModel.modelKwargs"),

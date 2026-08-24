@@ -71,7 +71,7 @@ Planul este fix înainte de prefill și pe întreaga decodare. MI v1 acceptă ca
 
 LSR nu primește dataset separat pentru MI: datasetul aceleiași fațete produce atât exemplele de training, cât și semnătura de rutare. LSR poate trimite selecția în `facets`, `resolvedActiveFacets`, `directSelectedFacets` sau `selectedFacets`; MI aplică dependențele authoritative din manifest.
 
-Componenta 2 deține semantica structurală și executarea. Componenta 3 va deține alegerea device-ului, bugetele RAM/VRAM, offload/eviction, concurența și planificarea agentică. API-ul actual este intenționat compatibil cu acest viitor strat, dar serializează trainingul și generarea pe resursa comună.
+Componenta 2 deține semantica structurală și executarea. Componenta 3, Resource Manager, deține acum alegerea device-ului, CPU/RAM/VRAM/storage, containment-ul, concurența între procese și lansarea locală/SSH. `mi.train`, `mi.generate` și `mi.serve` sunt procese distincte cu lease-uri distincte; un server managed nu mai pornește training în propriul proces. MI păstrează lock-ul strict necesar mutării reversibile a blocurilor în interiorul unei singure cereri, nu un scheduler hardware paralel cu RM.
 
 ## Extensibilitate
 

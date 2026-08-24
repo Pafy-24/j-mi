@@ -15,10 +15,10 @@ from ..core.specs import BaseModelRequest, GENERATION_SCHEMA_VERSION
 
 
 class MixedInferenceRuntime:
-    """Single-base, serialized dynamic composition runtime.
+    """Single-base runtime whose process placement is owned by RM.
 
-    Component 3 will eventually own multi-device placement and scheduling. MI v1
-    intentionally serializes composition mutations around one loaded base model.
+    The local lock protects reversible decoder-list mutations.  It is not a
+    hardware scheduler and never launches training in a managed serving process.
     """
 
     def __init__(self, registry: str | Path):
@@ -328,6 +328,6 @@ def normalize_generation_options(raw: Any) -> dict[str, Any]:
     if cache in {"static", "offloaded_static", "quantized"}:
         raise ConfigurationError(
             "MI v1 supports the default dynamic cache or offloaded dynamic cache only; "
-            "static/quantized cache plans are composition-specific and reserved for Component 3"
+            "static/quantized cache plans are not yet compatible with dynamic MI composition"
         )
     return options

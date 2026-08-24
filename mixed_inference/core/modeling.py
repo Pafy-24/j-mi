@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from .errors import CompatibilityError, CompositionError, ConfigurationError
 from .graph import CompositionPlan, PlannedBlock
 from .specs import BaseBinding, BaseModelRequest
 from .util import sha256_json
+from ..rm_integration import apply_memory_budget, managed_device
 
 
 @dataclass
@@ -67,6 +69,7 @@ def resolve_dtype(name: str, torch: Any) -> Any:
 
 
 def resolve_device(name: str, torch: Any) -> Any:
+    name = managed_device(name)
     if name == "auto":
         if torch.cuda.is_available():
             return torch.device("cuda")
@@ -95,11 +98,16 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         raise ConfigurationError("transformers is required for Mixed Inference") from exc
 
     device = resolve_device(request.device, torch)
+    apply_memory_budget(torch, device)
     dtype = resolve_dtype(request.dtype, torch)
+    model_id = request.model_id
+    local_model = Path(model_id).expanduser()
+    if local_model.exists():
+        model_id = str(local_model.resolve())
     if any(key in request.model_kwargs for key in ("device_map", "tp_plan")):
         raise ConfigurationError(
-            "MI v1 requires a single-device base model; device_map/tp_plan are reserved for "
-            "Component 3 resource management"
+            "MI v1 requires a single-device base model; an RM multi-CUDA lease exposes "
+            "devices but does not make device_map/tp_plan composition-safe"
         )
     common = {
         "revision": request.revision,
@@ -111,20 +119,20 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         model_kwargs.pop("dtype", None)
         model_kwargs["torch_dtype"] = dtype
     try:
-        model = AutoModelForCausalLM.from_pretrained(request.model_id, **model_kwargs)
+        model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     except TypeError as exc:
         if "torch_dtype" not in model_kwargs:
             raise
         retry = dict(model_kwargs)
         retry["dtype"] = retry.pop("torch_dtype")
         try:
-            model = AutoModelForCausalLM.from_pretrained(request.model_id, **retry)
+            model = AutoModelForCausalLM.from_pretrained(model_id, **retry)
         except Exception:
             raise exc
     except Exception as exc:
         mode = "online downloads enabled" if request.allow_download else "local files only"
         raise ConfigurationError(
-            f"Cannot load base model {request.model_id!r} ({mode}): {exc}"
+            f"Cannot load base model {model_id!r} ({mode}): {exc}"
         ) from exc
 
     if bool(getattr(model.config, "is_encoder_decoder", False)):
@@ -136,16 +144,16 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
     if load_tokenizer:
         tokenizer_kwargs = {**request.tokenizer_kwargs, **common}
         try:
-            tokenizer = AutoTokenizer.from_pretrained(request.model_id, **tokenizer_kwargs)
+            tokenizer = AutoTokenizer.from_pretrained(model_id, **tokenizer_kwargs)
         except Exception as exc:
-            raise ConfigurationError(f"Cannot load tokenizer for {request.model_id!r}: {exc}") from exc
+            raise ConfigurationError(f"Cannot load tokenizer for {model_id!r}: {exc}") from exc
         if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
             tokenizer.pad_token = tokenizer.eos_token
 
     stack = locate_layer_stack(model, request.layer_path)
     model_type = str(getattr(model.config, "model_type", type(model).__name__))
     binding = BaseBinding(
-        model_id=request.model_id,
+        model_id=model_id,
         revision=request.revision,
         config_sha256=sha256_json(sanitized_model_config(model)),
         layer_path=stack.path,

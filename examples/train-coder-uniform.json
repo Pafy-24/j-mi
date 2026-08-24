@@ -4,7 +4,7 @@
     "id": "../models/base-1b",
     "revision": null,
     "dtype": "bfloat16",
-    "device": "cuda:0",
+    "device": "managed",
     "allowDownload": false
   },
   "registry": "../artifacts/facets",

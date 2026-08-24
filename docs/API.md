@@ -5,15 +5,15 @@
 Comenzile principale sunt:
 
 ```text
-python mi.py --PUs
-python mi.py train CONFIG [--json]
-python mi.py generate PROMPT --base-model MODEL --facet FACET
+jester-rm instance start <MI_TRAIN_INSTANCE>
+jester-rm instance start <MI_GENERATE_OR_SERVE_INSTANCE>
 python mi.py generate PROMPT --server URL --facet FACET
 python mi.py plan --registry DIR --facet FACET
 python mi.py facets --registry DIR
-python mi.py inspect-base --base-model MODEL
-python mi.py serve [--base-model MODEL] [--registry DIR]
+python mi.py migrate-rm-config INPUT OUTPUT
 ```
+
+Comenzile locale `train`, `generate`, `serve` și `inspect-base` cer un lease RM și răspund `RM_LEASE_REQUIRED` dacă sunt pornite direct. Fațetele/planurile care nu încarcă un model și apelurile către un server existent rămân disponibile direct.
 
 Administrarea serverului folosește `health`, `base-load`, `base-unload`, `facet-load`, `facet-unload`, `registry-refresh`, `train-submit`, `jobs` și `job [--cancel]`. Toate răspunsurile administrative sunt JSON.
 
@@ -32,7 +32,7 @@ Serverul ascultă implicit numai pe `127.0.0.1:8120`. Nu include autentificare s
 | `POST /facets/load` | încarcă anticipat fațeta și strămoșii |
 | `POST /facets/unload` | elimină artifacte din cache |
 | `POST /generate` | compune și generează |
-| `POST /training/jobs` | creează job asincron; răspunde `202` |
+| `POST /training/jobs` | legacy unmanaged; într-un `mi.serve` managed răspunde `409 rm_training_instance_required` |
 | `GET /training/jobs` | listează joburile |
 | `GET /training/jobs/{id}` | stare, evenimente și rezultat |
 | `POST /training/jobs/{id}/cancel` | cere anularea |
@@ -55,7 +55,7 @@ Serverul ascultă implicit numai pe `127.0.0.1:8120`. Nu include autentificare s
 
 În loc de `facets`, payloadul LSR poate conține `resolvedActiveFacets`, `directSelectedFacets`, `selectedFacets` sau un obiect `route` care conține unul dintre acestea.
 
-### Training asincron
+### Training legacy și tranziția RM
 
 Pentru server pe aceeași mașină este preferată calea absolută, deoarece păstrează rezolvarea căilor relative din config:
 
@@ -65,9 +65,9 @@ Pentru server pe aceeași mașină este preferată calea absolută, deoarece pă
 
 Se poate trimite și `{"config": {...}}` sau direct documentul `mi-training-v1`; în aceste cazuri căile interne trebuie să fie absolute pentru un server remote.
 
-Stările sunt `queued`, `waiting-for-resource`, `running`, `cancelling`, `cancelled`, `succeeded` și `failed`. În v1 trainingul și generate sunt serializate de același resource lock. Componenta 3 va înlocui această politică simplă cu schedulerul de resurse.
+Stările jobului legacy sunt `queued`, `waiting-for-resource`, `running`, `cancelling`, `cancelled`, `succeeded` și `failed`.
 
-MI v1 refuză pornirea unui job de training cât timp baza de inferență este încărcată în server, pentru a nu ține două copii ale bazei în VRAM. Operatorul apelează `POST /base/unload`, pornește jobul, apoi reîncarcă baza după finalizare. Co-rezidența și migrarea automată vor aparține componentei 3.
+Într-un proces pornit ca `mi.serve` de Resource Manager, endpointul de training refuză imediat cererea; nu creează un job care eșuează ulterior și nu primește tokenul privilegiat al controllerului. Operatorul creează o instanță separată `mi.train`, cu propriul lease, volum și buget. Endpointul rămâne temporar numai pentru compatibilitatea library/unmanaged și va putea fi eliminat după migrarea consumatorilor.
 
 ### Erori
 

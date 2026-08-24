@@ -82,6 +82,34 @@ class HTTPTests(unittest.TestCase):
                 service.close()
                 thread.join(timeout=2)
 
+    def test_managed_server_refuses_in_process_training_immediately(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with patch(
+                "mixed_inference.api.server.is_managed", return_value=True
+            ):
+                service = MixedInferenceService(
+                    root / "facets", jobs_directory=root / "jobs"
+                )
+            server = MixedInferenceHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            url = f"http://127.0.0.1:{server.server_port}"
+            try:
+                with self.assertRaises(urllib.error.HTTPError) as raised:
+                    self._request(url + "/training/jobs", minimal_config(root))
+                self.assertEqual(raised.exception.code, 409)
+                body = json.loads(raised.exception.read().decode("utf-8"))
+                self.assertEqual(
+                    body["error"]["code"], "rm_training_instance_required"
+                )
+                self.assertEqual(service.jobs.list(), [])
+            finally:
+                server.shutdown()
+                server.server_close()
+                service.close()
+                thread.join(timeout=2)
+
     @staticmethod
     def _request(url: str, payload: object | None = None, *, method: str = "POST") -> object:
         data = None if method == "GET" else json.dumps(payload).encode("utf-8")

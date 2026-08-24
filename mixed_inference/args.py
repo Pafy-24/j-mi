@@ -16,7 +16,11 @@ def add_base_options(parser: argparse.ArgumentParser, *, required: bool) -> None
         choices=("auto", "float32", "float16", "bfloat16"),
         default="auto",
     )
-    parser.add_argument("--device", default="auto", help="Torch device, e.g. cpu, cuda, cuda:1.")
+    parser.add_argument(
+        "--device",
+        default="managed",
+        help="Managed RM device. Explicit cpu/cuda values are retained for library migration only.",
+    )
     parser.add_argument("--online", action="store_true", help="Allow Hugging Face downloads.")
     parser.add_argument("--trust-remote-code", action="store_true")
     parser.add_argument("--model-kwargs", help="JSON object with extra from_pretrained model kwargs.")
@@ -35,7 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Jester Mixed Inference (MI), component 2/4: train and compose expansion facets."
     )
-    parser.add_argument("--PUs", action="store_true", help="List processing units visible to PyTorch.")
+    parser.add_argument(
+        "--PUs",
+        action="store_true",
+        help="Deprecated: hardware inventory moved to `jester-rm resources list`.",
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     train = subparsers.add_parser("train", help="Train one facet locally from mi-training-v1 JSON.")
@@ -125,4 +133,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     refresh = subparsers.add_parser("registry-refresh", help="Rescan the server facet registry.")
     add_server(refresh)
+
+    migrate = subparsers.add_parser(
+        "migrate-rm-config",
+        help="Convert an MI JSON configuration to RM-managed device selection.",
+    )
+    migrate.add_argument("input", help="Existing MI JSON configuration.")
+    migrate.add_argument("output", nargs="?", help="Destination; required unless --in-place is used.")
+    migrate.add_argument("--in-place", action="store_true", help="Atomically replace the input file.")
     return parser

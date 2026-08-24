@@ -2,11 +2,13 @@
 
 Fișierul de intrare folosește `schemaVersion: mi-training-v1`. Exemple complete există în `examples/` și schema validabilă în `schemas/mi-training-v1.schema.json`.
 
+Trainingul operațional rulează ca instanță RM `mi.train`. CPU/CUDA și bugetul allocatorului vin din lease; o valoare explicită veche se convertește cu `python mi.py migrate-rm-config ...`. Configurația nu poate selecta o altă placă decât binding-ul primit.
+
 ## Controalele operatorului
 
 | Zonă | Controale principale |
 |---|---|
-| Bază | ID/path, revision, `layerPath`, dtype, device, acces online, kwargs model/tokenizer |
+| Bază | ID/path, revision, `layerPath`, dtype, `device: managed`, acces online, kwargs model/tokenizer |
 | Structură | sloturi explicite sau uniforme, poziție, ordine, blocuri/slot, strat-sursă, initializer |
 | Ierarhie | părinți multipli, constrângeri before/after, conflicte, prioritate |
 | Date | mai multe fișiere/directoare, filtre de stage, repeat, limit, packing, prompt masking |

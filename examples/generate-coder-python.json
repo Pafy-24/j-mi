@@ -7,7 +7,7 @@
       "content": "Scrie o funcție Python care grupează obiectele după o cheie și explică complexitatea."
     }
   ],
-  "facets": ["coder.python@0.1.0"],
+  "facets": ["coder.python@smoke-2026-08-23"],
   "generation": {
     "max_new_tokens": 384,
     "temperature": 0.2,

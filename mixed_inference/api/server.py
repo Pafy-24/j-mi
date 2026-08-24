@@ -13,6 +13,7 @@ from ..core.errors import ConfigurationError, MIError
 from ..core.specs import BaseModelRequest
 from ..generate.runtime import MixedInferenceRuntime
 from .jobs import TrainingJobManager
+from ..rm_integration import is_managed
 
 
 DEFAULT_MAX_REQUEST_BYTES = 2 * 1024 * 1024
@@ -28,6 +29,7 @@ class MixedInferenceService:
         allow_custom_training_classes: bool = False,
     ):
         self.resource_lock = threading.RLock()
+        self.managed = is_managed()
         self.runtime = MixedInferenceRuntime(registry)
         self.jobs = TrainingJobManager(
             jobs_directory,
@@ -42,8 +44,12 @@ class MixedInferenceService:
         health = self.runtime.health()
         health["trainingJobs"] = self.jobs.health()
         health["resourcePolicy"] = {
-            "mode": "single-base-serialized",
-            "note": "Component 3 will own multi-device placement and scheduling",
+            "mode": "rm-managed" if self.managed else "legacy-single-base-serialized",
+            "note": (
+                "Resource Manager owns placement and process scheduling"
+                if self.managed
+                else "Unmanaged construction is retained only for library-level compatibility"
+            ),
         }
         return health
 
@@ -53,10 +59,16 @@ class MixedInferenceService:
             self.runtime.unload_base()
 
     def _training_preflight(self) -> None:
+        if self.managed:
+            raise MIError(
+                "Training must be started as a separate mi.train Resource Manager instance.",
+                code="rm_training_instance_required",
+                status=409,
+            )
         if self.runtime.base is not None:
             raise MIError(
                 "Unload the inference base before starting a training job in MI v1. "
-                "Keeping two base models resident is delegated to Component 3.",
+                "Use separate Resource Manager instances for concurrent train and serve.",
                 code="base_loaded_for_training",
                 status=409,
             )
@@ -166,6 +178,13 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
                 with service.resource_lock:
                     response = service.runtime.generate(payload)
             elif path == "/training/jobs":
+                if service.managed:
+                    raise MIError(
+                        "This managed MI server cannot launch training. Create a separate "
+                        "mi.train instance through Jester Resource Manager.",
+                        code="rm_training_instance_required",
+                        status=409,
+                    )
                 response = service.jobs.submit(_training_config(payload))
                 self._write_json(HTTPStatus.ACCEPTED, response)
                 return

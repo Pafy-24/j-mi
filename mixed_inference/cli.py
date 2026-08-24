@@ -13,21 +13,29 @@ from .core.errors import ConfigurationError, MIError
 from .core.modeling import load_base_model
 from .core.registry import FacetRegistry
 from .core.specs import BaseModelRequest
-from .core.util import load_json
+from .core.util import atomic_write_json, load_json
 from .generate.runtime import MixedInferenceRuntime
 from .training.trainer import train_from_config
+from .rm_integration import require_managed_launch, start_telemetry
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.PUs:
-        _print_json({"processingUnits": processing_units()})
-        return 0
+        print(
+            "MI error [RM_LEASE_REQUIRED]: --PUs was replaced by "
+            "`jester-rm resources list`.",
+            file=sys.stderr,
+        )
+        return 2
     if not args.command:
         parser.print_help()
         return 0
+    telemetry = None
     try:
+        require_managed_launch(args)
+        telemetry = start_telemetry()
         return _dispatch(args)
     except MIError as exc:
         print(f"MI error [{exc.code}]: {exc}", file=sys.stderr)
@@ -35,9 +43,38 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("Interrupted.", file=sys.stderr)
         return 130
+    finally:
+        if telemetry is not None:
+            telemetry.close()
 
 
 def _dispatch(args: Any) -> int:
+    if args.command == "migrate-rm-config":
+        source = Path(args.input).resolve()
+        if args.in_place and args.output:
+            raise ConfigurationError("migrate-rm-config accepts output or --in-place, not both")
+        if not args.in_place and not args.output:
+            raise ConfigurationError("migrate-rm-config requires output or --in-place")
+        payload = load_json(source)
+        if not isinstance(payload, dict):
+            raise ConfigurationError("MI configuration root must be a JSON object")
+        base = payload.get("baseModel")
+        if not isinstance(base, dict):
+            raise ConfigurationError("MI configuration has no baseModel object")
+        previous = base.get("device")
+        base["device"] = "managed"
+        destination = source if args.in_place else Path(args.output).resolve()
+        atomic_write_json(destination, payload)
+        _print_json(
+            {
+                "migrated": True,
+                "path": str(destination),
+                "previousDevice": previous,
+                "device": "managed",
+            }
+        )
+        return 0
+
     if args.command == "train":
         def progress(event: dict[str, Any]) -> None:
             if not args.quiet:
