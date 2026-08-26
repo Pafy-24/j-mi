@@ -116,15 +116,15 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
     }
     model_kwargs = {**request.model_kwargs, **common}
     if dtype is not None:
-        model_kwargs.pop("dtype", None)
-        model_kwargs["torch_dtype"] = dtype
+        model_kwargs.pop("torch_dtype", None)
+        model_kwargs["dtype"] = dtype
     try:
         model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     except TypeError as exc:
-        if "torch_dtype" not in model_kwargs:
+        if "dtype" not in model_kwargs:
             raise
         retry = dict(model_kwargs)
-        retry["dtype"] = retry.pop("torch_dtype")
+        retry["torch_dtype"] = retry.pop("dtype")
         try:
             model = AutoModelForCausalLM.from_pretrained(model_id, **retry)
         except Exception:

@@ -34,6 +34,13 @@ class MixedInferenceRuntime:
             if self.base is not None:
                 self.unload_base()
             self.base = load_base_model(spec, load_tokenizer=True)
+            generation_config = getattr(self.base.model, "generation_config", None)
+            if generation_config is not None and hasattr(generation_config, "max_length"):
+                # MI always supplies max_new_tokens (128 by default). Recent
+                # Transformers versions otherwise treat a model-provided
+                # max_length as a second explicit limit and log a warning for
+                # every request, even though max_new_tokens takes precedence.
+                generation_config.max_length = None
             self.registry.refresh()
             return self.base.summary()
 
@@ -147,10 +154,18 @@ class MixedInferenceRuntime:
 
             input_length = int(inputs["input_ids"].shape[-1])
             generated_ids = output_ids[:, input_length:]
-            texts = base.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            texts = base.tokenizer.batch_decode(
+                generated_ids,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=False,
+            )
             full_texts = None
             if bool(request.get("returnFullText", False)):
-                full_texts = base.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+                full_texts = base.tokenizer.batch_decode(
+                    output_ids,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=False,
+                )
             total_elapsed = time.perf_counter() - started
             self._generation_count += 1
             response: dict[str, Any] = {
