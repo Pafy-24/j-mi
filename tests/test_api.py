@@ -3,14 +3,12 @@ from __future__ import annotations
 import json
 import tempfile
 import threading
-import time
 import unittest
 import urllib.error
 import urllib.request
 from pathlib import Path
 from unittest.mock import patch
 
-from mixed_inference.api.jobs import TrainingJobManager
 from mixed_inference.api.server import MixedInferenceHTTPServer, MixedInferenceService
 
 
@@ -36,26 +34,6 @@ def minimal_config(root: Path) -> dict[str, object]:
         "data": {"train": [{"path": str(root / "unused.jsonl")}]},
         "checkpoint": {"outputDirectory": str(root / "output")},
     }
-
-
-class TrainingJobTests(unittest.TestCase):
-    def test_job_lifecycle_persists_result(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            manager = TrainingJobManager(root / "jobs")
-            with patch(
-                "mixed_inference.api.jobs.train_from_config",
-                return_value={"status": "succeeded", "outputDirectory": "fake"},
-            ):
-                submitted = manager.submit(minimal_config(root))
-                deadline = time.time() + 2
-                current = submitted
-                while current["status"] not in {"succeeded", "failed"} and time.time() < deadline:
-                    time.sleep(0.01)
-                    current = manager.get(submitted["id"])
-            manager.close(wait=True)
-            self.assertEqual(current["status"], "succeeded")
-            self.assertTrue((root / "jobs" / f"{submitted['id']}.json").exists())
 
 
 class HTTPTests(unittest.TestCase):
@@ -100,10 +78,8 @@ class HTTPTests(unittest.TestCase):
                     self._request(url + "/training/jobs", minimal_config(root))
                 self.assertEqual(raised.exception.code, 409)
                 body = json.loads(raised.exception.read().decode("utf-8"))
-                self.assertEqual(
-                    body["error"]["code"], "rm_training_instance_required"
-                )
-                self.assertEqual(service.jobs.list(), [])
+                self.assertEqual(body["error"]["code"], "trainer_required")
+                self.assertIn("j-train migrate-mi-config", body["error"]["detail"])
             finally:
                 server.shutdown()
                 server.server_close()

@@ -5,13 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jester-mixed-inference"
 version = "0.1.0"
-description = "Dynamic block-expansion training and inference for Jester"
+description = "Jester component 2/5: dynamic facet composition, inference, and Trainer gradient workers"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "torch>=2.2",
   "transformers>=4.46",
   "safetensors>=0.4",
+  "pydantic>=2.8,<3",
+  "zstandard>=0.23,<1",
 ]
 
 [project.scripts]
@@ -19,4 +21,3 @@ j-mi = "mixed_inference.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["mixed_inference*"]
-

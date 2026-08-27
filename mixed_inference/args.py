@@ -37,7 +37,7 @@ def add_server(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Jester Mixed Inference (MI), component 2/4: train and compose expansion facets."
+        description="Jester Mixed Inference (MI), component 2/5: compose facets, generate, and execute Trainer gradient tasks."
     )
     parser.add_argument(
         "--PUs",
@@ -46,7 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    train = subparsers.add_parser("train", help="Train one facet locally from mi-training-v1 JSON.")
+    train = subparsers.add_parser("train", help="Removed: migrate this configuration to Jester Trainer.")
     train.add_argument("config", help="Training configuration JSON path.")
     train.add_argument("--quiet", action="store_true", help="Suppress progress events.")
     train.add_argument("--json", action="store_true", help="Print the complete result JSON.")
@@ -73,14 +73,15 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8120)
     serve.add_argument("--workers", type=int, default=4)
-    serve.add_argument("--training-workers", type=int, default=1)
-    serve.add_argument("--jobs-directory", default="artifacts/training-jobs")
     serve.add_argument("--max-request-bytes", type=int, default=2 * 1024 * 1024)
-    serve.add_argument(
-        "--allow-custom-training-classes",
-        action="store_true",
-        help="Allow configs to import custom trainer/optimizer/scheduler Python classes.",
-    )
+
+    worker = subparsers.add_parser("worker", help="Run or probe an RM-managed MI gradient worker.")
+    worker_commands = worker.add_subparsers(dest="worker_command", required=True)
+    worker_serve = worker_commands.add_parser("serve", help="Start the MI worker REST/binary API.")
+    worker_serve.add_argument("--host", default="127.0.0.1")
+    worker_serve.add_argument("--port", type=int, default=8130)
+    worker_serve.add_argument("--root", help="Worker state root; defaults to the RM lease run volume.")
+    worker_commands.add_parser("probe", help="Report lease-bound autograd and transport capabilities.")
 
     plan = subparsers.add_parser("plan", help="Resolve a facet DAG without generating.")
     add_registry(plan)
@@ -114,7 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     unload_facet.add_argument("--facet", "-f", action="append")
     unload_facet.add_argument("--all", action="store_true")
 
-    submit = subparsers.add_parser("train-submit", help="Submit an asynchronous server training job.")
+    submit = subparsers.add_parser("train-submit", help="Removed: submit campaigns to Jester Trainer.")
     add_server(submit)
     submit.add_argument("config", help="Training JSON path visible to the server.")
     submit.add_argument(
@@ -123,10 +124,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Send config contents; all paths inside it should be absolute for a remote server.",
     )
 
-    jobs = subparsers.add_parser("jobs", help="List server-side training jobs.")
+    jobs = subparsers.add_parser("jobs", help="Removed: inspect jobs through Jester Trainer.")
     add_server(jobs)
 
-    job = subparsers.add_parser("job", help="Read or cancel one server-side training job.")
+    job = subparsers.add_parser("job", help="Removed: inspect jobs through Jester Trainer.")
     add_server(job)
     job.add_argument("job_id")
     job.add_argument("--cancel", action="store_true")

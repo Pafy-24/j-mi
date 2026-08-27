@@ -7,12 +7,11 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
 
 from ..core.errors import ConfigurationError, MIError
 from ..core.specs import BaseModelRequest
 from ..generate.runtime import MixedInferenceRuntime
-from .jobs import TrainingJobManager
 from ..rm_integration import is_managed
 
 
@@ -31,47 +30,18 @@ class MixedInferenceService:
         self.resource_lock = threading.RLock()
         self.managed = is_managed()
         self.runtime = MixedInferenceRuntime(registry)
-        self.jobs = TrainingJobManager(
-            jobs_directory,
-            max_workers=training_workers,
-            resource_lock=self.resource_lock,
-            allow_custom_classes=allow_custom_training_classes,
-            completion_callback=lambda _: self.runtime.refresh_registry(),
-            start_callback=self._training_preflight,
-        )
 
     def health(self) -> dict[str, Any]:
         health = self.runtime.health()
-        health["trainingJobs"] = self.jobs.health()
         health["resourcePolicy"] = {
-            "mode": "rm-managed" if self.managed else "legacy-single-base-serialized",
-            "note": (
-                "Resource Manager owns placement and process scheduling"
-                if self.managed
-                else "Unmanaged construction is retained only for library-level compatibility"
-            ),
+            "mode": "rm-managed" if self.managed else "unmanaged-inference-only",
+            "note": "RM owns placement; Trainer owns every training job and optimizer",
         }
         return health
 
     def close(self) -> None:
-        self.jobs.close(wait=False)
         with self.resource_lock:
             self.runtime.unload_base()
-
-    def _training_preflight(self) -> None:
-        if self.managed:
-            raise MIError(
-                "Training must be started as a separate mi.train Resource Manager instance.",
-                code="rm_training_instance_required",
-                status=409,
-            )
-        if self.runtime.base is not None:
-            raise MIError(
-                "Unload the inference base before starting a training job in MI v1. "
-                "Use separate Resource Manager instances for concurrent train and serve.",
-                code="base_loaded_for_training",
-                status=409,
-            )
 
 
 class MixedInferenceHTTPServer(HTTPServer):
@@ -131,12 +101,9 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
                     "facets": self.server.service.runtime.list_facets(),
                 }
             elif path == "/training/jobs":
-                response = {"jobs": self.server.service.jobs.list()}
+                raise _trainer_required()
             elif path.startswith("/training/jobs/"):
-                job_id, action = _job_route(path)
-                if action:
-                    raise MIError("Not found", code="not_found", status=404)
-                response = self.server.service.jobs.get(job_id)
+                raise _trainer_required()
             else:
                 raise MIError("Not found", code="not_found", status=404)
             self._write_json(HTTPStatus.OK, response)
@@ -178,21 +145,9 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
                 with service.resource_lock:
                     response = service.runtime.generate(payload)
             elif path == "/training/jobs":
-                if service.managed:
-                    raise MIError(
-                        "This managed MI server cannot launch training. Create a separate "
-                        "mi.train instance through Jester Resource Manager.",
-                        code="rm_training_instance_required",
-                        status=409,
-                    )
-                response = service.jobs.submit(_training_config(payload))
-                self._write_json(HTTPStatus.ACCEPTED, response)
-                return
+                raise _trainer_required()
             elif path.startswith("/training/jobs/"):
-                job_id, action = _job_route(path)
-                if action != "cancel":
-                    raise MIError("Not found", code="not_found", status=404)
-                response = service.jobs.cancel(job_id)
+                raise _trainer_required()
             else:
                 raise MIError("Not found", code="not_found", status=404)
             self._write_json(HTTPStatus.OK, response)
@@ -227,7 +182,13 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
     def _write_error(self, error: MIError) -> None:
         self._write_json(
             error.status,
-            {"error": {"code": error.code, "message": str(error)}},
+            {
+                "error": {
+                    "code": error.code,
+                    "message": str(error),
+                    "detail": str(error),
+                }
+            },
         )
 
     def _write_internal_error(self, error: BaseException) -> None:
@@ -254,11 +215,14 @@ def _path(value: str) -> str:
     return urlparse(value).path.rstrip("/") or "/"
 
 
-def _job_route(path: str) -> tuple[str, str | None]:
-    parts = [unquote(part) for part in path.split("/") if part]
-    if len(parts) not in {3, 4} or parts[:2] != ["training", "jobs"]:
-        raise MIError("Not found", code="not_found", status=404)
-    return parts[2], parts[3] if len(parts) == 4 else None
+def _trainer_required() -> MIError:
+    return MIError(
+        "MI no longer owns training jobs. Migrate this request to Jester Trainer "
+        "with `j-train migrate-mi-config`, then execute gradients through an "
+        "RM-managed trainer.serve + mi.worker topology.",
+        code="trainer_required",
+        status=409,
+    )
 
 
 def _facet_list(payload: Any, *, required: bool) -> list[str]:
@@ -323,7 +287,7 @@ def serve(
         workers=workers,
         max_request_bytes=max_request_bytes,
     )
-    print(f"Jester MI component 2/4 ready on http://{host}:{port}")
+    print(f"Jester MI component 2/5 ready on http://{host}:{port}")
     try:
         server.serve_forever()
     finally:

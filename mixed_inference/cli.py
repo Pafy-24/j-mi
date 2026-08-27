@@ -15,8 +15,9 @@ from .core.registry import FacetRegistry
 from .core.specs import BaseModelRequest
 from .core.util import atomic_write_json, load_json
 from .generate.runtime import MixedInferenceRuntime
-from .training.trainer import train_from_config
 from .rm_integration import require_managed_launch, start_telemetry
+from .worker.server import serve_worker
+from .worker.service import MIWorkerService
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -76,16 +77,11 @@ def _dispatch(args: Any) -> int:
         return 0
 
     if args.command == "train":
-        def progress(event: dict[str, Any]) -> None:
-            if not args.quiet:
-                print(json.dumps(event, ensure_ascii=False), file=sys.stderr, flush=True)
-
-        result = train_from_config(args.config, progress_callback=progress)
-        if args.json:
-            _print_json(result)
-        else:
-            print(result["outputDirectory"])
-        return 0
+        raise MIError(
+            "MI no longer owns training jobs. Run `j-train migrate-mi-config` and submit a Trainer campaign.",
+            code="trainer_required",
+            status=409,
+        )
 
     if args.command == "generate":
         request = _generation_request(args)
@@ -113,13 +109,19 @@ def _dispatch(args: Any) -> int:
             port=args.port,
             registry=args.registry,
             base_model=request,
-            jobs_directory=args.jobs_directory,
             workers=args.workers,
-            training_workers=args.training_workers,
             max_request_bytes=args.max_request_bytes,
-            allow_custom_training_classes=args.allow_custom_training_classes,
         )
         return 0
+
+    if args.command == "worker":
+        if args.worker_command == "serve":
+            serve_worker(args.host, args.port, root=args.root, require_rm=True)
+            return 0
+        if args.worker_command == "probe":
+            _print_json(MIWorkerService(require_rm=True).capabilities())
+            return 0
+        raise ConfigurationError(f"Unknown worker command: {args.worker_command}")
 
     if args.command == "plan":
         if args.server:
@@ -181,25 +183,12 @@ def _dispatch(args: Any) -> int:
         )
         return 0
 
-    if args.command == "train-submit":
-        path = Path(args.config).resolve()
-        payload = {"config": load_json(path)} if args.inline else {"configPath": str(path)}
-        _print_json(request_json(args.server, "/training/jobs", payload))
-        return 0
-
-    if args.command == "jobs":
-        _print_json(request_json(args.server, "/training/jobs", method="GET"))
-        return 0
-
-    if args.command == "job":
-        suffix = f"/training/jobs/{args.job_id}"
-        if args.cancel:
-            suffix += "/cancel"
-            result = request_json(args.server, suffix, {})
-        else:
-            result = request_json(args.server, suffix, method="GET")
-        _print_json(result)
-        return 0
+    if args.command in {"train-submit", "jobs", "job"}:
+        raise MIError(
+            "MI training job management was removed; use j-train campaign/job commands.",
+            code="trainer_required",
+            status=409,
+        )
 
     if args.command == "registry-refresh":
         _print_json(request_json(args.server, "/registry/refresh", {}))

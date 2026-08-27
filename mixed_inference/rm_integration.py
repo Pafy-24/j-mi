@@ -5,7 +5,7 @@ from typing import Any
 from .core.errors import ConfigurationError
 
 
-LOCAL_RESOURCE_COMMANDS = {"train", "serve", "inspect-base"}
+LOCAL_RESOURCE_COMMANDS = {"serve", "inspect-base", "worker"}
 
 
 def command_requires_rm(args: Any) -> bool:
