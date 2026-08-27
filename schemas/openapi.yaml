@@ -2,13 +2,16 @@ openapi: 3.1.0
 info:
   title: Jester Mixed Inference API
   version: 0.1.0
-  description: Component 2/4, dynamic block-facet training and generation.
+  description: Component 2/5. Generate/composition and RM-managed gradient worker; Trainer owns jobs.
 servers:
   - url: http://127.0.0.1:8120
+    description: mi.serve
+  - url: http://127.0.0.1:8130
+    description: mi.worker
 paths:
   /health:
     get:
-      summary: Runtime and training health
+      summary: MI generate service health
       responses:
         "200": {description: Health payload}
   /facets:
@@ -18,7 +21,7 @@ paths:
         "200": {description: Facet list}
   /base/load:
     post:
-      summary: Load or replace the base model
+      summary: Load the RM-bound base model
       requestBody:
         required: true
         content:
@@ -26,16 +29,6 @@ paths:
             schema: {$ref: "#/components/schemas/BaseModel"}
       responses:
         "200": {description: Loaded base summary}
-  /base/unload:
-    post:
-      summary: Unload base and facet weights
-      responses:
-        "200": {description: Unload result}
-  /registry/refresh:
-    post:
-      summary: Rescan facet manifests
-      responses:
-        "200": {description: Updated registry}
   /compose:
     post:
       summary: Resolve the requested facet dependency DAG
@@ -46,21 +39,6 @@ paths:
             schema: {$ref: "#/components/schemas/FacetSelection"}
       responses:
         "200": {description: Deterministic composition plan}
-  /facets/load:
-    post:
-      summary: Preload facets and dependencies
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/FacetSelection"}
-      responses:
-        "200": {description: Loaded facets and composition}
-  /facets/unload:
-    post:
-      summary: Unload selected or all facet weights
-      responses:
-        "200": {description: Unload result}
   /generate:
     post:
       summary: Compose facets and generate
@@ -70,49 +48,107 @@ paths:
           application/json:
             schema: {$ref: "#/components/schemas/GenerateRequest"}
       responses:
-        "200": {description: Generated output, composition, usage and timing}
-  /training/jobs:
+        "200": {description: Generated output, usage and timing}
+  /v1/health:
     get:
-      summary: List asynchronous training jobs
+      summary: MI worker health
       responses:
-        "200": {description: Job summaries}
+        "200": {description: Worker state and capabilities}
+  /v1/capabilities:
+    get:
+      summary: Discovered, allocatable, autograd and verified backends
+      responses:
+        "200": {description: Worker capabilities}
+  /v1/sessions:
+    get:
+      summary: List worker sessions owned by Trainer
+      responses:
+        "200": {description: Session summaries}
     post:
-      summary: Submit a training job
+      summary: Create an idempotent Trainer-owned worker session
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              oneOf:
-                - type: object
-                  required: [configPath]
-                  properties: {configPath: {type: string}}
-                - type: object
-                  required: [config]
-                  properties: {config: {type: object}}
+            schema: {$ref: "./mi-worker-task-v1.schema.json"}
       responses:
-        "202": {description: Queued job}
-  /training/jobs/{jobId}:
+        "201": {description: Session created}
+        "409": {description: Session/configuration conflict}
+  /v1/sessions/{sessionId}:
     get:
-      summary: Get job state, events and result
+      summary: Inspect a worker session
       parameters:
-        - in: path
-          name: jobId
-          required: true
-          schema: {type: string}
+        - {$ref: "#/components/parameters/SessionId"}
       responses:
-        "200": {description: Complete job record}
-  /training/jobs/{jobId}/cancel:
+        "200": {description: Session state}
+    delete:
+      summary: Close a non-running session while retaining audit artifacts
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200": {description: Session closed}
+  /v1/sessions/{sessionId}/weights/{version}:
+    get:
+      summary: Download current child weights with optional Range
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Version"}
+      responses:
+        "200": {description: Safetensors body}
+        "206": {description: Safetensors byte range}
+    put:
+      summary: Resumable child weight upload with Content-Range and SHA-256
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Version"}
+      responses:
+        "200": {description: Upload state}
+  /v1/sessions/{sessionId}/rounds/{round}/compute:
     post:
-      summary: Request cooperative job cancellation
+      summary: Compute only child-facet gradients for a deterministic shard slice
       parameters:
-        - in: path
-          name: jobId
-          required: true
-          schema: {type: string}
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Round"}
       responses:
-        "200": {description: Updated job record}
+        "200": {description: Idempotent gradient contribution metadata}
+        "409": {description: Stale weight or round hash conflict}
+  /v1/sessions/{sessionId}/rounds/{round}:
+    get:
+      summary: Inspect a round without downloading its gradient body
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Round"}
+      responses:
+        "200": {description: Round state and contribution metadata}
+  /v1/sessions/{sessionId}/rounds/{round}/gradient:
+    get:
+      summary: Download gradient safetensors with Range/resume
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Round"}
+      responses:
+        "200": {description: Gradient body}
+        "206": {description: Gradient byte range}
+  /v1/sessions/{sessionId}/rounds/{round}/ack:
+    post:
+      summary: Acknowledge that Trainer committed or aborted the round
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/Round"}
+      responses:
+        "200": {description: Updated round state}
+  /v1/sessions/{sessionId}/actions/cancel:
+    post:
+      summary: Request cooperative cancellation of current worker work
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200": {description: Cancellation state}
 components:
+  parameters:
+    SessionId: {in: path, name: sessionId, required: true, schema: {type: string}}
+    Version: {in: path, name: version, required: true, schema: {type: string}}
+    Round: {in: path, name: round, required: true, schema: {type: integer, minimum: 0}}
   schemas:
     BaseModel:
       type: object
@@ -120,19 +156,13 @@ components:
       properties:
         id: {type: string}
         revision: {type: [string, "null"]}
-        layerPath: {type: string}
         dtype: {enum: [auto, float32, float16, bfloat16]}
-        device: {type: string}
-        allowDownload: {type: boolean}
-        trustRemoteCode: {type: boolean}
-        modelKwargs: {type: object}
-        tokenizerKwargs: {type: object}
+        device: {const: managed}
     FacetSelection:
       type: object
       required: [facets]
       properties:
         facets: {type: array, items: {type: string}}
-        allowModelIdMismatch: {type: boolean}
     GenerateRequest:
       type: object
       properties:

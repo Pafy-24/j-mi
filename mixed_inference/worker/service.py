@@ -183,6 +183,7 @@ class MIWorkerService:
             session_root.mkdir(parents=True, exist_ok=False)
             try:
                 training_config = copy.deepcopy(task.training_config)
+                self._apply_artifact_bindings(training_config, task)
                 if self.lease is not None:
                     base_model = training_config.get("baseModel")
                     if not isinstance(base_model, dict):
@@ -590,6 +591,59 @@ class MIWorkerService:
                 status=409,
             )
 
+    def _apply_artifact_bindings(
+        self, config: dict[str, Any], task: MIWorkerTask
+    ) -> None:
+        if not task.artifact_bindings:
+            return
+        manifest_path = os.environ.get("JESTER_RM_ARTIFACT_MANIFEST")
+        if not manifest_path:
+            raise ConfigurationError(
+                "artifactBindings require an RM artifact manifest"
+            )
+        try:
+            manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ConfigurationError(f"Cannot read RM artifact manifest: {exc}") from exc
+        entries = {
+            str(item.get("digest")): item
+            for item in manifest.get("entries", [])
+            if isinstance(item, dict)
+        }
+        for binding in task.artifact_bindings:
+            entry = entries.get(binding.digest)
+            if entry is None:
+                raise CompatibilityError(
+                    f"Artifact {binding.digest} is not present in the worker lease"
+                )
+            checkout = Path(str(entry.get("checkoutPath", ""))).resolve()
+            if not checkout.exists():
+                raise CompatibilityError(
+                    f"Artifact checkout is unavailable for {binding.digest}"
+                )
+            resolved = checkout
+            if binding.logical_path:
+                resolved = (checkout / binding.logical_path).resolve()
+                try:
+                    resolved.relative_to(checkout)
+                except ValueError as exc:
+                    raise ConfigurationError("artifact logicalPath escapes checkout") from exc
+            if not resolved.exists():
+                raise CompatibilityError(
+                    f"Artifact logical path is unavailable: {binding.logical_path}"
+                )
+            parts = binding.target.strip("/").split("/")
+            target: Any = config
+            for part in parts[:-1]:
+                if isinstance(target, list):
+                    target = target[int(part)]
+                else:
+                    target = target[part]
+            if isinstance(target, list):
+                target[int(parts[-1])] = str(resolved)
+            else:
+                target[parts[-1]] = str(resolved)
+
     def _recover_sessions(self) -> None:
         for state_path in sorted(self.sessions_root.glob("*/session.json")):
             try:
@@ -599,6 +653,7 @@ class MIWorkerService:
                 task = MIWorkerTask.model_validate(payload["task"])
                 self._validate_lease_backend(task)
                 config = copy.deepcopy(task.training_config)
+                self._apply_artifact_bindings(config, task)
                 if self.lease is not None:
                     config.setdefault("baseModel", {})["device"] = "managed"
                 engine = FacetGradientEngine(config)

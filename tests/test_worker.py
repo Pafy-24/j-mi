@@ -119,6 +119,71 @@ class WorkerGradientTests(unittest.TestCase):
                 }
             )
 
+    def test_rm_artifact_bindings_are_applied_and_recovered(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self._config(root)
+            model = Path(config["baseModel"]["id"])
+            dataset = Path(config["data"]["train"][0]["path"])
+            registry = Path(config["registry"])
+            registry.mkdir(parents=True, exist_ok=True)
+            digests = {
+                "model": "sha256:" + "1" * 64,
+                "dataset": "sha256:" + "2" * 64,
+                "registry": "sha256:" + "3" * 64,
+            }
+            manifest = root / "lease-artifacts.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": "jester-rm-runtime-artifacts-v1",
+                        "entries": [
+                            {"digest": digests["model"], "checkoutPath": str(model)},
+                            {
+                                "digest": digests["dataset"],
+                                "checkoutPath": str(dataset),
+                            },
+                            {
+                                "digest": digests["registry"],
+                                "checkoutPath": str(registry),
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            task = {
+                "sessionId": "cas-session",
+                "trainingConfig": {
+                    **config,
+                    "baseModel": {**config["baseModel"], "id": "rm-artifact-pending"},
+                    "registry": "rm-artifact-pending",
+                    "data": {
+                        **config["data"],
+                        "train": [{"path": "rm-artifact-pending"}],
+                    },
+                },
+                "artifactBindings": [
+                    {"target": "/baseModel/id", "digest": digests["model"]},
+                    {
+                        "target": "/data/train/0/path",
+                        "digest": digests["dataset"],
+                    },
+                    {"target": "/registry", "digest": digests["registry"]},
+                ],
+            }
+            from unittest.mock import patch
+
+            worker_root = root / "worker"
+            with patch.dict(
+                "os.environ", {"JESTER_RM_ARTIFACT_MANIFEST": str(manifest)}
+            ):
+                service = MIWorkerService(worker_root, require_rm=False)
+                created = service.create_session(task)
+                self.assertEqual(created["id"], "cas-session")
+                recovered = MIWorkerService(worker_root, require_rm=False)
+                self.assertEqual(recovered.session("cas-session")["state"], "idle")
+
     @staticmethod
     def _config(root: Path) -> dict:
         model_dir = root / "model"

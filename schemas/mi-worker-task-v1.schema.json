@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "ArtifactBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "digest": {
+          "title": "Digest",
+          "type": "string"
+        },
+        "logicalPath": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logicalpath"
+        }
+      },
+      "required": [
+        "target",
+        "digest"
+      ],
+      "title": "ArtifactBinding",
+      "type": "object"
+    },
+    "TransportSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "compression": {
+          "default": "none",
+          "enum": [
+            "none",
+            "zstd"
+          ],
+          "title": "Compression",
+          "type": "string"
+        },
+        "dtype": {
+          "default": "float32",
+          "enum": [
+            "float32",
+            "float16",
+            "bfloat16"
+          ],
+          "title": "Dtype",
+          "type": "string"
+        }
+      },
+      "title": "TransportSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "mi-worker-task-v1",
+      "default": "mi-worker-task-v1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "sessionId": {
+      "title": "Sessionid",
+      "type": "string"
+    },
+    "trainingConfig": {
+      "additionalProperties": true,
+      "title": "Trainingconfig",
+      "type": "object"
+    },
+    "weightVersion": {
+      "default": "0",
+      "title": "Weightversion",
+      "type": "string"
+    },
+    "requestedBackend": {
+      "default": "cpu",
+      "title": "Requestedbackend",
+      "type": "string"
+    },
+    "effectiveBackend": {
+      "default": "cpu",
+      "title": "Effectivebackend",
+      "type": "string"
+    },
+    "fallbackReason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fallbackreason"
+    },
+    "allowCpuFallback": {
+      "default": false,
+      "title": "Allowcpufallback",
+      "type": "boolean"
+    },
+    "transport": {
+      "$ref": "#/$defs/TransportSpec"
+    },
+    "artifactBindings": {
+      "items": {
+        "$ref": "#/$defs/ArtifactBinding"
+      },
+      "title": "Artifactbindings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "sessionId",
+    "trainingConfig"
+  ],
+  "title": "MIWorkerTask",
+  "type": "object",
+  "$id": "https://jester.local/schemas/mi/mi-worker-task-v1.schema.json"
+}

@@ -21,6 +21,37 @@ class TransportSpec(WorkerModel):
     dtype: Literal["float32", "float16", "bfloat16"] = "float32"
 
 
+class ArtifactBinding(WorkerModel):
+    target: str
+    digest: str
+    logical_path: str | None = Field(default=None, alias="logicalPath")
+
+    @field_validator("target")
+    @classmethod
+    def valid_target(cls, value: str) -> str:
+        if not re.fullmatch(r"/(baseModel/id|data/train/\d+/path|registry)", value):
+            raise ValueError("artifact target is not an approved MI config field")
+        return value
+
+    @field_validator("digest")
+    @classmethod
+    def valid_digest(cls, value: str) -> str:
+        normalized = value.lower().removeprefix("sha256:")
+        if not re.fullmatch(r"[0-9a-f]{64}", normalized):
+            raise ValueError("artifact digest must be SHA-256")
+        return f"sha256:{normalized}"
+
+    @field_validator("logical_path")
+    @classmethod
+    def valid_logical_path(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.replace("\\", "/").strip("/")
+        if not normalized or any(part in {"", ".", ".."} for part in normalized.split("/")):
+            raise ValueError("logicalPath must remain inside the artifact")
+        return normalized
+
+
 class MIWorkerTask(WorkerModel):
     schema_version: Literal[WORKER_TASK_VERSION] = Field(
         default=WORKER_TASK_VERSION, alias="schemaVersion"
@@ -33,6 +64,9 @@ class MIWorkerTask(WorkerModel):
     fallback_reason: str | None = Field(default=None, alias="fallbackReason")
     allow_cpu_fallback: bool = Field(default=False, alias="allowCpuFallback")
     transport: TransportSpec = Field(default_factory=TransportSpec)
+    artifact_bindings: list[ArtifactBinding] = Field(
+        default_factory=list, alias="artifactBindings"
+    )
 
     @field_validator("session_id")
     @classmethod
