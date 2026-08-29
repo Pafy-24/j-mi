@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "jester-facet-efficiency-config-v1",
+  "miUrl": "http://127.0.0.1:8130",
+  "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
+  "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
+  "seed": 42,
+  "states": [
+    {"id": "base", "facets": []},
+    {"id": "base+coder", "facets": ["coder@a40-v1"]},
+    {"id": "base+parent+child", "facets": ["coder.python@a40-v1"]}
+  ],
+  "designGeneration": {
+    "max_new_tokens": 768,
+    "do_sample": false,
+    "use_cache": true
+  },
+  "humanEvalGeneration": {
+    "max_new_tokens": 384,
+    "do_sample": false,
+    "use_cache": true
+  },
+  "rm": {
+    "url": "http://127.0.0.1:8790",
+    "tokenFile": "../../../RM/experiments/a40-remote/controller.token.reference",
+    "topologyId": "a40-facet-evaluation"
+  },
+  "trainer": {
+    "url": "http://127.0.0.1:8140",
+    "tokenFile": "trainer.token.reference",
+    "campaignId": "qwen-coder-a40-v1"
+  }
+}
+

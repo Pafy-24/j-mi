@@ -209,7 +209,7 @@ class MixedInferenceRuntime:
             return {
                 "service": "Jester Mixed Inference",
                 "component": 2,
-                "componentCount": 4,
+                "componentCount": 5,
                 "schemaVersion": "mi-health-v1",
                 "status": "ready" if self.base is not None else "waiting-for-base",
                 "uptimeSeconds": round(time.time() - self._started_at, 3),
