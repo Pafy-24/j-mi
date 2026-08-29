@@ -19,6 +19,64 @@ from mixed_inference.worker.service import MIWorkerService
 
 
 class WorkerGradientTests(unittest.TestCase):
+    def test_two_worker_token_weighted_gradient_matches_combined_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self._config(root)
+            services = [
+                MIWorkerService(root / "worker-a", require_rm=False),
+                MIWorkerService(root / "worker-b", require_rm=False),
+                MIWorkerService(root / "worker-combined", require_rm=False),
+            ]
+            sessions = ["worker-a", "worker-b", "worker-combined"]
+            summaries = [
+                service.create_session(
+                    {
+                        "sessionId": session_id,
+                        "trainingConfig": config,
+                        "weightVersion": "initial",
+                        "transport": {"dtype": "float32", "compression": "none"},
+                    }
+                )
+                for service, session_id in zip(services, sessions)
+            ]
+            rounds = [
+                services[0].compute_round(
+                    sessions[0],
+                    0,
+                    {"weightVersion": summaries[0]["weightVersion"], "indices": [0]},
+                ),
+                services[1].compute_round(
+                    sessions[1],
+                    0,
+                    {"weightVersion": summaries[1]["weightVersion"], "indices": [1]},
+                ),
+                services[2].compute_round(
+                    sessions[2],
+                    0,
+                    {
+                        "weightVersion": summaries[2]["weightVersion"],
+                        "indices": [0, 1],
+                        "batchSize": 1,
+                    },
+                ),
+            ]
+            paths = [
+                service.gradient_file(session_id, 0)[0]
+                for service, session_id in zip(services, sessions)
+            ]
+            gradients = [load_file(str(path), device="cpu") for path in paths]
+            total_tokens = rounds[0]["supervisedTokens"] + rounds[1]["supervisedTokens"]
+            for name in gradients[2]:
+                aggregate = (
+                    gradients[0][name] * rounds[0]["supervisedTokens"]
+                    + gradients[1][name] * rounds[1]["supervisedTokens"]
+                ) / total_tokens
+                self.assertTrue(
+                    torch.allclose(aggregate, gradients[2][name], atol=2e-6, rtol=2e-5),
+                    name,
+                )
+
     def test_child_only_gradient_round_is_idempotent_and_versioned(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -52,6 +110,19 @@ class WorkerGradientTests(unittest.TestCase):
             for name, parameter in session.engine.base.model.named_parameters():
                 self.assertTrue(torch.equal(base_before[name], parameter.detach()), name)
                 self.assertIsNone(parameter.grad)
+            acknowledged = service.ack_round(
+                "session-one",
+                0,
+                {"gradientSha256": first["gradientSha256"]},
+            )
+            self.assertFalse(acknowledged["gradientRetained"])
+            self.assertFalse(gradient_path.exists())
+            repeated_ack = service.ack_round(
+                "session-one",
+                0,
+                {"gradientSha256": first["gradientSha256"]},
+            )
+            self.assertEqual(repeated_ack["state"], "acked")
             with self.assertRaises(MIError) as conflict:
                 service.compute_round(
                     "session-one",
@@ -138,13 +209,19 @@ class WorkerGradientTests(unittest.TestCase):
                     {
                         "schemaVersion": "jester-rm-runtime-artifacts-v1",
                         "entries": [
-                            {"digest": digests["model"], "checkoutPath": str(model)},
+                            {
+                                "digest": digests["model"],
+                                "kind": "directory",
+                                "checkoutPath": str(model),
+                            },
                             {
                                 "digest": digests["dataset"],
+                                "kind": "file",
                                 "checkoutPath": str(dataset),
                             },
                             {
                                 "digest": digests["registry"],
+                                "kind": "directory",
                                 "checkoutPath": str(registry),
                             },
                         ],
@@ -168,6 +245,7 @@ class WorkerGradientTests(unittest.TestCase):
                     {
                         "target": "/data/train/0/path",
                         "digest": digests["dataset"],
+                        "logicalPath": "training.jsonl",
                     },
                     {"target": "/registry", "digest": digests["registry"]},
                 ],

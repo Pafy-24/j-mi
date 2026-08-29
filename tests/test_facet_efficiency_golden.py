@@ -90,4 +90,60 @@ def test_paired_bootstrap_reports_direction_and_is_deterministic() -> None:
     assert first["delta"] == 0.333333
     assert first["improved"] == 1
     assert first["regressed"] == 0
+    assert first["improvedIds"] == ["a"]
+    assert first["regressedIds"] == []
 
+
+def test_lsr_route_maps_only_direct_ids_to_pinned_versions(monkeypatch) -> None:
+    def fake_request(method, url, payload, **_):
+        assert method == "POST"
+        assert url == "http://127.0.0.1:8765/rank"
+        assert payload["top_k"] == 1
+        return {
+            "schemaVersion": "lsr-route-v2",
+            "selectedFacets": [{"facet": "coder.python", "weight": 0.87}],
+            "performance": {"totalMs": 4.5},
+        }
+
+    monkeypatch.setattr(golden, "request_json", fake_request)
+    facets, route = golden.request_facets(
+        {
+            "lsr": {
+                "url": "http://127.0.0.1:8765",
+                "topK": 1,
+                "facetReferences": {
+                    "coder.python": "coder.python@a40-seed-42"
+                },
+            }
+        },
+        {"id": "lsr-routed", "routeWithLsr": True},
+        "Implement this Python function",
+        "coder.python",
+    )
+
+    assert facets == ["coder.python@a40-seed-42"]
+    assert route["exactDirectSelection"] is True
+    assert route["expectedSelected"] is True
+    assert "weight" not in facets[0]
+
+
+def test_generation_aggregate_reports_latency_distribution() -> None:
+    aggregate = golden.aggregate_generation(
+        [
+            {
+                "usage": {"outputTokens": 10},
+                "timingMs": {"generation": 100, "total": 120},
+            },
+            {
+                "usage": {"outputTokens": 20},
+                "timingMs": {"generation": 300, "total": 340},
+            },
+            {"error": "failed"},
+        ]
+    )
+
+    assert aggregate["completed"] == 2
+    assert aggregate["errors"] == 1
+    assert aggregate["tokensPerSecond"] == 75.0
+    assert aggregate["latencyMs"]["generationP50"] == 200.0
+    assert aggregate["latencyMs"]["generationP95"] == 290.0

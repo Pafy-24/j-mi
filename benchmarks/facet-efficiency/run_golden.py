@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-SCHEMA_VERSION = "jester-facet-efficiency-v1"
+SCHEMA_VERSION = "jester-facet-efficiency-v2"
 HUMANEVAL_SHA256 = "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef"
 DESIGN_FIELDS = (
     "contract",
@@ -237,12 +237,55 @@ def mean(values: Iterable[float]) -> float | None:
     return round(statistics.fmean(items), 6) if items else None
 
 
+def percentile(values: Iterable[float], quantile: float) -> float | None:
+    items = sorted(float(value) for value in values)
+    if not items:
+        return None
+    if len(items) == 1:
+        return round(items[0], 6)
+    position = (len(items) - 1) * quantile
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return round(items[lower], 6)
+    fraction = position - lower
+    return round(items[lower] * (1.0 - fraction) + items[upper] * fraction, 6)
+
+
+def aggregate_generation(records: list[dict[str, Any]]) -> dict[str, Any]:
+    completed = [item for item in records if not item.get("error")]
+    generation_ms = [
+        float(item.get("timingMs", {}).get("generation", 0))
+        for item in completed
+    ]
+    total_ms = [
+        float(item.get("timingMs", {}).get("total", 0)) for item in completed
+    ]
+    tokens = sum(int(item.get("usage", {}).get("outputTokens", 0)) for item in completed)
+    elapsed = sum(generation_ms) / 1000
+    return {
+        "attempted": len(records),
+        "completed": len(completed),
+        "errors": len(records) - len(completed),
+        "generatedTokens": tokens,
+        "generationSeconds": round(elapsed, 6),
+        "tokensPerSecond": round(tokens / elapsed, 6) if elapsed else None,
+        "latencyMs": {
+            "generationMean": mean(generation_ms),
+            "generationP50": percentile(generation_ms, 0.50),
+            "generationP95": percentile(generation_ms, 0.95),
+            "totalMean": mean(total_ms),
+            "totalP50": percentile(total_ms, 0.50),
+            "totalP95": percentile(total_ms, 0.95),
+        },
+    }
+
+
 def aggregate_design(records: list[dict[str, Any]]) -> dict[str, Any]:
     completed = [item for item in records if item.get("scores")]
     strict = sum(bool(item["scores"]["strictPass"]) for item in completed)
-    generation_ms = sum(float(item.get("timingMs", {}).get("generation", 0)) for item in completed)
-    tokens = sum(int(item.get("usage", {}).get("outputTokens", 0)) for item in completed)
     return {
+        **aggregate_generation(records),
         "attempted": len(records),
         "completed": len(completed),
         "errors": len(records) - len(completed),
@@ -255,12 +298,166 @@ def aggregate_design(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semanticCoverage": mean(
             item["scores"]["semanticCoverage"] for item in completed
         ),
-        "generatedTokens": tokens,
-        "generationSeconds": round(generation_ms / 1000, 6),
-        "tokensPerSecond": round(tokens / (generation_ms / 1000), 6)
-        if generation_ms
-        else None,
     }
+
+
+def route_request(
+    config: dict[str, Any], prompt: str, expected_facet: str
+) -> tuple[list[str], dict[str, Any]]:
+    routing = config.get("lsr") or {}
+    url = str(routing.get("url") or "").rstrip("/")
+    if not url:
+        raise RuntimeError("A routeWithLsr state requires lsr.url")
+    top_k = int(routing.get("topK", 1))
+    if top_k < 1:
+        raise RuntimeError("lsr.topK must be at least one")
+    route = request_json(
+        "POST",
+        f"{url}/rank",
+        {"input": prompt, "top_k": top_k},
+        timeout=120,
+    )
+    selected = route.get("selectedFacets")
+    if not isinstance(selected, list):
+        raise RuntimeError("LSR response has no selectedFacets array")
+    facet_ids: list[str] = []
+    for item in selected:
+        value = item if isinstance(item, str) else item.get("facet") if isinstance(item, dict) else None
+        if value:
+            facet_ids.append(str(value))
+    versions = routing.get("facetReferences") or {}
+    references = [str(versions.get(item, item)) for item in facet_ids]
+    return references, {
+        "schemaVersion": route.get("schemaVersion"),
+        "expectedDirectFacet": expected_facet,
+        "selectedFacetIds": facet_ids,
+        "mappedReferences": references,
+        "expectedSelected": expected_facet in facet_ids,
+        "exactDirectSelection": facet_ids == [expected_facet],
+        "abstained": not facet_ids,
+        "performance": route.get("performance", {}),
+    }
+
+
+def request_facets(
+    config: dict[str, Any],
+    state: dict[str, Any],
+    prompt: str,
+    expected_facet: str,
+) -> tuple[list[str], dict[str, Any] | None]:
+    if state.get("routeWithLsr"):
+        return route_request(config, prompt, expected_facet)
+    return list(state.get("facets", [])), None
+
+
+def aggregate_routing(records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    routed = [item["route"] for item in records if isinstance(item.get("route"), dict)]
+    if not routed:
+        return None
+    exact = sum(bool(item["exactDirectSelection"]) for item in routed)
+    selected = sum(bool(item["expectedSelected"]) for item in routed)
+    abstained = sum(bool(item["abstained"]) for item in routed)
+    latencies = [
+        float(item.get("performance", {}).get("totalMs", 0))
+        for item in routed
+        if item.get("performance", {}).get("totalMs") is not None
+    ]
+    return {
+        "attempted": len(routed),
+        "expectedRecall": round(selected / len(routed), 6),
+        "exactDirectRate": round(exact / len(routed), 6),
+        "abstainRate": round(abstained / len(routed), 6),
+        "latencyMs": {
+            "mean": mean(latencies),
+            "p50": percentile(latencies, 0.50),
+            "p95": percentile(latencies, 0.95),
+        },
+    }
+
+
+def _resolved(path: str, root: Path) -> Path:
+    value = Path(path).expanduser()
+    return value.resolve() if value.is_absolute() else (root / value).resolve()
+
+
+def provenance_preflight(
+    config: dict[str, Any], root: Path, mi_url: str
+) -> dict[str, Any]:
+    states = list(config.get("states") or [])
+    identifiers = [str(item.get("id") or "") for item in states]
+    if not states or any(not item for item in identifiers) or len(set(identifiers)) != len(identifiers):
+        raise RuntimeError("states must have unique non-empty ids")
+    if list(states[0].get("facets", [])) or states[0].get("routeWithLsr"):
+        raise RuntimeError("The first state must be the fixed base with no facets")
+    health = request_json("GET", f"{mi_url}/health", timeout=60)
+    if health.get("status") != "ready" or not isinstance(health.get("base"), dict):
+        raise RuntimeError("MI must be ready with a loaded base before the golden run")
+    registry = request_json("GET", f"{mi_url}/facets", timeout=60)
+    result: dict[str, Any] = {"miHealth": health, "miRegistry": registry, "files": []}
+    expected = config.get("expected") or {}
+    base = expected.get("base") or {}
+    actual_base = health["base"]
+    for field in ("modelType", "configSha256", "baseLayerCount"):
+        if field in base and actual_base.get(field) != base[field]:
+            raise RuntimeError(
+                f"MI base {field}={actual_base.get(field)!r}, expected {base[field]!r}"
+            )
+    if base.get("modelFile"):
+        model_file = _resolved(str(base["modelFile"]), root)
+        observed = sha256_file(model_file)
+        expected_hash = str(base.get("modelSha256") or "").removeprefix("sha256:").lower()
+        if expected_hash and observed != expected_hash:
+            raise RuntimeError("Base model SHA-256 mismatch")
+        result["files"].append(
+            {
+                "role": "base-model",
+                "path": str(model_file),
+                "bytes": model_file.stat().st_size,
+                "sha256": observed,
+            }
+        )
+    for artifact in expected.get("facets", []):
+        metadata_file = _resolved(str(artifact["metadataFile"]), root)
+        manifest = json.loads(metadata_file.read_text(encoding="utf-8"))
+        weights_file = _resolved(
+            str(artifact.get("weightsFile") or metadata_file.parent / manifest["artifact"]["weights"]),
+            root,
+        )
+        metadata_hash = sha256_file(metadata_file)
+        weights_hash = sha256_file(weights_file)
+        declared = str(manifest.get("artifact", {}).get("sha256") or "").lower()
+        expected_hash = str(artifact.get("sha256") or declared).removeprefix("sha256:").lower()
+        if weights_hash != declared or weights_hash != expected_hash:
+            raise RuntimeError(f"Facet artifact hash mismatch for {artifact['reference']}")
+        if f"{manifest['id']}@{manifest['version']}" != artifact["reference"]:
+            raise RuntimeError(f"Facet reference mismatch in {metadata_file}")
+        result["files"].extend(
+            [
+                {
+                    "role": "facet-metadata",
+                    "reference": artifact["reference"],
+                    "path": str(metadata_file),
+                    "bytes": metadata_file.stat().st_size,
+                    "sha256": metadata_hash,
+                },
+                {
+                    "role": "facet-weights",
+                    "reference": artifact["reference"],
+                    "path": str(weights_file),
+                    "bytes": weights_file.stat().st_size,
+                    "sha256": weights_hash,
+                },
+            ]
+        )
+    plans: dict[str, Any] = {}
+    for state in states:
+        if state.get("routeWithLsr"):
+            continue
+        plans[str(state["id"])] = request_json(
+            "POST", f"{mi_url}/compose", {"facets": list(state.get("facets", []))}
+        )
+    result["compositionPlans"] = plans
+    return result
 
 
 def _token(path: str | None, root: Path) -> str | None:
@@ -312,6 +509,8 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
     if humaneval_limit:
         problems = problems[:humaneval_limit]
     states = list(config["states"])
+    mi_url = str(config["miUrl"]).rstrip("/")
+    preflight = provenance_preflight(config, root, mi_url)
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     started = time.time()
@@ -320,39 +519,45 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
         "status": "running",
         "startedAtUnix": started,
         "configSha256": sha256_file(config_path),
+        "family": config.get("family"),
         "suites": {
             "coderDesign": {"sha256": sha256_file(design_path), "records": len(designs)},
             "humanEval": {"sha256": sha256_file(humaneval_path), "records": len(problems)},
         },
         "controlPlaneBefore": control_plane_snapshot(config, root),
+        "preflight": preflight,
         "states": [],
     }
     atomic_json(output / "run.json", run_record)
-    mi_url = str(config["miUrl"]).rstrip("/")
-    request_json("GET", f"{mi_url}/health", timeout=60)
     for state in states:
         state_id = str(state["id"])
         safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", state_id)
         design_output = output / f"design.{safe_id}.jsonl"
         samples_output = output / f"humaneval-samples.{safe_id}.jsonl"
-        if design_output.exists() or samples_output.exists():
+        telemetry_output = output / f"humaneval-telemetry.{safe_id}.jsonl"
+        if design_output.exists() or samples_output.exists() or telemetry_output.exists():
             raise RuntimeError(f"Output for state {state_id} already exists; use a new run directory")
         design_records: list[dict[str, Any]] = []
         for item in designs:
-            payload = {
-                "requestId": f"golden:{state_id}:design:{item['id']}",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a software architect. Obey the requested JSON contract exactly and do not use Markdown.",
-                    },
-                    {"role": "user", "content": item["prompt"]},
-                ],
-                "facets": list(state.get("facets", [])),
-                "generation": config.get("designGeneration", {}),
-                "seed": int(config.get("seed", 42)),
-            }
+            facets: list[str] = []
+            route: dict[str, Any] | None = None
             try:
+                facets, route = request_facets(
+                    config, state, str(item["prompt"]), "coder"
+                )
+                payload = {
+                    "requestId": f"golden:{state_id}:design:{item['id']}",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a software architect. Obey the requested JSON contract exactly and do not use Markdown.",
+                        },
+                        {"role": "user", "content": item["prompt"]},
+                    ],
+                    "facets": facets,
+                    "generation": config.get("designGeneration", {}),
+                    "seed": int(config.get("seed", 42)),
+                }
                 response = request_json("POST", f"{mi_url}/generate", payload)
                 text = str(response["output"]["text"])
                 record = {
@@ -363,14 +568,23 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
                     "usage": response.get("usage", {}),
                     "timingMs": response.get("timingMs", {}),
                     "resolvedFacets": response.get("resolvedFacets", []),
+                    "requestedFacets": facets,
+                    "route": route,
                 }
             except Exception as exc:
-                record = {"id": item["id"], "error": f"{type(exc).__name__}: {exc}"}
+                record = {
+                    "id": item["id"],
+                    "route": route,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
             append_jsonl(design_output, record)
             design_records.append(record)
         syntax_passes = 0
         human_errors = 0
+        human_telemetry: list[dict[str, Any]] = []
         for item in problems:
+            facets: list[str] = []
+            route: dict[str, Any] | None = None
             payload = {
                 "requestId": f"golden:{state_id}:{item['task_id']}",
                 "messages": [
@@ -380,21 +594,35 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
                     },
                     {"role": "user", "content": str(item["prompt"])},
                 ],
-                "facets": list(state.get("facets", [])),
+                "facets": facets,
                 "generation": config.get("humanEvalGeneration", {}),
                 "seed": int(config.get("seed", 42)),
             }
             try:
+                facets, route = request_facets(
+                    config, state, str(item["prompt"]), "coder.python"
+                )
+                payload["facets"] = facets
                 response = request_json("POST", f"{mi_url}/generate", payload)
                 completion = normalize_humaneval_completion(
                     str(response["output"]["text"]), str(item["entry_point"])
                 )
+                syntax_ok = True
                 try:
                     compile(str(item["prompt"]) + completion, str(item["task_id"]), "exec")
                     syntax_passes += 1
                 except SyntaxError:
-                    pass
+                    syntax_ok = False
                 sample = {"task_id": item["task_id"], "completion": completion}
+                telemetry = {
+                    "task_id": item["task_id"],
+                    "syntaxPassed": syntax_ok,
+                    "usage": response.get("usage", {}),
+                    "timingMs": response.get("timingMs", {}),
+                    "requestedFacets": facets,
+                    "resolvedFacets": response.get("resolvedFacets", []),
+                    "route": route,
+                }
             except Exception as exc:
                 human_errors += 1
                 sample = {
@@ -402,13 +630,24 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
                     "completion": "    raise RuntimeError('generation failed')\n",
                     "jesterError": f"{type(exc).__name__}: {exc}",
                 }
+                telemetry = {
+                    "task_id": item["task_id"],
+                    "requestedFacets": facets,
+                    "route": route,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
             append_jsonl(samples_output, sample)
+            append_jsonl(telemetry_output, telemetry)
+            human_telemetry.append(telemetry)
+        routing_records = [*design_records, *human_telemetry]
         run_record["states"].append(
             {
                 "id": state_id,
                 "facets": state.get("facets", []),
+                "routeWithLsr": bool(state.get("routeWithLsr")),
                 "design": aggregate_design(design_records),
                 "humanEval": {
+                    **aggregate_generation(human_telemetry),
                     "attempted": len(problems),
                     "generationErrors": human_errors,
                     "syntaxPassRate": round(syntax_passes / len(problems), 6)
@@ -416,7 +655,9 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
                     else None,
                     "functionalPassAt1": "pending-container-evaluation",
                     "samples": samples_output.name,
+                    "telemetry": telemetry_output.name,
                 },
+                "routing": aggregate_routing(routing_records),
             }
         )
         atomic_json(output / "run.json", run_record)
@@ -433,7 +674,10 @@ def bootstrap_delta(
     common = sorted(set(baseline).intersection(candidate))
     if not common:
         return {"pairedRecords": 0, "delta": None, "bootstrap95": None}
-    values = [int(candidate[key]) - int(baseline[key]) for key in common]
+    values_by_id = {
+        key: int(candidate[key]) - int(baseline[key]) for key in common
+    }
+    values = list(values_by_id.values())
     rng = random.Random(42)
     estimates = sorted(
         statistics.fmean(rng.choice(values) for _ in values) for _ in range(samples)
@@ -448,6 +692,8 @@ def bootstrap_delta(
         "improved": sum(value > 0 for value in values),
         "regressed": sum(value < 0 for value in values),
         "unchanged": sum(value == 0 for value in values),
+        "improvedIds": [key for key in common if values_by_id[key] > 0],
+        "regressedIds": [key for key in common if values_by_id[key] < 0],
     }
 
 
@@ -456,8 +702,16 @@ def summarize(run_directory: Path) -> None:
     record_path = run_directory / "run.json"
     record = json.loads(record_path.read_text(encoding="utf-8"))
     passes: dict[str, dict[str, bool]] = {}
+    design_passes: dict[str, dict[str, bool]] = {}
     for state in record["states"]:
         safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", str(state["id"]))
+        design_rows = load_jsonl(run_directory / f"design.{safe_id}.jsonl")
+        if len(design_rows) != int(state["design"]["attempted"]):
+            raise RuntimeError(f"Incomplete design results for {state['id']}")
+        design_passes[str(state["id"])] = {
+            str(item["id"]): bool(item.get("scores", {}).get("strictPass"))
+            for item in design_rows
+        }
         candidates = [
             run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl",
             run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl.gz",
@@ -466,6 +720,13 @@ def summarize(run_directory: Path) -> None:
         if result_path is None:
             raise RuntimeError(f"Missing HumanEval evaluator results for {state['id']}")
         rows = load_jsonl(result_path)
+        expected = int(state["humanEval"]["attempted"])
+        task_ids = [str(item["task_id"]) for item in rows]
+        if len(rows) != expected or len(set(task_ids)) != expected:
+            raise RuntimeError(
+                f"HumanEval results for {state['id']} contain {len(rows)} rows and "
+                f"{len(set(task_ids))} unique tasks; expected {expected}"
+            )
         by_task = {str(item["task_id"]): bool(item["passed"]) for item in rows}
         passes[str(state["id"])] = by_task
         succeeded = sum(by_task.values())
@@ -482,6 +743,11 @@ def summarize(run_directory: Path) -> None:
     record["pairedHumanEval"] = {
         state_id: bootstrap_delta(passes[baseline_id], values)
         for state_id, values in passes.items()
+        if state_id != baseline_id
+    }
+    record["pairedDesign"] = {
+        state_id: bootstrap_delta(design_passes[baseline_id], values)
+        for state_id, values in design_passes.items()
         if state_id != baseline_id
     }
     record["status"] = "evaluated"

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "jester-facet-efficiency-config-v1",
-  "miUrl": "http://127.0.0.1:8130",
+  "miUrl": "http://127.0.0.1:8120",
   "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
   "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
   "seed": 42,
@@ -30,4 +30,3 @@
     "campaignId": "qwen-coder-a40-v1"
   }
 }
-

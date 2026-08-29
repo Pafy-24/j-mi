@@ -286,6 +286,7 @@ class MIWorkerService:
             )
         session = self._get(session_id)
         with session.lock:
+            previous_version = session.weight_version
             weights = session.root / "weights"
             weights.mkdir(parents=True, exist_ok=True)
             final_path = weights / f"{version}.safetensors"
@@ -373,6 +374,12 @@ class MIWorkerService:
             session.weight_version = version
             session.weight_sha256 = actual
             self._persist(session)
+            if previous_version != version:
+                previous_path = weights / f"{previous_version}.safetensors"
+                previous_path.unlink(missing_ok=True)
+                previous_path.with_suffix(previous_path.suffix + ".zst").unlink(
+                    missing_ok=True
+                )
             return {
                 "version": version,
                 "sha256": actual,
@@ -515,6 +522,12 @@ class MIWorkerService:
                 )
             record["state"] = "acked"
             record["ackedAt"] = utc_now()
+            gradient_path = session.root / "rounds" / f"{round_index:08d}.safetensors"
+            gradient_path.unlink(missing_ok=True)
+            gradient_path.with_suffix(gradient_path.suffix + ".zst").unlink(
+                missing_ok=True
+            )
+            record["gradientRetained"] = False
             session.rounds[round_index] = record
             self._persist(session)
             return record
@@ -622,12 +635,17 @@ class MIWorkerService:
                     f"Artifact checkout is unavailable for {binding.digest}"
                 )
             resolved = checkout
-            if binding.logical_path:
+            entry_kind = str(entry.get("kind", ""))
+            if binding.logical_path and entry_kind == "directory":
                 resolved = (checkout / binding.logical_path).resolve()
                 try:
                     resolved.relative_to(checkout)
                 except ValueError as exc:
                     raise ConfigurationError("artifact logicalPath escapes checkout") from exc
+            elif binding.logical_path and entry_kind not in {"", "file"}:
+                raise ConfigurationError(
+                    f"Unsupported RM artifact kind for logicalPath: {entry_kind}"
+                )
             if not resolved.exists():
                 raise CompatibilityError(
                     f"Artifact logical path is unavailable: {binding.logical_path}"
