@@ -5,6 +5,7 @@ import copy
 import os
 import re
 import shutil
+import sys
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -210,8 +211,32 @@ class MIWorkerService:
                     base_model["device"] = "managed"
                 engine = FacetGradientEngine(training_config)
                 weights_path = session_root / "weights" / f"{task.weight_version}.safetensors"
+                print(
+                    json.dumps(
+                        {
+                            "event": "mi.worker.session.stage",
+                            "sessionId": task.session_id,
+                            "stage": "saving-initial-weights",
+                        },
+                        separators=(",", ":"),
+                    ),
+                    file=sys.stderr,
+                    flush=True,
+                )
                 weight_sha = engine.save_weights(
                     weights_path, dtype=task.transport.dtype
+                )
+                print(
+                    json.dumps(
+                        {
+                            "event": "mi.worker.session.stage",
+                            "sessionId": task.session_id,
+                            "stage": "initial-weights-saved",
+                        },
+                        separators=(",", ":"),
+                    ),
+                    file=sys.stderr,
+                    flush=True,
                 )
                 session = WorkerSession(
                     task=task,
@@ -257,6 +282,11 @@ class MIWorkerService:
                     code="session_running",
                     status=409,
                 )
+            # Explicitly destroy the model/composition graph while creation of
+            # another session is excluded by the service lock.  Merely popping
+            # the dictionary entry leaves cyclic PyTorch references alive and
+            # can exhaust the Windows commit limit on a parent -> child job.
+            session.engine.close()
             self._sessions.pop(session_id)
             (session.root / "session.json").unlink(missing_ok=True)
             atomic_write_json(

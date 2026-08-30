@@ -294,6 +294,28 @@ class WorkerGradientTests(unittest.TestCase):
                 (worker_root / "sessions" / "replanned-session" / "deleted.json").exists()
             )
 
+    def test_delete_session_explicitly_closes_the_model_graph(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            service = MIWorkerService(root / "worker", require_rm=False)
+            service.create_session(
+                {
+                    "sessionId": "cleanup-session",
+                    "trainingConfig": self._config(root),
+                    "weightVersion": "initial",
+                }
+            )
+            engine = service._sessions["cleanup-session"].engine
+
+            with patch.object(engine, "close", wraps=engine.close) as close:
+                result = service.delete_session("cleanup-session")
+
+            close.assert_called_once_with()
+            self.assertTrue(result["deleted"])
+            self.assertTrue(engine._closed)
+            self.assertIsNone(engine.base)
+            self.assertIsNone(engine.target)
+
     def test_rm_artifact_bindings_are_applied_and_recovered(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,19 +120,26 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         model_kwargs.pop("torch_dtype", None)
         model_kwargs["dtype"] = dtype
     if device.type == "cuda":
-        try:
-            import accelerate  # noqa: F401
-        except ImportError as exc:
+        load_strategy = os.environ.get(
+            "JESTER_MI_CUDA_LOAD_STRATEGY", "direct"
+        ).strip().lower()
+        if load_strategy not in {"direct", "host-staged"}:
             raise ConfigurationError(
-                "CUDA base-model loading requires accelerate so weights can be "
-                "materialized directly on the single RM-assigned GPU"
-            ) from exc
-        # Loading the complete checkpoint in host RAM and only then calling
-        # model.to(cuda) doubles peak commit.  That is especially harmful on
-        # consumer Windows systems with a small pagefile.  A one-entry map is
-        # still a strict single-device placement and therefore preserves MI's
-        # dynamic decoder-stack assumptions.
-        model_kwargs["device_map"] = {"": device}
+                "JESTER_MI_CUDA_LOAD_STRATEGY must be direct or host-staged"
+            )
+        if load_strategy == "direct":
+            try:
+                import accelerate  # noqa: F401
+            except ImportError as exc:
+                raise ConfigurationError(
+                    "Direct CUDA base-model loading requires accelerate"
+                ) from exc
+            # A one-entry map materializes weights directly on the only
+            # RM-visible CUDA device and minimizes host commit. Operators can
+            # explicitly select host-staged loading for runtimes where the
+            # Accelerate direct loader is not stable; final placement is still
+            # verified by model.to(device) below.
+            model_kwargs["device_map"] = {"": device}
     try:
         model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     except TypeError as exc:

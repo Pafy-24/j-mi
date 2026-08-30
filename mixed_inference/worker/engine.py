@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import gc
+import json
 import math
+import sys
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,26 +44,37 @@ class FacetGradientEngine:
         cancel_event: threading.Event | None = None,
     ):
         self.cancel_event = cancel_event or threading.Event()
+        self._stage("configuring")
         self.helper = MixedInferenceTrainer(
             training_config, cancel_event=self.cancel_event
         )
         self.config = self.helper.config
         self.helper._seed_everything(self.config.loop.seed)
+        self._stage("loading-base")
         self.base = load_base_model(self.config.base_model, load_tokenizer=True)
+        self._stage("base-loaded")
         self.helper.base = self.base
         if self.base.tokenizer is None:
             raise ConfigurationError("MI worker requires a tokenizer")
+        self._stage("building-datasets")
         self.dataset, self.validation_dataset = build_datasets(
             self.base.tokenizer, self.config.data
         )
+        self._stage("datasets-built")
+        self._stage("materializing-target")
         self.target = self.helper._prepare_target(self.base)
+        self._stage("target-materialized")
+        self._stage("resolving-composition")
         self.plan, self.parents = self.helper._prepare_composition(
             self.base, self.target
         )
+        self._stage("composition-resolved")
         self.helper.target = self.target
         self.helper.plan = self.plan
         self.helper.parents = self.parents
+        self._stage("placing-facet")
         self.helper._move_facet_to_base(self.target, self.base)
+        self._stage("freezing-parameters")
         self.helper._freeze_parameters(
             self.base, self.target, self.parents.values()
         )
@@ -68,6 +82,19 @@ class FacetGradientEngine:
             self.helper._pad_token_id(self.base.tokenizer)
         )
         self._compute_lock = threading.Lock()
+        self._closed = False
+        self._stage("ready")
+
+    @staticmethod
+    def _stage(stage: str) -> None:
+        print(
+            json.dumps(
+                {"event": "mi.worker.engine.stage", "stage": stage},
+                separators=(",", ":"),
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
 
     def summary(self) -> dict[str, Any]:
         trainable = sum(parameter.numel() for parameter in self.target.parameters())
@@ -82,6 +109,73 @@ class FacetGradientEngine:
             "trainableParameters": trainable,
             "tensorSpecs": self.tensor_specs(),
         }
+
+    def close(self) -> None:
+        """Release a session's model graph before another facet is loaded.
+
+        Removing the session from the service dictionary is not sufficient for
+        large models.  The trainer helper, activated composition and base model
+        form reference cycles, so CPython can retain several GiB of committed
+        CPU/GPU memory until a later cyclic-GC pass.  On Windows that can make
+        the next parent/child session fail with ``ERROR_COMMITMENT_LIMIT`` even
+        though the previous session is no longer addressable through the API.
+
+        Session deletion is serialized by the worker service and is allowed
+        only while the session is idle, therefore it is safe to tear down the
+        graph synchronously here.  The method is idempotent so shutdown and
+        retry paths may both call it.
+        """
+
+        with self._compute_lock:
+            if self._closed:
+                return
+            self._closed = True
+            self.cancel_event.set()
+
+            target = getattr(self, "target", None)
+            if target is not None:
+                for parameter in target.parameters():
+                    parameter.grad = None
+
+            helper = getattr(self, "helper", None)
+            if helper is not None:
+                for attribute in ("base", "target", "plan", "parents"):
+                    if hasattr(helper, attribute):
+                        setattr(helper, attribute, None)
+
+            parents = getattr(self, "parents", None)
+            if isinstance(parents, dict):
+                parents.clear()
+
+            # Break every strong reference to modules, tokenizers, datasets and
+            # the activated composition before forcing cyclic collection.
+            for attribute in (
+                "collator",
+                "validation_dataset",
+                "dataset",
+                "parents",
+                "plan",
+                "target",
+                "base",
+                "helper",
+            ):
+                if hasattr(self, attribute):
+                    setattr(self, attribute, None)
+
+        gc.collect()
+        try:
+            torch = require_torch()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                try:
+                    torch.cuda.ipc_collect()
+                except (RuntimeError, AttributeError):
+                    # IPC collection is not implemented by every CUDA runtime.
+                    pass
+        except (CompatibilityError, RuntimeError):
+            # CPU-only workers and partially initialized CUDA runtimes still
+            # benefit from the explicit reference teardown and cyclic GC.
+            pass
 
     def tensor_specs(self) -> dict[str, dict[str, Any]]:
         return {
