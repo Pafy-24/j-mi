@@ -200,6 +200,7 @@ def base_request(args: Any) -> BaseModelRequest:
     return BaseModelRequest.from_dict(
         {
             "id": args.base_model,
+            "canonicalId": args.base_identity,
             "revision": args.revision,
             "layerPath": args.layer_path,
             "dtype": args.dtype,

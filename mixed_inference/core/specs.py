@@ -26,6 +26,7 @@ def validate_facet_id(value: str, field_name: str = "facet.id") -> str:
 @dataclass(frozen=True)
 class BaseModelRequest:
     model_id: str
+    canonical_id: str | None = None
     revision: str | None = None
     layer_path: str | None = None
     dtype: str = "auto"
@@ -41,6 +42,13 @@ class BaseModelRequest:
         model_id = str(data.get("id", "")).strip()
         if not model_id:
             raise ConfigurationError("baseModel.id is required")
+        canonical_id = (
+            str(data["canonicalId"]).strip()
+            if data.get("canonicalId") is not None
+            else None
+        )
+        if canonical_id == "":
+            raise ConfigurationError("baseModel.canonicalId cannot be empty")
         dtype = str(data.get("dtype", "auto")).lower()
         if dtype not in {"auto", "float32", "float16", "bfloat16"}:
             raise ConfigurationError(
@@ -55,6 +63,7 @@ class BaseModelRequest:
             )
         return cls(
             model_id=model_id,
+            canonical_id=canonical_id,
             revision=str(data["revision"]) if data.get("revision") is not None else None,
             layer_path=str(data["layerPath"]) if data.get("layerPath") else None,
             dtype=dtype,
@@ -70,6 +79,7 @@ class BaseModelRequest:
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.model_id,
+            "canonicalId": self.canonical_id,
             "revision": self.revision,
             "layerPath": self.layer_path,
             "dtype": self.dtype,

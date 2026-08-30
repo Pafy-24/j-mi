@@ -180,6 +180,23 @@ class MIWorkerService:
                     )
                 return self.session(task.session_id)
             session_root = self._safe_session_root(task.session_id)
+            if session_root.exists():
+                # A worker can be terminated while the model is loading, before
+                # session.json is durable.  That directory has no recoverable
+                # state and must not make every Trainer retry fail with
+                # FileExistsError.  Conversely, never overwrite a persisted
+                # session which failed recovery: it may contain the only copy
+                # of an acknowledged weight version.
+                if (session_root / "deleted.json").is_file():
+                    shutil.rmtree(session_root)
+                elif (session_root / "session.json").is_file():
+                    raise MIError(
+                        f"Session {task.session_id} exists on disk but could not be recovered",
+                        code="session_recovery_failed",
+                        status=409,
+                    )
+                else:
+                    shutil.rmtree(session_root)
             session_root.mkdir(parents=True, exist_ok=False)
             try:
                 training_config = copy.deepcopy(task.training_config)
@@ -661,6 +678,18 @@ class MIWorkerService:
                 target[int(parts[-1])] = str(resolved)
             else:
                 target[parts[-1]] = str(resolved)
+            if (
+                binding.logical_path
+                and len(parts) == 4
+                and parts[:2] == ["data", "train"]
+                and parts[3] == "path"
+            ):
+                source_config = config["data"]["train"][int(parts[2])]
+                if not isinstance(source_config, dict):
+                    raise ConfigurationError(
+                        "dataset artifact binding requires an object source"
+                    )
+                source_config["logicalPath"] = binding.logical_path
 
     def _recover_sessions(self) -> None:
         for state_path in sorted(self.sessions_root.glob("*/session.json")):

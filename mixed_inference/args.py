@@ -9,6 +9,13 @@ DEFAULT_SERVER = "http://127.0.0.1:8120"
 
 def add_base_options(parser: argparse.ArgumentParser, *, required: bool) -> None:
     parser.add_argument("--base-model", required=required, help="Hugging Face model ID or local path.")
+    parser.add_argument(
+        "--base-identity",
+        help=(
+            "Portable model identity stored in facet manifests. Use the RM CAS "
+            "sha256 digest when loading the same model from different host paths."
+        ),
+    )
     parser.add_argument("--revision", help="Pinned model revision/commit.")
     parser.add_argument("--layer-path", help="Explicit decoder ModuleList path, e.g. model.layers.")
     parser.add_argument(

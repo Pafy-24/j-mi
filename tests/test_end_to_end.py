@@ -70,7 +70,12 @@ class EndToEndTests(unittest.TestCase):
             )
             config = {
                 "schemaVersion": "mi-training-v1",
-                "baseModel": {"id": str(model_dir), "device": "cpu", "dtype": "float32"},
+                "baseModel": {
+                    "id": str(model_dir),
+                    "canonicalId": "sha256:" + "b" * 64,
+                    "device": "cpu",
+                    "dtype": "float32",
+                },
                 "registry": str(root / "facets"),
                 "facet": {
                     "id": "tiny-coder",
@@ -114,6 +119,8 @@ class EndToEndTests(unittest.TestCase):
             self.assertTrue(result["metrics"]["identityCheck"]["passed"])
             self.assertTrue((output / "facet.mi.json").exists())
             self.assertTrue((output / "facet.safetensors").exists())
+            manifest = json.loads((output / "facet.mi.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["base"]["modelId"], "sha256:" + "b" * 64)
             self.assertEqual(FacetRegistry(root / "facets").list()[0]["blocks"], 1)
 
             resumed_config = json.loads(json.dumps(config))

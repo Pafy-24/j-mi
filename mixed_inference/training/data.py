@@ -70,7 +70,9 @@ def tokenize_sources(
 ) -> list[TokenizedRecord]:
     tokenized: list[TokenizedRecord] = []
     for source in sources:
-        raw_records = list(read_records(source.path))
+        raw_records = list(
+            read_records(source.path, logical_path=source.logical_path)
+        )
         if source.stages:
             raw_records = [item for item in raw_records if str(item.get("stage", "")) in source.stages]
         if source.limit is not None:
@@ -83,7 +85,9 @@ def tokenize_sources(
     return tokenized
 
 
-def read_records(path: str | Path) -> Iterable[dict[str, Any]]:
+def read_records(
+    path: str | Path, *, logical_path: str | None = None
+) -> Iterable[dict[str, Any]]:
     source = Path(path)
     if not source.exists():
         raise ConfigurationError(f"Dataset does not exist: {source}")
@@ -106,7 +110,8 @@ def read_records(path: str | Path) -> Iterable[dict[str, Any]]:
         for item in files:
             yield from read_records(item)
         return
-    if source.suffix.lower() == ".jsonl":
+    format_path = Path(logical_path) if logical_path else source
+    if format_path.suffix.lower() == ".jsonl":
         with source.open("r", encoding="utf-8") as handle:
             for line_number, line in enumerate(handle, 1):
                 if not line.strip():

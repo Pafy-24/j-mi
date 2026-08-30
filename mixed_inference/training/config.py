@@ -27,6 +27,7 @@ from ..core.util import (
 @dataclass(frozen=True)
 class DatasetSource:
     path: Path
+    logical_path: str | None = None
     stages: tuple[str, ...] = ()
     repeat: int = 1
     limit: int | None = None
@@ -298,9 +299,18 @@ def _parse_dataset_sources(raw: Any, name: str, base: Path) -> tuple[DatasetSour
         limit = int(data["limit"]) if data.get("limit") is not None else None
         if limit is not None and limit <= 0:
             raise ConfigurationError(f"{field_name}.limit must be positive")
+        logical_path = str(data.get("logicalPath", "")).strip() or None
+        if logical_path and Path(logical_path).suffix.lower() not in {
+            ".json",
+            ".jsonl",
+        }:
+            raise ConfigurationError(
+                f"{field_name}.logicalPath must identify a JSON or JSONL source"
+            )
         sources.append(
             DatasetSource(
                 path=resolve_relative(path, base),
+                logical_path=logical_path,
                 stages=string_list(data.get("stages"), f"{field_name}.stages"),
                 repeat=repeat,
                 limit=limit,

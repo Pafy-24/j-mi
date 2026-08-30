@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from mixed_inference.core.errors import ConfigurationError
+from mixed_inference.core.specs import BaseModelRequest
 from mixed_inference.training.config import TrainingConfig, resolve_slots
 from mixed_inference.training.data import read_records
 
@@ -65,6 +66,17 @@ class ConfigAndDataTests(unittest.TestCase):
             )
             parsed = TrainingConfig.load(config)
         self.assertEqual(parsed.base_model.model_id, str((root / "model").resolve()))
+
+    def test_base_model_canonical_identity_is_portable(self) -> None:
+        request = BaseModelRequest.from_dict(
+            {
+                "id": "C:/runtime/checkout/model",
+                "canonicalId": "sha256:" + "a" * 64,
+            }
+        )
+        self.assertEqual(request.model_id, "C:/runtime/checkout/model")
+        self.assertEqual(request.canonical_id, "sha256:" + "a" * 64)
+        self.assertEqual(request.to_dict()["canonicalId"], "sha256:" + "a" * 64)
 
 
 if __name__ == "__main__":

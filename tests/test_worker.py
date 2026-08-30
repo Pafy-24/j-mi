@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 from pydantic import ValidationError
@@ -138,6 +139,46 @@ class WorkerGradientTests(unittest.TestCase):
                 )
             self.assertEqual(stale.exception.code, "stale_weight_version")
 
+    def test_distributed_compute_honours_gradient_checkpointing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self._config(root)
+            config["training"]["gradientCheckpointing"] = True
+            service = MIWorkerService(root / "worker", require_rm=False)
+            summary = service.create_session(
+                {
+                    "sessionId": "checkpointed-session",
+                    "trainingConfig": config,
+                    "weightVersion": "initial",
+                }
+            )
+            model = service._sessions["checkpointed-session"].engine.base.model
+            with (
+                patch.object(
+                    model,
+                    "gradient_checkpointing_enable",
+                    wraps=model.gradient_checkpointing_enable,
+                ) as enable,
+                patch.object(
+                    model,
+                    "gradient_checkpointing_disable",
+                    wraps=model.gradient_checkpointing_disable,
+                ) as disable,
+            ):
+                result = service.compute_round(
+                    "checkpointed-session",
+                    0,
+                    {
+                        "weightVersion": summary["weightVersion"],
+                        "indices": [0, 1],
+                        "batchSize": 1,
+                    },
+                )
+            self.assertGreater(result["supervisedTokens"], 0)
+            enable.assert_called_once()
+            disable.assert_called_once()
+            self.assertFalse(model.is_gradient_checkpointing)
+
     def test_weight_upload_rejects_nonfinite_and_deleted_session_stays_deleted(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -190,12 +231,78 @@ class WorkerGradientTests(unittest.TestCase):
                 }
             )
 
+    def test_retry_removes_incomplete_session_directory_after_worker_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            worker_root = root / "worker"
+            orphan = worker_root / "sessions" / "retry-session"
+            orphan.mkdir(parents=True)
+            (orphan / "partial-load.marker").write_text("incomplete", encoding="utf-8")
+
+            service = MIWorkerService(worker_root, require_rm=False)
+            created = service.create_session(
+                {
+                    "sessionId": "retry-session",
+                    "trainingConfig": self._config(root),
+                    "weightVersion": "initial",
+                }
+            )
+
+            self.assertEqual(created["id"], "retry-session")
+            self.assertFalse((orphan / "partial-load.marker").exists())
+            self.assertTrue((orphan / "session.json").is_file())
+
+    def test_retry_does_not_overwrite_a_persisted_unrecoverable_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            worker_root = root / "worker"
+            persisted = worker_root / "sessions" / "broken-session"
+            persisted.mkdir(parents=True)
+            (persisted / "session.json").write_text("{}", encoding="utf-8")
+
+            service = MIWorkerService(worker_root, require_rm=False)
+            with self.assertRaises(MIError) as failure:
+                service.create_session(
+                    {
+                        "sessionId": "broken-session",
+                        "trainingConfig": self._config(root),
+                        "weightVersion": "initial",
+                    }
+                )
+
+            self.assertEqual(failure.exception.code, "session_recovery_failed")
+            self.assertTrue((persisted / "session.json").is_file())
+
+    def test_deleted_session_identifier_can_be_reused_by_a_replanned_job(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            worker_root = root / "worker"
+            service = MIWorkerService(worker_root, require_rm=False)
+            task = {
+                "sessionId": "replanned-session",
+                "trainingConfig": self._config(root),
+                "weightVersion": "initial",
+            }
+            service.create_session(task)
+            service.delete_session("replanned-session")
+
+            restarted = MIWorkerService(worker_root, require_rm=False)
+            recreated = restarted.create_session(task)
+
+            self.assertEqual(recreated["id"], "replanned-session")
+            self.assertFalse(
+                (worker_root / "sessions" / "replanned-session" / "deleted.json").exists()
+            )
+
     def test_rm_artifact_bindings_are_applied_and_recovered(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             config = self._config(root)
             model = Path(config["baseModel"]["id"])
             dataset = Path(config["data"]["train"][0]["path"])
+            extensionless_dataset = root / "dataset-object"
+            dataset.replace(extensionless_dataset)
+            dataset = extensionless_dataset
             registry = Path(config["registry"])
             registry.mkdir(parents=True, exist_ok=True)
             digests = {
@@ -259,6 +366,7 @@ class WorkerGradientTests(unittest.TestCase):
                 service = MIWorkerService(worker_root, require_rm=False)
                 created = service.create_session(task)
                 self.assertEqual(created["id"], "cas-session")
+                self.assertEqual(created["engine"]["datasetExamples"], 2)
                 recovered = MIWorkerService(worker_root, require_rm=False)
                 self.assertEqual(recovered.session("cas-session")["state"], "idle")
 

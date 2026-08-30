@@ -118,6 +118,20 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
     if dtype is not None:
         model_kwargs.pop("torch_dtype", None)
         model_kwargs["dtype"] = dtype
+    if device.type == "cuda":
+        try:
+            import accelerate  # noqa: F401
+        except ImportError as exc:
+            raise ConfigurationError(
+                "CUDA base-model loading requires accelerate so weights can be "
+                "materialized directly on the single RM-assigned GPU"
+            ) from exc
+        # Loading the complete checkpoint in host RAM and only then calling
+        # model.to(cuda) doubles peak commit.  That is especially harmful on
+        # consumer Windows systems with a small pagefile.  A one-entry map is
+        # still a strict single-device placement and therefore preserves MI's
+        # dynamic decoder-stack assumptions.
+        model_kwargs["device_map"] = {"": device}
     try:
         model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     except TypeError as exc:
@@ -153,7 +167,10 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
     stack = locate_layer_stack(model, request.layer_path)
     model_type = str(getattr(model.config, "model_type", type(model).__name__))
     binding = BaseBinding(
-        model_id=model_id,
+        # Runtime paths are host-local (and CAS checkout paths differ between
+        # cluster and consumer devices). Persist the explicit portable
+        # identity when one is supplied, while still loading from model_id.
+        model_id=request.canonical_id or model_id,
         revision=request.revision,
         config_sha256=sha256_json(sanitized_model_config(model)),
         layer_path=stack.path,

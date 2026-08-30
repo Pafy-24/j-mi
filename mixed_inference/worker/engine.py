@@ -141,8 +141,23 @@ class FacetGradientEngine:
             losses: list[tuple[float, int]] = []
             supervised_total = 0
             previous_use_cache = getattr(model.config, "use_cache", None)
+            gradient_checkpointing_enabled = False
             if hasattr(model.config, "use_cache"):
                 model.config.use_cache = False
+            if self.config.loop.gradient_checkpointing:
+                enable = getattr(model, "gradient_checkpointing_enable", None)
+                if not callable(enable):
+                    raise ConfigurationError(
+                        "This base model does not expose gradient_checkpointing_enable"
+                    )
+                try:
+                    enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+                except TypeError:
+                    enable()
+                input_grads = getattr(model, "enable_input_require_grads", None)
+                if callable(input_grads):
+                    input_grads()
+                gradient_checkpointing_enabled = True
             loss_scale = 65536.0 if self.config.loop.precision == "float16" else 1.0
             try:
                 with ActivatedComposition(
@@ -172,6 +187,10 @@ class FacetGradientEngine:
                         losses.append((float(loss.detach().float().item()), supervised))
                         supervised_total += supervised
             finally:
+                if gradient_checkpointing_enabled:
+                    disable = getattr(model, "gradient_checkpointing_disable", None)
+                    if callable(disable):
+                        disable()
                 if hasattr(model.config, "use_cache"):
                     model.config.use_cache = previous_use_cache
 

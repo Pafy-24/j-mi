@@ -84,6 +84,7 @@
       "required": ["id"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
+        "canonicalId": {"type": ["string", "null"], "minLength": 1},
         "revision": {"type": ["string", "null"]},
         "layerPath": {"type": "string"},
         "dtype": {"enum": ["auto", "float32", "float16", "bfloat16"]},
@@ -177,6 +178,7 @@
           "required": ["path"],
           "properties": {
             "path": {"type": "string", "minLength": 1},
+            "logicalPath": {"type": "string", "pattern": "\\.(json|jsonl)$"},
             "stages": {"type": "array", "items": {"type": "string"}},
             "repeat": {"type": "integer", "minimum": 1},
             "limit": {"type": "integer", "minimum": 1}
