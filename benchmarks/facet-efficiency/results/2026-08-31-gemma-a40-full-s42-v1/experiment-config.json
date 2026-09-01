@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "jester-facet-efficiency-config-v1",
+  "family": "gemma-3-1b-it",
+  "miUrl": "http://127.0.0.1:53784",
+  "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
+  "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
+  "generalSuite": "../../../datasets/golden/mmlu-general-v1/mmlu-general-v1.jsonl",
+  "seed": 42,
+  "states": [
+    {"id": "base", "facets": []},
+    {"id": "base+coder", "facets": ["coder@rtx-gemma-s42"]},
+    {"id": "base+parent+child", "facets": ["coder.python@rtx-gemma-s42"]},
+    {"id": "base+lsr+mi", "routeWithLsr": true}
+  ],
+  "designGeneration": {"max_new_tokens": 768, "do_sample": false, "use_cache": true},
+  "humanEvalGeneration": {"max_new_tokens": 384, "do_sample": false, "use_cache": true},
+  "generalGeneration": {"max_new_tokens": 8, "do_sample": false, "use_cache": true},
+  "lsr": {
+    "url": "http://127.0.0.1:53756",
+    "topK": 1,
+    "requireCandidateFilter": true,
+    "facetReferences": {"coder": "coder@rtx-gemma-s42", "coder.python": "coder.python@rtx-gemma-s42"}
+  },
+  "rm": {
+    "url": "http://127.0.0.1:8790",
+    "tokenFile": "C:/Users/xxsho/AppData/Local/Jester/RM/controller.token",
+    "topologyId": "inference-gemma-a40-s42",
+    "metricsLimit": 500
+  },
+  "expected": {
+    "base": {"modelType": "gemma3_text", "configSha256": "4f29a01c53105f332637b45d42103387314b15086d5d0ebddf8962ebfcc66123", "baseLayerCount": 26},
+    "facets": [
+      {
+        "reference": "coder@rtx-gemma-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/gemma/coder/rtx-gemma-s42/facet.mi.json",
+        "sha256": "2588c25a3725aa6c3ad92f38ee3f78cbd05b13f7096e886cc7079b2d00dfffbb"
+      },
+      {
+        "reference": "coder.python@rtx-gemma-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/gemma/coder.python/rtx-gemma-s42/facet.mi.json",
+        "sha256": "cb0ae741cfb58ea48a878e5bd1ff87b9691827ab84365c5e281929253a3ee59a"
+      }
+    ]
+  }
+}

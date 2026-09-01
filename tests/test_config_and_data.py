@@ -5,12 +5,28 @@ import unittest
 from pathlib import Path
 
 from mixed_inference.core.errors import ConfigurationError
-from mixed_inference.core.specs import BaseModelRequest
+from mixed_inference.core.specs import ArtifactSpec, BaseModelRequest
 from mixed_inference.training.config import TrainingConfig, resolve_slots
 from mixed_inference.training.data import read_records
 
 
 class ConfigAndDataTests(unittest.TestCase):
+    def test_artifact_statistics_round_trip(self) -> None:
+        artifact = ArtifactSpec.from_dict(
+            {
+                "weights": "facet.safetensors",
+                "format": "safetensors",
+                "sha256": "abc",
+                "sizeBytes": 200,
+                "tensorCount": 4,
+                "parameterCount": 100,
+                "dtypeParameterCounts": {"bfloat16": 100},
+            }
+        )
+
+        self.assertEqual(artifact.parameter_count, 100)
+        self.assertEqual(artifact.to_dict()["dtypeParameterCounts"], {"bfloat16": 100})
+
     def test_uniform_slots_allow_different_block_counts(self) -> None:
         slots = resolve_slots(
             {

@@ -49,19 +49,20 @@ class FacetRegistry:
         result = []
         for key in sorted(self._manifests):
             manifest, path = self._manifests[key]
-            result.append(
-                {
-                    "id": manifest.facet_id,
-                    "version": manifest.version,
-                    "reference": manifest.reference(),
-                    "status": manifest.status,
-                    "path": str(path.parent),
-                    "loaded": key in self._loaded,
-                    "requires": list(manifest.dependencies.requires),
-                    "slots": len(manifest.slots),
-                    "blocks": sum(len(slot.blocks) for slot in manifest.slots),
-                }
-            )
+            item = {
+                "id": manifest.facet_id,
+                "version": manifest.version,
+                "reference": manifest.reference(),
+                "status": manifest.status,
+                "path": str(path.parent),
+                "loaded": key in self._loaded,
+                "requires": list(manifest.dependencies.requires),
+                "slots": len(manifest.slots),
+                "blocks": sum(len(slot.blocks) for slot in manifest.slots),
+            }
+            if manifest.artifact is not None:
+                item["artifact"] = manifest.artifact.to_dict()
+            result.append(item)
         return result
 
     def get_manifest(self, reference: FacetReference | str) -> FacetManifest:

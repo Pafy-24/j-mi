@@ -8,7 +8,9 @@ import json
 import math
 import random
 import re
+import shutil
 import statistics
+import struct
 import textwrap
 import time
 import urllib.error
@@ -19,6 +21,7 @@ from typing import Any, Iterable
 
 SCHEMA_VERSION = "jester-facet-efficiency-v2"
 HUMANEVAL_SHA256 = "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef"
+MMLU_GENERAL_SHA256 = "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4"
 DESIGN_FIELDS = (
     "contract",
     "requirements",
@@ -42,6 +45,45 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def safetensors_statistics(path: Path) -> dict[str, Any]:
+    size = path.stat().st_size
+    with path.open("rb") as handle:
+        length_raw = handle.read(8)
+        if len(length_raw) != 8:
+            raise RuntimeError(f"Invalid safetensors header in {path}")
+        header_length = struct.unpack("<Q", length_raw)[0]
+        if header_length <= 0 or header_length > min(size - 8, 100 * 1024 * 1024):
+            raise RuntimeError(f"Invalid safetensors header length in {path}")
+        header = json.loads(handle.read(header_length).decode("utf-8"))
+    tensors = [value for key, value in header.items() if key != "__metadata__"]
+    dtype_counts: dict[str, int] = {}
+    parameter_count = 0
+    payload_bytes = size - 8 - header_length
+    for tensor in tensors:
+        shape = tensor.get("shape")
+        offsets = tensor.get("data_offsets")
+        dtype = str(tensor.get("dtype") or "")
+        if (
+            not isinstance(shape, list)
+            or not isinstance(offsets, list)
+            or len(offsets) != 2
+            or any(not isinstance(value, int) or value < 0 for value in shape)
+            or any(not isinstance(value, int) or value < 0 for value in offsets)
+            or offsets[0] > offsets[1]
+            or offsets[1] > payload_bytes
+            or not dtype
+        ):
+            raise RuntimeError(f"Invalid tensor metadata in {path}")
+        count = math.prod(shape)
+        parameter_count += count
+        dtype_counts[dtype] = dtype_counts.get(dtype, 0) + count
+    return {
+        "tensorCount": len(tensors),
+        "parameterCount": parameter_count,
+        "dtypeParameterCounts": dict(sorted(dtype_counts.items())),
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     if path.suffix == ".gz":
         handle = gzip.open(path, "rt", encoding="utf-8")
@@ -57,6 +99,17 @@ def atomic_json(path: Path, payload: Any) -> None:
     temporary.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    temporary.replace(path)
+
+
+def atomic_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        for record in records:
+            handle.write(
+                json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
     temporary.replace(path)
 
 
@@ -301,8 +354,68 @@ def aggregate_design(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def mmlu_prompt(record: dict[str, Any]) -> str:
+    choices = list(record["choices"])
+    if len(choices) != 4:
+        raise RuntimeError(f"MMLU record {record.get('id')} must have four choices")
+    rendered = "\n".join(
+        f"{letter}. {choice}" for letter, choice in zip("ABCD", choices, strict=True)
+    )
+    return (
+        f"Question:\n{record['question']}\n\nChoices:\n{rendered}\n\n"
+        "Answer with exactly one uppercase letter: A, B, C, or D."
+    )
+
+
+def parse_mmlu_answer(text: str) -> tuple[str | None, bool]:
+    stripped = text.strip().upper()
+    exact = re.fullmatch(r"[ABCD]", stripped)
+    if exact:
+        return exact.group(0), True
+    leading = re.match(r"^([ABCD])(?:[.):\s]|$)", stripped)
+    if leading:
+        return leading.group(1), False
+    labelled = re.search(
+        r"\b(?:CORRECT\s+)?ANSWER(?:\s+IS)?\s*[:\-]?\s*([ABCD])\b", stripped
+    )
+    return (labelled.group(1), False) if labelled else (None, False)
+
+
+def aggregate_mmlu(records: list[dict[str, Any]]) -> dict[str, Any]:
+    total = len(records)
+    correct = sum(bool(item.get("score", {}).get("correct")) for item in records)
+    completed = [item for item in records if not item.get("error")]
+    exact = sum(bool(item.get("score", {}).get("exactFormat")) for item in completed)
+    categories: dict[str, Any] = {}
+    for category in sorted({str(item.get("category")) for item in records}):
+        category_rows = [item for item in records if str(item.get("category")) == category]
+        category_correct = sum(
+            bool(item.get("score", {}).get("correct")) for item in category_rows
+        )
+        categories[category] = {
+            "records": len(category_rows),
+            "correct": category_correct,
+            "accuracy": round(category_correct / len(category_rows), 6)
+            if category_rows
+            else None,
+            "wilson95": wilson(category_correct, len(category_rows)),
+        }
+    return {
+        **aggregate_generation(records),
+        "attempted": total,
+        "completed": len(completed),
+        "errors": total - len(completed),
+        "correct": correct,
+        "accuracy": round(correct / total, 6) if total else None,
+        "wilson95": wilson(correct, total),
+        "exactFormatRate": round(exact / len(completed), 6) if completed else None,
+        "categories": categories,
+        "protocol": "zero-shot single-letter generation; not official five-shot MMLU",
+    }
+
+
 def route_request(
-    config: dict[str, Any], prompt: str, expected_facet: str
+    config: dict[str, Any], prompt: str, expected_facet: str | None
 ) -> tuple[list[str], dict[str, Any]]:
     routing = config.get("lsr") or {}
     url = str(routing.get("url") or "").rstrip("/")
@@ -311,12 +424,24 @@ def route_request(
     top_k = int(routing.get("topK", 1))
     if top_k < 1:
         raise RuntimeError("lsr.topK must be at least one")
+    versions = routing.get("facetReferences") or {}
+    allowed_facets = sorted(str(item) for item in versions)
+    if not allowed_facets:
+        raise RuntimeError("lsr.facetReferences must pin at least one deployed facet")
     route = request_json(
         "POST",
         f"{url}/rank",
-        {"input": prompt, "top_k": top_k},
+        {"input": prompt, "top_k": top_k, "allowed_facets": allowed_facets},
         timeout=120,
     )
+    candidate_filter = route.get("candidateFacetFilter")
+    if routing.get("requireCandidateFilter"):
+        if (
+            not isinstance(candidate_filter, dict)
+            or not candidate_filter.get("applied")
+            or set(candidate_filter.get("effective") or []) != set(allowed_facets)
+        ):
+            raise RuntimeError("LSR did not enforce the deployed-facet candidate filter")
     selected = route.get("selectedFacets")
     if not isinstance(selected, list):
         raise RuntimeError("LSR response has no selectedFacets array")
@@ -325,16 +450,24 @@ def route_request(
         value = item if isinstance(item, str) else item.get("facet") if isinstance(item, dict) else None
         if value:
             facet_ids.append(str(value))
-    versions = routing.get("facetReferences") or {}
-    references = [str(versions.get(item, item)) for item in facet_ids]
+    unmapped = [item for item in facet_ids if item not in versions]
+    references = [str(versions[item]) for item in facet_ids if item in versions]
+    expected_abstain = expected_facet is None
+    expected_selected = bool(expected_facet and expected_facet in facet_ids)
+    expected_decision = not facet_ids if expected_abstain else expected_selected
+    exact_decision = not facet_ids if expected_abstain else facet_ids == [expected_facet]
     return references, {
         "schemaVersion": route.get("schemaVersion"),
         "expectedDirectFacet": expected_facet,
+        "expectedAbstain": expected_abstain,
         "selectedFacetIds": facet_ids,
+        "unmappedSelectedFacetIds": unmapped,
         "mappedReferences": references,
-        "expectedSelected": expected_facet in facet_ids,
-        "exactDirectSelection": facet_ids == [expected_facet],
+        "expectedSelected": expected_selected,
+        "expectedDecision": expected_decision,
+        "exactDirectSelection": exact_decision,
         "abstained": not facet_ids,
+        "candidateFacetFilter": candidate_filter,
         "performance": route.get("performance", {}),
     }
 
@@ -343,7 +476,7 @@ def request_facets(
     config: dict[str, Any],
     state: dict[str, Any],
     prompt: str,
-    expected_facet: str,
+    expected_facet: str | None,
 ) -> tuple[list[str], dict[str, Any] | None]:
     if state.get("routeWithLsr"):
         return route_request(config, prompt, expected_facet)
@@ -355,18 +488,45 @@ def aggregate_routing(records: list[dict[str, Any]]) -> dict[str, Any] | None:
     if not routed:
         return None
     exact = sum(bool(item["exactDirectSelection"]) for item in routed)
-    selected = sum(bool(item["expectedSelected"]) for item in routed)
+    expected_decisions = sum(
+        bool(item.get("expectedDecision", item.get("expectedSelected"))) for item in routed
+    )
+    selection_rows = [item for item in routed if not item.get("expectedAbstain")]
+    abstention_rows = [item for item in routed if item.get("expectedAbstain")]
+    selected = sum(bool(item["expectedSelected"]) for item in selection_rows)
+    expected_abstentions = sum(bool(item["abstained"]) for item in abstention_rows)
     abstained = sum(bool(item["abstained"]) for item in routed)
-    latencies = [
-        float(item.get("performance", {}).get("totalMs", 0))
-        for item in routed
-        if item.get("performance", {}).get("totalMs") is not None
-    ]
+    selected_counts: dict[str, int] = {}
+    for item in routed:
+        for facet_id in item.get("selectedFacetIds", []):
+            selected_counts[str(facet_id)] = selected_counts.get(str(facet_id), 0) + 1
+    latencies: list[float] = []
+    for item in routed:
+        performance = item.get("performance", {})
+        timing = performance.get("timing", {}) if isinstance(performance, dict) else {}
+        value = (
+            performance.get("totalMs")
+            if isinstance(performance, dict) and performance.get("totalMs") is not None
+            else timing.get("rankingMs")
+            if isinstance(timing, dict)
+            else None
+        )
+        if value is not None:
+            latencies.append(float(value))
     return {
         "attempted": len(routed),
-        "expectedRecall": round(selected / len(routed), 6),
+        "selectionExpected": len(selection_rows),
+        "abstentionExpected": len(abstention_rows),
+        "expectedDecisionRate": round(expected_decisions / len(routed), 6),
+        "expectedRecall": round(selected / len(selection_rows), 6)
+        if selection_rows
+        else None,
+        "expectedAbstentionRate": round(expected_abstentions / len(abstention_rows), 6)
+        if abstention_rows
+        else None,
         "exactDirectRate": round(exact / len(routed), 6),
         "abstainRate": round(abstained / len(routed), 6),
+        "selectedFacetCounts": dict(sorted(selected_counts.items())),
         "latencyMs": {
             "mean": mean(latencies),
             "p50": percentile(latencies, 0.50),
@@ -431,6 +591,15 @@ def provenance_preflight(
             raise RuntimeError(f"Facet artifact hash mismatch for {artifact['reference']}")
         if f"{manifest['id']}@{manifest['version']}" != artifact["reference"]:
             raise RuntimeError(f"Facet reference mismatch in {metadata_file}")
+        weight_record = {
+            "role": "facet-weights",
+            "reference": artifact["reference"],
+            "path": str(weights_file),
+            "bytes": weights_file.stat().st_size,
+            "sha256": weights_hash,
+        }
+        if weights_file.suffix.lower() == ".safetensors":
+            weight_record["safetensors"] = safetensors_statistics(weights_file)
         result["files"].extend(
             [
                 {
@@ -440,13 +609,7 @@ def provenance_preflight(
                     "bytes": metadata_file.stat().st_size,
                     "sha256": metadata_hash,
                 },
-                {
-                    "role": "facet-weights",
-                    "reference": artifact["reference"],
-                    "path": str(weights_file),
-                    "bytes": weights_file.stat().st_size,
-                    "sha256": weights_hash,
-                },
+                weight_record,
             ]
         )
     plans: dict[str, Any] = {}
@@ -472,9 +635,11 @@ def control_plane_snapshot(config: dict[str, Any], root: Path) -> dict[str, Any]
     rm = config.get("rm") or {}
     if rm.get("url") and rm.get("topologyId"):
         try:
+            metrics_limit = min(max(int(rm.get("metricsLimit", 500)), 1), 100_000)
             result["rmTopologyMetrics"] = request_json(
                 "GET",
-                f"{str(rm['url']).rstrip('/')}/v1/topologies/{rm['topologyId']}/metrics",
+                f"{str(rm['url']).rstrip('/')}/v1/topologies/"
+                f"{rm['topologyId']}/metrics?limit={metrics_limit}",
                 token=_token(rm.get("tokenFile"), root),
                 timeout=60,
             )
@@ -494,7 +659,13 @@ def control_plane_snapshot(config: dict[str, Any], root: Path) -> dict[str, Any]
     return result
 
 
-def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int) -> None:
+def run(
+    config_path: Path,
+    output: Path,
+    design_limit: int,
+    humaneval_limit: int,
+    state_ids: list[str] | None = None,
+) -> None:
     config_path = config_path.resolve()
     root = config_path.parent
     config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -508,21 +679,52 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
         designs = designs[:design_limit]
     if humaneval_limit:
         problems = problems[:humaneval_limit]
-    states = list(config["states"])
+    configured_states = list(config["states"])
+    if state_ids:
+        if len(set(state_ids)) != len(state_ids):
+            raise RuntimeError("--state values must be unique")
+        by_id = {str(item["id"]): item for item in configured_states}
+        missing = [item for item in state_ids if item not in by_id]
+        if missing:
+            raise RuntimeError(f"Unknown state IDs: {missing}")
+        selected = set(state_ids)
+        states = [item for item in configured_states if str(item["id"]) in selected]
+    else:
+        states = configured_states
+    if not states or str(states[0]["id"]) != "base":
+        raise RuntimeError("Every standalone run must include base as its first state")
     mi_url = str(config["miUrl"]).rstrip("/")
-    preflight = provenance_preflight(config, root, mi_url)
+    effective_config = {**config, "states": states}
+    preflight = provenance_preflight(effective_config, root, mi_url)
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    config_snapshot = output / "experiment-config.json"
+    if config_snapshot.exists():
+        raise RuntimeError("Experiment config snapshot already exists; use a new run directory")
+    shutil.copyfile(config_path, config_snapshot)
+    evaluation_problems = output / "humaneval-problems.jsonl"
+    if evaluation_problems.exists():
+        raise RuntimeError(
+            "HumanEval problem snapshot already exists; use a new run directory"
+        )
+    atomic_jsonl(evaluation_problems, problems)
     started = time.time()
     run_record: dict[str, Any] = {
         "schemaVersion": SCHEMA_VERSION,
         "status": "running",
         "startedAtUnix": started,
         "configSha256": sha256_file(config_path),
+        "configSnapshot": config_snapshot.name,
         "family": config.get("family"),
+        "selectedStateIds": [str(item["id"]) for item in states],
         "suites": {
             "coderDesign": {"sha256": sha256_file(design_path), "records": len(designs)},
-            "humanEval": {"sha256": sha256_file(humaneval_path), "records": len(problems)},
+            "humanEval": {
+                "sourceSha256": sha256_file(humaneval_path),
+                "evaluationSha256": sha256_file(evaluation_problems),
+                "evaluationFile": evaluation_problems.name,
+                "records": len(problems),
+            },
         },
         "controlPlaneBefore": control_plane_snapshot(config, root),
         "preflight": preflight,
@@ -530,6 +732,8 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
     }
     atomic_json(output / "run.json", run_record)
     for state in states:
+        state_started = time.time()
+        health_before = request_json("GET", f"{mi_url}/health", timeout=60)
         state_id = str(state["id"])
         safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", state_id)
         design_output = output / f"design.{safe_id}.jsonl"
@@ -640,11 +844,18 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
             append_jsonl(telemetry_output, telemetry)
             human_telemetry.append(telemetry)
         routing_records = [*design_records, *human_telemetry]
+        state_finished = time.time()
+        health_after = request_json("GET", f"{mi_url}/health", timeout=60)
         run_record["states"].append(
             {
                 "id": state_id,
                 "facets": state.get("facets", []),
                 "routeWithLsr": bool(state.get("routeWithLsr")),
+                "startedAtUnix": state_started,
+                "finishedAtUnix": state_finished,
+                "wallSeconds": round(state_finished - state_started, 6),
+                "miHealthBefore": health_before,
+                "miHealthAfter": health_after,
                 "design": aggregate_design(design_records),
                 "humanEval": {
                     **aggregate_generation(human_telemetry),
@@ -666,6 +877,147 @@ def run(config_path: Path, output: Path, design_limit: int, humaneval_limit: int
     run_record["wallSeconds"] = round(run_record["finishedAtUnix"] - started, 6)
     run_record["controlPlaneAfter"] = control_plane_snapshot(config, root)
     atomic_json(output / "run.json", run_record)
+
+
+def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
+    config_path = config_path.resolve()
+    root = config_path.parent
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    suite_value = config.get("generalSuite")
+    if not suite_value:
+        raise RuntimeError("The experiment config has no generalSuite")
+    suite_path = (root / str(suite_value)).resolve()
+    if sha256_file(suite_path) != MMLU_GENERAL_SHA256:
+        raise RuntimeError("MMLU general-retention digest mismatch")
+    problems = load_jsonl(suite_path)
+    if limit:
+        problems = problems[:limit]
+
+    run_directory = run_directory.resolve()
+    record_path = run_directory / "run.json"
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    if record.get("status") not in {"generated", "evaluated"}:
+        raise RuntimeError("The coding/HumanEval generation run must finish first")
+    recorded_ids = [str(item["id"]) for item in record.get("states", [])]
+    by_id = {str(item["id"]): item for item in config.get("states") or []}
+    missing_states = [item for item in recorded_ids if item not in by_id]
+    if missing_states:
+        raise RuntimeError(f"Config has no states recorded by the run: {missing_states}")
+    configured_states = [by_id[item] for item in recorded_ids]
+    configured_ids = recorded_ids
+    if record.get("suites", {}).get("generalMmlu"):
+        raise RuntimeError("The run already contains a general-retention suite")
+
+    snapshot = run_directory / "general-mmlu-problems.jsonl"
+    output_paths = [
+        run_directory
+        / f"general-mmlu.{re.sub(r'[^A-Za-z0-9._-]+', '_', state_id)}.jsonl"
+        for state_id in configured_ids
+    ]
+    if snapshot.exists() or any(path.exists() for path in output_paths):
+        raise RuntimeError("General-retention output already exists; use a clean run")
+    atomic_jsonl(snapshot, problems)
+    started = time.time()
+    record.setdefault("suites", {})["generalMmlu"] = {
+        "sourceSha256": sha256_file(suite_path),
+        "evaluationSha256": sha256_file(snapshot),
+        "evaluationFile": snapshot.name,
+        "records": len(problems),
+        "protocol": "zero-shot single-letter generation; not official five-shot MMLU",
+    }
+    record["generalRetention"] = {
+        "status": "running",
+        "startedAtUnix": started,
+        "configSha256": sha256_file(config_path),
+    }
+    atomic_json(record_path, record)
+
+    mi_url = str(config["miUrl"]).rstrip("/")
+    state_records = {str(item["id"]): item for item in record["states"]}
+    for state, output_path in zip(configured_states, output_paths, strict=True):
+        state_id = str(state["id"])
+        state_started = time.time()
+        rows: list[dict[str, Any]] = []
+        for item in problems:
+            prompt = mmlu_prompt(item)
+            facets: list[str] = []
+            route: dict[str, Any] | None = None
+            try:
+                facets, route = request_facets(config, state, prompt, None)
+                response = request_json(
+                    "POST",
+                    f"{mi_url}/generate",
+                    {
+                        "requestId": f"golden:{state_id}:general:{item['id']}",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "Answer the multiple-choice question. Return exactly one "
+                                    "uppercase letter and no explanation."
+                                ),
+                            },
+                            {"role": "user", "content": prompt},
+                        ],
+                        "facets": facets,
+                        "generation": config.get(
+                            "generalGeneration",
+                            {"max_new_tokens": 8, "do_sample": False, "use_cache": True},
+                        ),
+                        "seed": int(config.get("seed", 42)),
+                    },
+                )
+                output_text = str(response["output"]["text"])
+                answer, exact_format = parse_mmlu_answer(output_text)
+                score = {
+                    "parsedAnswer": answer,
+                    "expectedAnswer": str(item["answerLetter"]),
+                    "correct": answer == str(item["answerLetter"]),
+                    "exactFormat": exact_format,
+                }
+                row = {
+                    "id": item["id"],
+                    "category": item["category"],
+                    "subject": item["subject"],
+                    "output": output_text,
+                    "score": score,
+                    "usage": response.get("usage", {}),
+                    "timingMs": response.get("timingMs", {}),
+                    "requestedFacets": facets,
+                    "resolvedFacets": response.get("resolvedFacets", []),
+                    "route": route,
+                }
+            except Exception as exc:
+                row = {
+                    "id": item["id"],
+                    "category": item["category"],
+                    "subject": item["subject"],
+                    "requestedFacets": facets,
+                    "route": route,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            append_jsonl(output_path, row)
+            rows.append(row)
+        state_finished = time.time()
+        state_records[state_id]["generalMmlu"] = {
+            **aggregate_mmlu(rows),
+            "startedAtUnix": state_started,
+            "finishedAtUnix": state_finished,
+            "wallSeconds": round(state_finished - state_started, 6),
+            "recordsFile": output_path.name,
+        }
+        atomic_json(record_path, record)
+
+    finished = time.time()
+    record["generalRetention"] = {
+        "status": "generated",
+        "startedAtUnix": started,
+        "finishedAtUnix": finished,
+        "wallSeconds": round(finished - started, 6),
+        "configSha256": sha256_file(config_path),
+    }
+    record["controlPlaneAfterGeneral"] = control_plane_snapshot(config, root)
+    atomic_json(record_path, record)
 
 
 def bootstrap_delta(
@@ -701,8 +1053,19 @@ def summarize(run_directory: Path) -> None:
     run_directory = run_directory.resolve()
     record_path = run_directory / "run.json"
     record = json.loads(record_path.read_text(encoding="utf-8"))
+    for item in record.get("preflight", {}).get("files", []):
+        path = Path(str(item.get("path") or ""))
+        if (
+            item.get("role") == "facet-weights"
+            and "safetensors" not in item
+            and path.suffix.lower() == ".safetensors"
+            and path.is_file()
+        ):
+            item["safetensors"] = safetensors_statistics(path)
     passes: dict[str, dict[str, bool]] = {}
     design_passes: dict[str, dict[str, bool]] = {}
+    general_passes: dict[str, dict[str, bool]] = {}
+    has_general = bool(record.get("suites", {}).get("generalMmlu"))
     for state in record["states"]:
         safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", str(state["id"]))
         design_rows = load_jsonl(run_directory / f"design.{safe_id}.jsonl")
@@ -712,6 +1075,34 @@ def summarize(run_directory: Path) -> None:
             str(item["id"]): bool(item.get("scores", {}).get("strictPass"))
             for item in design_rows
         }
+        telemetry_rows = load_jsonl(
+            run_directory / f"humaneval-telemetry.{safe_id}.jsonl"
+        )
+        general_rows: list[dict[str, Any]] = []
+        if has_general:
+            general_path = run_directory / f"general-mmlu.{safe_id}.jsonl"
+            if not general_path.is_file():
+                raise RuntimeError(f"Missing general-retention results for {state['id']}")
+            general_rows = load_jsonl(general_path)
+            expected_general = int(record["suites"]["generalMmlu"]["records"])
+            general_ids = [str(item["id"]) for item in general_rows]
+            if (
+                len(general_rows) != expected_general
+                or len(set(general_ids)) != expected_general
+            ):
+                raise RuntimeError(
+                    f"General-retention results for {state['id']} contain "
+                    f"{len(general_rows)} rows and {len(set(general_ids))} unique IDs; "
+                    f"expected {expected_general}"
+                )
+            state.setdefault("generalMmlu", {}).update(aggregate_mmlu(general_rows))
+            general_passes[str(state["id"])] = {
+                str(item["id"]): bool(item.get("score", {}).get("correct"))
+                for item in general_rows
+            }
+        state["routing"] = aggregate_routing(
+            [*design_rows, *telemetry_rows, *general_rows]
+        )
         candidates = [
             run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl",
             run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl.gz",
@@ -750,6 +1141,12 @@ def summarize(run_directory: Path) -> None:
         for state_id, values in design_passes.items()
         if state_id != baseline_id
     }
+    if general_passes:
+        record["pairedGeneralMmlu"] = {
+            state_id: bootstrap_delta(general_passes[baseline_id], values)
+            for state_id, values in general_passes.items()
+            if state_id != baseline_id
+        }
     record["status"] = "evaluated"
     atomic_json(record_path, record)
 
@@ -762,11 +1159,24 @@ def main() -> None:
     execute.add_argument("--output", type=Path, required=True)
     execute.add_argument("--design-limit", type=int, default=0)
     execute.add_argument("--humaneval-limit", type=int, default=0)
+    execute.add_argument("--state", action="append", dest="states")
+    general = subparsers.add_parser("general")
+    general.add_argument("--config", type=Path, required=True)
+    general.add_argument("--run", type=Path, required=True)
+    general.add_argument("--limit", type=int, default=0)
     summary = subparsers.add_parser("summarize")
     summary.add_argument("--run", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "run":
-        run(args.config, args.output, args.design_limit, args.humaneval_limit)
+        run(
+            args.config,
+            args.output,
+            args.design_limit,
+            args.humaneval_limit,
+            args.states,
+        )
+    elif args.command == "general":
+        run_general(args.config, args.run, args.limit)
     else:
         summarize(args.run)
 

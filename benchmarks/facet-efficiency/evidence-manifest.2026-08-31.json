@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "jester-facet-evidence-manifest-v1",
+  "methodology": {
+    "seed": 42,
+    "states": [
+      "base",
+      "base+coder",
+      "base+parent+child",
+      "base+lsr+mi"
+    ],
+    "general": "80-record deterministic zero-shot single-letter MMLU subset",
+    "coding": "24 manually authored multilingual code-design-v3 cases",
+    "python": "official HumanEval, 164 tasks, isolated Docker execution"
+  },
+  "runs": [
+    {
+      "id": "qwen-rtx-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "trainingHardware": "A40",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "run": "results/2026-08-31-qwen-full-s42-v1",
+      "stateSources": {
+        "base+lsr+mi": "results/2026-08-31-qwen-lsr-filtered-s42-v2"
+      },
+      "suiteSources": {
+        "base+lsr+mi": {
+          "generalMmlu": "results/2026-08-31-qwen-full-s42-v1"
+        }
+      },
+      "notes": [
+        "The original routed coding arm was invalidated because it predated request-local candidate filtering; the corrected routed run is used for design, HumanEval, routing and health.",
+        "General retention was executed after candidate filtering and is sourced from the full run.",
+        "The corrected RTX run experienced external throttling; clean static-state throughput comes from the full run."
+      ]
+    },
+    {
+      "id": "qwen-a40-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "trainingHardware": "A40",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "run": "results/2026-08-31-qwen-a40-full-s42-v1"
+    },
+    {
+      "id": "gemma-rtx-s42",
+      "model": "Gemma-3-1B-IT",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "run": "results/2026-08-31-gemma-rtx-full-s42-v1"
+    },
+    {
+      "id": "gemma-a40-s42",
+      "model": "Gemma-3-1B-IT",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "run": "results/2026-08-31-gemma-a40-full-s42-v1"
+    },
+    {
+      "id": "llama-rtx-s42",
+      "model": "Llama-3.2-1B-Instruct",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "run": "results/2026-08-31-llama-rtx-full-s42-v1"
+    },
+    {
+      "id": "llama-a40-s42",
+      "model": "Llama-3.2-1B-Instruct",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "run": "results/2026-08-31-llama-a40-full-s42-v1"
+    }
+  ],
+  "limitations": [
+    "All quality runs use one deterministic seed; they do not establish between-seed variance.",
+    "The design suite contains 24 cases and is a project golden, not a public leaderboard.",
+    "The MMLU suite is an 80-record balanced subset and not the official five-shot protocol.",
+    "Only one academic A40 was available; the other devices were occupied and were not touched.",
+    "A measured quality regression remains a valid result and is not replaced by an expectation."
+  ]
+}

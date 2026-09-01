@@ -1,0 +1,1 @@
+{"task_id":"HumanEval/0","syntaxPassed":true,"usage":{"inputTokens":146,"outputTokens":66,"totalTokens":212,"sequences":1},"timingMs":{"facetLoad":0.031,"composition":2.021,"generation":1549.125,"total":1556.34},"requestedFacets":[],"resolvedFacets":[],"route":null}

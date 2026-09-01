@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "jester-facet-efficiency-config-v1",
+  "family": "qwen2.5-1.5b-instruct",
+  "miUrl": "http://127.0.0.1:53288",
+  "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
+  "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
+  "seed": 42,
+  "states": [
+    {"id": "base", "facets": []},
+    {"id": "base+coder", "facets": ["coder@a40-qwen-s42"]},
+    {"id": "base+parent+child", "facets": ["coder.python@a40-qwen-s42"]},
+    {"id": "base+lsr+mi", "routeWithLsr": true}
+  ],
+  "designGeneration": {
+    "max_new_tokens": 768,
+    "do_sample": false,
+    "use_cache": true
+  },
+  "humanEvalGeneration": {
+    "max_new_tokens": 384,
+    "do_sample": false,
+    "use_cache": true
+  },
+  "lsr": {
+    "url": "http://127.0.0.1:64218",
+    "topK": 1,
+    "facetReferences": {
+      "coder": "coder@a40-qwen-s42",
+      "coder.python": "coder.python@a40-qwen-s42"
+    }
+  },
+  "rm": {
+    "url": "http://127.0.0.1:8790",
+    "tokenFile": "C:/Users/xxsho/AppData/Local/Jester/RM/controller.token",
+    "topologyId": "inference-qwen-rtx-s42",
+    "metricsLimit": 500
+  },
+  "expected": {
+    "base": {
+      "modelType": "qwen2",
+      "configSha256": "55cca9a510934067237875bfdf2a893427b1ffa59e1d19e19959a9cda83052b9",
+      "baseLayerCount": 28
+    },
+    "facets": [
+      {
+        "reference": "coder@a40-qwen-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/qwen/coder/a40-qwen-s42/facet.mi.json",
+        "sha256": "8dca701ca880cd61cedaaffb48d6e2c147074086afe0d70bbffade297c24c26a"
+      },
+      {
+        "reference": "coder.python@a40-qwen-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/qwen/coder.python/a40-qwen-s42/facet.mi.json",
+        "sha256": "3ff812a534554905fb4dec373def483e0a23610fc7fd266de864abf0df2e9197"
+      }
+    ]
+  }
+}

@@ -1,0 +1,1150 @@
+{
+  "schemaVersion": "jester-facet-evidence-v1",
+  "manifest": "evidence-manifest.2026-08-31.json",
+  "methodology": {
+    "seed": 42,
+    "states": [
+      "base",
+      "base+coder",
+      "base+parent+child",
+      "base+lsr+mi"
+    ],
+    "general": "80-record deterministic zero-shot single-letter MMLU subset",
+    "coding": "24 manually authored multilingual code-design-v3 cases",
+    "python": "official HumanEval, 164 tasks, isolated Docker execution"
+  },
+  "runs": [
+    {
+      "id": "qwen-rtx-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "trainingHardware": "A40",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-full-s42-v1",
+            "routing": "2026-08-31-qwen-full-s42-v1",
+            "health": "2026-08-31-qwen-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": 0.5625,
+            "generalMmluWilson95": [
+              0.453411,
+              0.665861
+            ],
+            "codingSemanticCoverage": 0.4375,
+            "codingValidJsonRate": 0.708333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalPassAt1": 0.439024,
+            "pythonHumanEvalWilson95": [
+              0.365329,
+              0.515511
+            ],
+            "pythonHumanEvalPassed": 72,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 519.253425,
+            "designTokensPerSecond": 42.593204,
+            "humanEvalTokensPerSecond": 41.870825,
+            "designLatencyMs": {
+              "generationMean": 10097.463708,
+              "generationP50": 8113.8205,
+              "generationP95": 18165.4686,
+              "totalMean": 10105.044208,
+              "totalP50": 8119.8895,
+              "totalP95": 18172.64945
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1639.479091,
+              "generationP50": 1375.7675,
+              "generationP95": 3806.63525,
+              "totalMean": 1645.288427,
+              "totalP50": 1381.39,
+              "totalP95": 3812.6564
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3096866304,
+            "cudaReservedBytes": 3351248896
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-full-s42-v1",
+            "routing": "2026-08-31-qwen-full-s42-v1",
+            "health": "2026-08-31-qwen-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder@a40-qwen-s42"
+          ],
+          "quality": {
+            "generalMmluAccuracy": 0.5625,
+            "generalMmluWilson95": [
+              0.453411,
+              0.665861
+            ],
+            "codingSemanticCoverage": 0.510417,
+            "codingValidJsonRate": 0.708333,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalPassAt1": 0.396341,
+            "pythonHumanEvalWilson95": [
+              0.324676,
+              0.472751
+            ],
+            "pythonHumanEvalPassed": 65,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": 0.0,
+              "bootstrap95": [
+                -0.05,
+                0.05
+              ],
+              "improved": 2,
+              "regressed": 2,
+              "unchanged": 76,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/other/professional_accounting/02",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.042683,
+              "bootstrap95": [
+                -0.085366,
+                0.0
+              ],
+              "improved": 4,
+              "regressed": 11,
+              "unchanged": 149,
+              "improvedIds": [
+                "HumanEval/130",
+                "HumanEval/156",
+                "HumanEval/54",
+                "HumanEval/81"
+              ],
+              "regressedIds": [
+                "HumanEval/104",
+                "HumanEval/117",
+                "HumanEval/128",
+                "HumanEval/147",
+                "HumanEval/151",
+                "HumanEval/159",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/68"
+              ]
+            },
+            "codingSemanticCoverage": 0.072917
+          },
+          "performance": {
+            "stateWallSeconds": 523.273075,
+            "designTokensPerSecond": 39.11754,
+            "humanEvalTokensPerSecond": 39.451295,
+            "designLatencyMs": {
+              "generationMean": 10645.267167,
+              "generationP50": 8678.6185,
+              "generationP95": 18489.1034,
+              "totalMean": 10669.402625,
+              "totalP50": 8684.648,
+              "totalP95": 18496.61115
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1580.831585,
+              "generationP50": 1256.4275,
+              "generationP95": 3212.1332,
+              "totalMean": 1587.266762,
+              "totalP50": 1262.9965,
+              "totalP95": 3218.39925
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3284057600,
+            "cudaReservedBytes": 3554672640
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.060445,
+            "cudaReserved": 1.060701,
+            "humanEvalThroughput": 0.942214,
+            "humanEvalP50Latency": 0.913256
+          }
+        },
+        {
+          "state": "base+parent+child",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-full-s42-v1",
+            "routing": "2026-08-31-qwen-full-s42-v1",
+            "health": "2026-08-31-qwen-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder.python@a40-qwen-s42"
+          ],
+          "quality": {
+            "generalMmluAccuracy": 0.5625,
+            "generalMmluWilson95": [
+              0.453411,
+              0.665861
+            ],
+            "codingSemanticCoverage": 0.552083,
+            "codingValidJsonRate": 0.708333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalPassAt1": 0.378049,
+            "pythonHumanEvalWilson95": [
+              0.307428,
+              0.454252
+            ],
+            "pythonHumanEvalPassed": 62,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": 0.0,
+              "bootstrap95": [
+                -0.05,
+                0.05
+              ],
+              "improved": 2,
+              "regressed": 2,
+              "unchanged": 76,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/other/professional_accounting/02",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.060976,
+              "bootstrap95": [
+                -0.109756,
+                -0.012195
+              ],
+              "improved": 4,
+              "regressed": 14,
+              "unchanged": 146,
+              "improvedIds": [
+                "HumanEval/101",
+                "HumanEval/124",
+                "HumanEval/156",
+                "HumanEval/81"
+              ],
+              "regressedIds": [
+                "HumanEval/104",
+                "HumanEval/114",
+                "HumanEval/117",
+                "HumanEval/128",
+                "HumanEval/147",
+                "HumanEval/151",
+                "HumanEval/159",
+                "HumanEval/18",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/68",
+                "HumanEval/69"
+              ]
+            },
+            "codingSemanticCoverage": 0.114583
+          },
+          "performance": {
+            "stateWallSeconds": 530.035312,
+            "designTokensPerSecond": 38.61874,
+            "humanEvalTokensPerSecond": 38.285893,
+            "designLatencyMs": {
+              "generationMean": 10480.662958,
+              "generationP50": 8713.8345,
+              "generationP95": 19472.55225,
+              "totalMean": 10496.53125,
+              "totalP50": 8719.854,
+              "totalP95": 19478.2628
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1645.514713,
+              "generationP50": 1339.692,
+              "generationP95": 3387.27085,
+              "totalMean": 1651.866348,
+              "totalP50": 1346.1425,
+              "totalP95": 3393.72045
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3377653248,
+            "cudaReservedBytes": 3665821696
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.090668,
+            "cudaReserved": 1.093867,
+            "humanEvalThroughput": 0.914381,
+            "humanEvalP50Latency": 0.973778
+          }
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-lsr-filtered-s42-v2",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-lsr-filtered-s42-v2",
+            "humanEval": "2026-08-31-qwen-lsr-filtered-s42-v2",
+            "generalMmlu": "2026-08-31-qwen-full-s42-v1",
+            "routing": "2026-08-31-qwen-lsr-filtered-s42-v2",
+            "health": "2026-08-31-qwen-lsr-filtered-s42-v2"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": 0.575,
+            "generalMmluWilson95": [
+              0.465693,
+              0.677434
+            ],
+            "codingSemanticCoverage": 0.5,
+            "codingValidJsonRate": 0.708333,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalPassAt1": 0.378049,
+            "pythonHumanEvalWilson95": [
+              0.307428,
+              0.454252
+            ],
+            "pythonHumanEvalPassed": 62,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": 0.0125,
+              "bootstrap95": [
+                0.0,
+                0.0375
+              ],
+              "improved": 1,
+              "regressed": 0,
+              "unchanged": 79,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03"
+              ],
+              "regressedIds": []
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.060976,
+              "bootstrap95": [
+                -0.109756,
+                -0.012195
+              ],
+              "improved": 4,
+              "regressed": 14,
+              "unchanged": 146,
+              "improvedIds": [
+                "HumanEval/101",
+                "HumanEval/124",
+                "HumanEval/156",
+                "HumanEval/81"
+              ],
+              "regressedIds": [
+                "HumanEval/104",
+                "HumanEval/114",
+                "HumanEval/117",
+                "HumanEval/128",
+                "HumanEval/147",
+                "HumanEval/151",
+                "HumanEval/159",
+                "HumanEval/18",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/68",
+                "HumanEval/69"
+              ]
+            },
+            "codingSemanticCoverage": 0.0625
+          },
+          "performance": {
+            "stateWallSeconds": 1078.36629,
+            "designTokensPerSecond": 15.147128,
+            "humanEvalTokensPerSecond": 27.593552,
+            "designLatencyMs": {
+              "generationMean": 27282.39975,
+              "generationP50": 21415.868,
+              "generationP95": 60133.1324,
+              "totalMean": 27329.205167,
+              "totalP50": 21430.3285,
+              "totalP95": 60152.41655
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 2283.142128,
+              "generationP50": 1769.6235,
+              "generationP95": 6599.8644,
+              "totalMean": 2292.590152,
+              "totalP50": 1776.1285,
+              "totalP95": 6618.75375
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3377653248,
+            "cudaReservedBytes": 3663724544
+          },
+          "routing": {
+            "expectedDecisionRate": 0.978723,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": null,
+            "latencyMs": {
+              "mean": 195.88608,
+              "p50": 153.5175,
+              "p95": 449.66095
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.090668,
+            "cudaReserved": 1.093242,
+            "humanEvalThroughput": 0.659016,
+            "humanEvalP50Latency": 1.286281
+          }
+        }
+      ],
+      "notes": [
+        "The original routed coding arm was invalidated because it predated request-local candidate filtering; the corrected routed run is used for design, HumanEval, routing and health.",
+        "General retention was executed after candidate filtering and is sourced from the full run.",
+        "The corrected RTX run experienced external throttling; clean static-state throughput comes from the full run."
+      ]
+    },
+    {
+      "id": "qwen-a40-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "trainingHardware": "A40",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-a40-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-a40-full-s42-v1",
+            "routing": "2026-08-31-qwen-a40-full-s42-v1",
+            "health": "2026-08-31-qwen-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": 0.5625,
+            "generalMmluWilson95": [
+              0.453411,
+              0.665861
+            ],
+            "codingSemanticCoverage": 0.5,
+            "codingValidJsonRate": 0.583333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalPassAt1": 0.439024,
+            "pythonHumanEvalWilson95": [
+              0.365329,
+              0.515511
+            ],
+            "pythonHumanEvalPassed": 72,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 493.313523,
+            "designTokensPerSecond": 44.235064,
+            "humanEvalTokensPerSecond": 45.507108,
+            "designLatencyMs": {
+              "generationMean": 9412.781667,
+              "generationP50": 7774.0995,
+              "generationP95": 17435.91565,
+              "totalMean": 9419.863583,
+              "totalP50": 7780.0475,
+              "totalP95": 17441.6906
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1498.291799,
+              "generationP50": 1280.7555,
+              "generationP95": 3335.607,
+              "totalMean": 1503.216652,
+              "totalP50": 1285.776,
+              "totalP95": 3340.86785
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3095948800,
+            "cudaReservedBytes": 3181379584
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-a40-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-a40-full-s42-v1",
+            "routing": "2026-08-31-qwen-a40-full-s42-v1",
+            "health": "2026-08-31-qwen-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder@a40-qwen-s42"
+          ],
+          "quality": {
+            "generalMmluAccuracy": 0.55,
+            "generalMmluWilson95": [
+              0.441195,
+              0.654223
+            ],
+            "codingSemanticCoverage": 0.552083,
+            "codingValidJsonRate": 0.75,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalPassAt1": 0.384146,
+            "pythonHumanEvalWilson95": [
+              0.313166,
+              0.46043
+            ],
+            "pythonHumanEvalPassed": 63,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.0125,
+              "bootstrap95": [
+                -0.0625,
+                0.0375
+              ],
+              "improved": 2,
+              "regressed": 3,
+              "unchanged": 75,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/other/professional_accounting/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/01",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.054878,
+              "bootstrap95": [
+                -0.109756,
+                0.0
+              ],
+              "improved": 7,
+              "regressed": 16,
+              "unchanged": 141,
+              "improvedIds": [
+                "HumanEval/101",
+                "HumanEval/105",
+                "HumanEval/118",
+                "HumanEval/130",
+                "HumanEval/14",
+                "HumanEval/156",
+                "HumanEval/26"
+              ],
+              "regressedIds": [
+                "HumanEval/102",
+                "HumanEval/116",
+                "HumanEval/128",
+                "HumanEval/139",
+                "HumanEval/144",
+                "HumanEval/151",
+                "HumanEval/155",
+                "HumanEval/159",
+                "HumanEval/161",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/61",
+                "HumanEval/68",
+                "HumanEval/69"
+              ]
+            },
+            "codingSemanticCoverage": 0.052083
+          },
+          "performance": {
+            "stateWallSeconds": 501.824398,
+            "designTokensPerSecond": 42.597097,
+            "humanEvalTokensPerSecond": 42.563691,
+            "designLatencyMs": {
+              "generationMean": 9628.981667,
+              "generationP50": 7980.8105,
+              "generationP95": 16895.5051,
+              "totalMean": 9652.216333,
+              "totalP50": 8043.0775,
+              "totalP95": 16901.0171
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1497.325671,
+              "generationP50": 1208.2395,
+              "generationP95": 3158.86125,
+              "totalMean": 1502.776994,
+              "totalP50": 1213.311,
+              "totalP95": 3164.46205
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3283140096,
+            "cudaReservedBytes": 3355443200
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.060463,
+            "cudaReserved": 1.054713,
+            "humanEvalThroughput": 0.93532,
+            "humanEvalP50Latency": 0.94338
+          }
+        },
+        {
+          "state": "base+parent+child",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-a40-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-a40-full-s42-v1",
+            "routing": "2026-08-31-qwen-a40-full-s42-v1",
+            "health": "2026-08-31-qwen-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder.python@a40-qwen-s42"
+          ],
+          "quality": {
+            "generalMmluAccuracy": 0.55,
+            "generalMmluWilson95": [
+              0.441195,
+              0.654223
+            ],
+            "codingSemanticCoverage": 0.583333,
+            "codingValidJsonRate": 0.708333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalPassAt1": 0.390244,
+            "pythonHumanEvalWilson95": [
+              0.318915,
+              0.466597
+            ],
+            "pythonHumanEvalPassed": 64,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.0125,
+              "bootstrap95": [
+                -0.0625,
+                0.0375
+              ],
+              "improved": 2,
+              "regressed": 3,
+              "unchanged": 75,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/other/professional_accounting/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/01",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.04878,
+              "bootstrap95": [
+                -0.103659,
+                0.006098
+              ],
+              "improved": 7,
+              "regressed": 15,
+              "unchanged": 142,
+              "improvedIds": [
+                "HumanEval/101",
+                "HumanEval/105",
+                "HumanEval/124",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/156",
+                "HumanEval/26"
+              ],
+              "regressedIds": [
+                "HumanEval/102",
+                "HumanEval/104",
+                "HumanEval/117",
+                "HumanEval/128",
+                "HumanEval/139",
+                "HumanEval/144",
+                "HumanEval/151",
+                "HumanEval/159",
+                "HumanEval/161",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/61",
+                "HumanEval/69"
+              ]
+            },
+            "codingSemanticCoverage": 0.083333
+          },
+          "performance": {
+            "stateWallSeconds": 497.497369,
+            "designTokensPerSecond": 40.554404,
+            "humanEvalTokensPerSecond": 41.199779,
+            "designLatencyMs": {
+              "generationMean": 9033.13325,
+              "generationP50": 7946.585,
+              "generationP95": 18434.09435,
+              "totalMean": 9049.191042,
+              "totalP50": 8026.747,
+              "totalP95": 18439.98665
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1566.874372,
+              "generationP50": 1226.2975,
+              "generationP95": 4071.27395,
+              "totalMean": 1572.416305,
+              "totalP50": 1231.686,
+              "totalP95": 4077.01895
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3376735744,
+            "cudaReservedBytes": 3462397952
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.090695,
+            "cudaReserved": 1.088332,
+            "humanEvalThroughput": 0.905348,
+            "humanEvalP50Latency": 0.95748
+          }
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "measured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-qwen-a40-full-s42-v1",
+            "humanEval": "2026-08-31-qwen-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-qwen-a40-full-s42-v1",
+            "routing": "2026-08-31-qwen-a40-full-s42-v1",
+            "health": "2026-08-31-qwen-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": 0.5625,
+            "generalMmluWilson95": [
+              0.453411,
+              0.665861
+            ],
+            "codingSemanticCoverage": 0.552083,
+            "codingValidJsonRate": 0.75,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalPassAt1": 0.390244,
+            "pythonHumanEvalWilson95": [
+              0.318915,
+              0.466597
+            ],
+            "pythonHumanEvalPassed": 64,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": 0.0,
+              "bootstrap95": [
+                -0.0375,
+                0.0375
+              ],
+              "improved": 1,
+              "regressed": 1,
+              "unchanged": 78,
+              "improvedIds": [
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/social_sciences/high_school_geography/01"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.04878,
+              "bootstrap95": [
+                -0.103659,
+                0.006098
+              ],
+              "improved": 7,
+              "regressed": 15,
+              "unchanged": 142,
+              "improvedIds": [
+                "HumanEval/101",
+                "HumanEval/105",
+                "HumanEval/124",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/156",
+                "HumanEval/26"
+              ],
+              "regressedIds": [
+                "HumanEval/102",
+                "HumanEval/104",
+                "HumanEval/117",
+                "HumanEval/128",
+                "HumanEval/139",
+                "HumanEval/144",
+                "HumanEval/151",
+                "HumanEval/159",
+                "HumanEval/161",
+                "HumanEval/28",
+                "HumanEval/36",
+                "HumanEval/50",
+                "HumanEval/6",
+                "HumanEval/61",
+                "HumanEval/69"
+              ]
+            },
+            "codingSemanticCoverage": 0.052083
+          },
+          "performance": {
+            "stateWallSeconds": 533.127155,
+            "designTokensPerSecond": 42.21267,
+            "humanEvalTokensPerSecond": 41.030984,
+            "designLatencyMs": {
+              "generationMean": 9806.494875,
+              "generationP50": 8261.867,
+              "generationP95": 16825.18095,
+              "totalMean": 9812.387208,
+              "totalP50": 8267.476,
+              "totalP95": 16831.09175
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1566.335659,
+              "generationP50": 1237.229,
+              "generationP95": 4056.14705,
+              "totalMean": 1572.071439,
+              "totalP50": 1242.8145,
+              "totalP95": 4061.57215
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 3376735744,
+            "cudaReservedBytes": 3462397952
+          },
+          "routing": {
+            "expectedDecisionRate": 0.843284,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": 0.525,
+            "latencyMs": {
+              "mean": 125.813112,
+              "p50": 110.6455,
+              "p95": 240.9474
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.090695,
+            "cudaReserved": 1.088332,
+            "humanEvalThroughput": 0.901639,
+            "humanEvalP50Latency": 0.966015
+          }
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "gemma-rtx-s42",
+      "model": "Gemma-3-1B-IT",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "partial",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-rtx-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-rtx-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-rtx-full-s42-v1",
+            "routing": "2026-08-31-gemma-rtx-full-s42-v1",
+            "health": "2026-08-31-gemma-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "running",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": null,
+            "generalMmluWilson95": null,
+            "codingSemanticCoverage": 0.635417,
+            "codingValidJsonRate": 0.541667,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalPassAt1": null,
+            "pythonHumanEvalWilson95": null,
+            "pythonHumanEvalPassed": null,
+            "pythonHumanEvalEvaluated": null
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 1478.668941,
+            "designTokensPerSecond": 35.218858,
+            "humanEvalTokensPerSecond": 34.980022,
+            "designLatencyMs": {
+              "generationMean": 20887.247583,
+              "generationP50": 21527.104,
+              "generationP95": 22384.3815,
+              "totalMean": 20896.006625,
+              "totalP50": 21533.6995,
+              "totalP95": 22390.9057
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 5911.736738,
+              "generationP50": 5464.8535,
+              "generationP95": 11230.35295,
+              "totalMean": 5918.316317,
+              "totalP50": 5470.869,
+              "totalP95": 11237.9176
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2061142016,
+            "cudaReservedBytes": 2118123520
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+        },
+        {
+          "state": "base+parent+child",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "gemma-a40-s42",
+      "model": "Gemma-3-1B-IT",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "partial",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-a40-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-a40-full-s42-v1",
+            "routing": "2026-08-31-gemma-a40-full-s42-v1",
+            "health": "2026-08-31-gemma-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "running",
+          "facets": [],
+          "quality": {
+            "generalMmluAccuracy": null,
+            "generalMmluWilson95": null,
+            "codingSemanticCoverage": 0.625,
+            "codingValidJsonRate": 0.333333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalPassAt1": null,
+            "pythonHumanEvalWilson95": null,
+            "pythonHumanEvalPassed": null,
+            "pythonHumanEvalEvaluated": null
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 1802.601477,
+            "designTokensPerSecond": 28.11221,
+            "humanEvalTokensPerSecond": 29.17111,
+            "designLatencyMs": {
+              "generationMean": 25375.984583,
+              "generationP50": 26952.46,
+              "generationP95": 27790.6838,
+              "totalMean": 25385.695417,
+              "totalP50": 26961.1505,
+              "totalP95": 27800.00285
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 7133.268622,
+              "generationP50": 6512.0905,
+              "generationP95": 13322.41585,
+              "totalMean": 7139.623951,
+              "totalP50": 6518.405,
+              "totalP95": 13329.3649
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2008320000,
+            "cudaReservedBytes": 2065694720
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+        },
+        {
+          "state": "base+parent+child",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "llama-rtx-s42",
+      "model": "Llama-3.2-1B-Instruct",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "RTX 5070 Laptop",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+        },
+        {
+          "state": "base+coder",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+        },
+        {
+          "state": "base+parent+child",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "llama-a40-s42",
+      "model": "Llama-3.2-1B-Instruct",
+      "trainingHardware": "RTX 5070 Laptop",
+      "trainingRounds": 8,
+      "inferenceHardware": "NVIDIA A40",
+      "seed": 42,
+      "states": [
+        {
+          "state": "base",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+        },
+        {
+          "state": "base+coder",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+        },
+        {
+          "state": "base+parent+child",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "not-measured",
+          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "training": [],
+  "limitations": [
+    "All quality runs use one deterministic seed; they do not establish between-seed variance.",
+    "The design suite contains 24 cases and is a project golden, not a public leaderboard.",
+    "The MMLU suite is an 80-record balanced subset and not the official five-shot protocol.",
+    "Only one academic A40 was available; the other devices were occupied and were not touched.",
+    "A measured quality regression remains a valid result and is not replaced by an expectation."
+  ]
+}

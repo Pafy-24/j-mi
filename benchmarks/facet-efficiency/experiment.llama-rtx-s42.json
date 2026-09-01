@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "jester-facet-efficiency-config-v1",
+  "family": "llama-3.2-1b-instruct",
+  "miUrl": "http://127.0.0.1:0",
+  "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
+  "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
+  "generalSuite": "../../../datasets/golden/mmlu-general-v1/mmlu-general-v1.jsonl",
+  "seed": 42,
+  "states": [
+    {"id": "base", "facets": []},
+    {"id": "base+coder", "facets": ["coder@rtx-llama-s42"]},
+    {"id": "base+parent+child", "facets": ["coder.python@rtx-llama-s42"]},
+    {"id": "base+lsr+mi", "routeWithLsr": true}
+  ],
+  "designGeneration": {"max_new_tokens": 768, "do_sample": false, "use_cache": true},
+  "humanEvalGeneration": {"max_new_tokens": 384, "do_sample": false, "use_cache": true},
+  "generalGeneration": {"max_new_tokens": 8, "do_sample": false, "use_cache": true},
+  "lsr": {
+    "url": "http://127.0.0.1:0",
+    "topK": 1,
+    "requireCandidateFilter": true,
+    "facetReferences": {
+      "coder": "coder@rtx-llama-s42",
+      "coder.python": "coder.python@rtx-llama-s42"
+    }
+  },
+  "rm": {
+    "url": "http://127.0.0.1:8790",
+    "tokenFile": "C:/Users/xxsho/AppData/Local/Jester/RM/controller.token",
+    "topologyId": "inference-llama-rtx-s42",
+    "metricsLimit": 500
+  },
+  "expected": {
+    "base": {
+      "modelType": "llama",
+      "configSha256": "340ee2caf4ba0b4658eff1dcac8e550b21b3eed89374f8a716b25962089c9f87",
+      "baseLayerCount": 16
+    },
+    "facets": [
+      {
+        "reference": "coder@rtx-llama-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/llama/coder/rtx-llama-s42/facet.mi.json",
+        "sha256": "a465fde75691c70ec21e1c4f9dab3255b67b86f8063751888c77d239254723f0"
+      },
+      {
+        "reference": "coder.python@rtx-llama-s42",
+        "metadataFile": "../../../.jester-rm-eval/golden-registries/2026-08-31/llama/coder.python/rtx-llama-s42/facet.mi.json",
+        "sha256": "f68a2380f333d73d5d10de088af35eda87edea464fcb32ba791b078c7bfc1a5b"
+      }
+    ]
+  }
+}

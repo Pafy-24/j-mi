@@ -3,6 +3,7 @@
   "miUrl": "http://127.0.0.1:8120",
   "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
   "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
+  "generalSuite": "../../../datasets/golden/mmlu-general-v1/mmlu-general-v1.jsonl",
   "seed": 42,
   "states": [
     {"id": "base", "facets": []},
@@ -16,6 +17,11 @@
   },
   "humanEvalGeneration": {
     "max_new_tokens": 384,
+    "do_sample": false,
+    "use_cache": true
+  },
+  "generalGeneration": {
+    "max_new_tokens": 8,
     "do_sample": false,
     "use_cache": true
   },

@@ -266,6 +266,10 @@ class ArtifactSpec:
     weights: str
     format: str = "safetensors"
     sha256: str = ""
+    size_bytes: int | None = None
+    tensor_count: int | None = None
+    parameter_count: int | None = None
+    dtype_parameter_counts: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, raw: Any) -> "ArtifactSpec":
@@ -276,10 +280,50 @@ class ArtifactSpec:
             raise ConfigurationError("artifact.weights is required")
         if format_name not in {"safetensors", "torch"}:
             raise ConfigurationError("artifact.format must be safetensors or torch")
-        return cls(weights=weights, format=format_name, sha256=str(data.get("sha256", "")))
+        optional_counts = {
+            name: int(data[name]) if data.get(name) is not None else None
+            for name in ("sizeBytes", "tensorCount", "parameterCount")
+        }
+        if any(value is not None and value < 0 for value in optional_counts.values()):
+            raise ConfigurationError("artifact statistics must be non-negative")
+        dtype_counts = {
+            str(name): int(value)
+            for name, value in optional_mapping(
+                data.get("dtypeParameterCounts"), "artifact.dtypeParameterCounts"
+            ).items()
+        }
+        if any(value < 0 for value in dtype_counts.values()):
+            raise ConfigurationError(
+                "artifact.dtypeParameterCounts values must be non-negative"
+            )
+        return cls(
+            weights=weights,
+            format=format_name,
+            sha256=str(data.get("sha256", "")),
+            size_bytes=optional_counts["sizeBytes"],
+            tensor_count=optional_counts["tensorCount"],
+            parameter_count=optional_counts["parameterCount"],
+            dtype_parameter_counts=dtype_counts,
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {"weights": self.weights, "format": self.format, "sha256": self.sha256}
+        result: dict[str, Any] = {
+            "weights": self.weights,
+            "format": self.format,
+            "sha256": self.sha256,
+        }
+        for key, value in (
+            ("sizeBytes", self.size_bytes),
+            ("tensorCount", self.tensor_count),
+            ("parameterCount", self.parameter_count),
+        ):
+            if value is not None:
+                result[key] = value
+        if self.dtype_parameter_counts:
+            result["dtypeParameterCounts"] = dict(
+                sorted(self.dtype_parameter_counts.items())
+            )
+        return result
 
 
 @dataclass(frozen=True)

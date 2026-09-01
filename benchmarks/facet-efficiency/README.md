@@ -1,12 +1,13 @@
 # Facet-efficiency golden experiment
 
 The experiment compares exactly the same base model and decoding parameters in
-three states:
+four states:
 
 ```text
 base
 base + coder
 base + coder + coder.python
+base + LSR route + MI composition
 ```
 
 It uses 24 manually authored, multilingual architecture cases and all 164
@@ -33,5 +34,11 @@ python .\MI\benchmarks\facet-efficiency\run_golden.py summarize `
 ```
 
 `run.json` includes Wilson intervals, paired bootstrap deltas, MI timing and
-control-plane snapshots from RM and Trainer. A run with only generated-template
-NLL is not considered evidence of facet efficiency.
+control-plane snapshots from RM and Trainer. Every state also records exact
+start/finish timestamps plus MI health before/after, including loaded facets and
+CUDA allocator memory. A run with only generated-template NLL is not considered
+evidence of facet efficiency.
+
+Set `rm.metricsLimit` in the experiment file to bound each control-plane
+snapshot. The default is 500 samples so provenance capture does not turn into a
+multi-megabyte, slow request during a long golden run.
