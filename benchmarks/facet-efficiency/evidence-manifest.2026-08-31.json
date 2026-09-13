@@ -12,6 +12,7 @@
     "coding": "24 manually authored multilingual code-design-v3 cases",
     "python": "official HumanEval, 164 tasks, isolated Docker execution"
   },
+  "resourceEvidence": "results/2026-08-31-jester-evidence/rm-metrics-all.json",
   "runs": [
     {
       "id": "qwen-rtx-s42",
@@ -69,7 +70,7 @@
       "trainingRounds": 8,
       "inferenceHardware": "RTX 5070 Laptop",
       "seed": 42,
-      "run": "results/2026-08-31-llama-rtx-full-s42-v1"
+      "run": "results/2026-09-01-llama-rtx-full-s42-v1"
     },
     {
       "id": "llama-a40-s42",
@@ -78,7 +79,7 @@
       "trainingRounds": 8,
       "inferenceHardware": "NVIDIA A40",
       "seed": 42,
-      "run": "results/2026-08-31-llama-a40-full-s42-v1"
+      "run": "results/2026-09-01-llama-a40-full-s42-v1"
     }
   ],
   "limitations": [

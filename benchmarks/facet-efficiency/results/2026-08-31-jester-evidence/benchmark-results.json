@@ -21,6 +21,58 @@
       "trainingRounds": 8,
       "inferenceHardware": "RTX 5070 Laptop",
       "seed": 42,
+      "provenance": {
+        "runStatus": "evaluated",
+        "configSha256": "b26377093f1867e31b2fc2b62672e8684068840fe7a0079fdd3becc2c0cddaee",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:834987060d9f34ffb7fda7688dd589009312eceda220baf83258b39659359f47",
+          "modelType": "qwen2",
+          "configSha256": "55cca9a510934067237875bfdf2a893427b1ffa59e1d19e19959a9cda83052b9",
+          "baseLayerCount": 28,
+          "parameterCount": 1543714304
+        },
+        "facets": [
+          {
+            "reference": "coder@a40-qwen-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": null,
+            "parameterCount": 93595648,
+            "tensorCount": 24
+          },
+          {
+            "reference": "coder.python@a40-qwen-s42",
+            "requires": [
+              "coder@a40-qwen-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": null,
+            "parameterCount": 46797824,
+            "tensorCount": 12
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
@@ -36,14 +88,61 @@
           "sourceRunStatus": "evaluated",
           "facets": [],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.5625,
             "generalMmluWilson95": [
               0.453411,
               0.665861
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.4375,
             "codingValidJsonRate": 0.708333,
             "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.439024,
             "pythonHumanEvalWilson95": [
               0.365329,
@@ -76,7 +175,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3096866304,
-            "cudaReservedBytes": 3351248896
+            "cudaReservedBytes": 3351248896,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 220,
+              "peakRssUpperBoundBytes": 2713632768.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 4784457135.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 787030016.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 559679476.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-rtx-s42": {
+                  "peakRssBytes": 1926602752.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 4224777659.0,
+                  "peakAcceleratorAllocatedBytes": 3307801600.0,
+                  "peakAcceleratorReservedBytes": 3550478336.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -102,14 +236,61 @@
             "coder@a40-qwen-s42"
           ],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.5625,
             "generalMmluWilson95": [
               0.453411,
               0.665861
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 12,
+                "accuracy": 0.6,
+                "wilson95": [
+                  0.386582,
+                  0.781193
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.510417,
             "codingValidJsonRate": 0.708333,
             "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.396341,
             "pythonHumanEvalWilson95": [
               0.324676,
@@ -193,7 +374,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3284057600,
-            "cudaReservedBytes": 3554672640
+            "cudaReservedBytes": 3554672640,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 198,
+              "peakRssUpperBoundBytes": 2714382336.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 4785001762.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 787025920.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 559934512.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-rtx-s42": {
+                  "peakRssBytes": 1927356416.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 4225067250.0,
+                  "peakAcceleratorAllocatedBytes": 3390542848.0,
+                  "peakAcceleratorReservedBytes": 3642753024.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -219,14 +435,61 @@
             "coder.python@a40-qwen-s42"
           ],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.5625,
             "generalMmluWilson95": [
               0.453411,
               0.665861
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 12,
+                "accuracy": 0.6,
+                "wilson95": [
+                  0.386582,
+                  0.781193
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.552083,
             "codingValidJsonRate": 0.708333,
             "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.378049,
             "pythonHumanEvalWilson95": [
               0.307428,
@@ -313,7 +576,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3377653248,
-            "cudaReservedBytes": 3665821696
+            "cudaReservedBytes": 3665821696,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 220,
+              "peakRssUpperBoundBytes": 2775379968.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 4785578293.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 847736832.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 560204500.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-rtx-s42": {
+                  "peakRssBytes": 1927643136.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 4225373793.0,
+                  "peakAcceleratorAllocatedBytes": 3410378752.0,
+                  "peakAcceleratorReservedBytes": 3665821696.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -337,14 +635,61 @@
           "sourceRunStatus": "evaluated",
           "facets": [],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.575,
             "generalMmluWilson95": [
               0.465693,
               0.677434
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 12,
+                "accuracy": 0.6,
+                "wilson95": [
+                  0.386582,
+                  0.781193
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.5,
             "codingValidJsonRate": 0.708333,
             "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.378049,
             "pythonHumanEvalWilson95": [
               0.307428,
@@ -427,7 +772,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3377653248,
-            "cudaReservedBytes": 3663724544
+            "cudaReservedBytes": 3663724544,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 418,
+              "peakRssUpperBoundBytes": 2774728704.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 4799457371.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 854597632.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 566719400.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-rtx-s42": {
+                  "peakRssBytes": 1920131072.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 4232737971.0,
+                  "peakAcceleratorAllocatedBytes": 3404666880.0,
+                  "peakAcceleratorReservedBytes": 3663724544.0
+                }
+              }
+            }
           },
           "routing": {
             "expectedDecisionRate": 0.978723,
@@ -460,6 +840,58 @@
       "trainingRounds": 8,
       "inferenceHardware": "NVIDIA A40",
       "seed": 42,
+      "provenance": {
+        "runStatus": "evaluated",
+        "configSha256": "6077689692a6749c55e4ae7bb4fb961cc9332a9b1d08cc9102c03136b58c778e",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:834987060d9f34ffb7fda7688dd589009312eceda220baf83258b39659359f47",
+          "modelType": "qwen2",
+          "configSha256": "55cca9a510934067237875bfdf2a893427b1ffa59e1d19e19959a9cda83052b9",
+          "baseLayerCount": 28,
+          "parameterCount": 1543714304
+        },
+        "facets": [
+          {
+            "reference": "coder@a40-qwen-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": "8dca701ca880cd61cedaaffb48d6e2c147074086afe0d70bbffade297c24c26a",
+            "parameterCount": 93595648,
+            "tensorCount": 24
+          },
+          {
+            "reference": "coder.python@a40-qwen-s42",
+            "requires": [
+              "coder@a40-qwen-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": "3ff812a534554905fb4dec373def483e0a23610fc7fd266de864abf0df2e9197",
+            "parameterCount": 46797824,
+            "tensorCount": 12
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
@@ -475,14 +907,61 @@
           "sourceRunStatus": "evaluated",
           "facets": [],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.5625,
             "generalMmluWilson95": [
               0.453411,
               0.665861
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.5,
             "codingValidJsonRate": 0.583333,
             "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.439024,
             "pythonHumanEvalWilson95": [
               0.365329,
@@ -515,7 +994,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3095948800,
-            "cudaReservedBytes": 3181379584
+            "cudaReservedBytes": 3181379584,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 198,
+              "peakRssUpperBoundBytes": 2468388864.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 559096531.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 838180864.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 558125369.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-a40-s42": {
+                  "peakRssBytes": 1630208000.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 971162.0,
+                  "peakAcceleratorAllocatedBytes": 3295388160.0,
+                  "peakAcceleratorReservedBytes": 3328180224.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -541,14 +1055,61 @@
             "coder@a40-qwen-s42"
           ],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.55,
             "generalMmluWilson95": [
               0.441195,
               0.654223
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.552083,
             "codingValidJsonRate": 0.75,
             "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.384146,
             "pythonHumanEvalWilson95": [
               0.313166,
@@ -641,7 +1202,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3283140096,
-            "cudaReservedBytes": 3355443200
+            "cudaReservedBytes": 3355443200,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 220,
+              "peakRssUpperBoundBytes": 2468388864.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 560339782.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 838180864.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 558573610.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-a40-s42": {
+                  "peakRssBytes": 1630208000.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 1766172.0,
+                  "peakAcceleratorAllocatedBytes": 3390524416.0,
+                  "peakAcceleratorReservedBytes": 3418357760.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -667,14 +1263,61 @@
             "coder.python@a40-qwen-s42"
           ],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.55,
             "generalMmluWilson95": [
               0.441195,
               0.654223
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.583333,
             "codingValidJsonRate": 0.708333,
             "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.390244,
             "pythonHumanEvalWilson95": [
               0.318915,
@@ -766,7 +1409,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3376735744,
-            "cudaReservedBytes": 3462397952
+            "cudaReservedBytes": 3462397952,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 198,
+              "peakRssUpperBoundBytes": 2221453312.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 561405665.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 851431424.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 558921755.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-a40-s42": {
+                  "peakRssBytes": 1370021888.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2483910.0,
+                  "peakAcceleratorAllocatedBytes": 3404174848.0,
+                  "peakAcceleratorReservedBytes": 3462397952.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -790,14 +1468,61 @@
           "sourceRunStatus": "evaluated",
           "facets": [],
           "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
             "generalMmluAccuracy": 0.5625,
             "generalMmluWilson95": [
               0.453411,
               0.665861
             ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 15,
+                "accuracy": 0.75,
+                "wilson95": [
+                  0.531299,
+                  0.888138
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.552083,
             "codingValidJsonRate": 0.75,
             "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
             "pythonHumanEvalPassAt1": 0.390244,
             "pythonHumanEvalWilson95": [
               0.318915,
@@ -886,7 +1611,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 3376735744,
-            "cudaReservedBytes": 3462397952
+            "cudaReservedBytes": 3462397952,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 220,
+              "peakRssUpperBoundBytes": 2320920576.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 562552322.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 951304192.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 559268944.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-qwen-a40-s42": {
+                  "peakRssBytes": 1369616384.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 3283378.0,
+                  "peakAcceleratorAllocatedBytes": 3403348992.0,
+                  "peakAcceleratorReservedBytes": 3462397952.0
+                }
+              }
+            }
           },
           "routing": {
             "expectedDecisionRate": 0.843284,
@@ -915,10 +1675,62 @@
       "trainingRounds": 8,
       "inferenceHardware": "RTX 5070 Laptop",
       "seed": 42,
+      "provenance": {
+        "runStatus": "evaluated",
+        "configSha256": "9424d839f19841dac10fbbc5cdd2fd8eb8d4df45bb14ead49ce3c58909882ceb",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:885e5e15a92d6f03433d8bc9ca050acacd4b24b2c82efb19ad6bc7d27043a391",
+          "modelType": "gemma3_text",
+          "configSha256": "4f29a01c53105f332637b45d42103387314b15086d5d0ebddf8962ebfcc66123",
+          "baseLayerCount": 26,
+          "parameterCount": 999885952
+        },
+        "facets": [
+          {
+            "reference": "coder@rtx-gemma-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": "2588c25a3725aa6c3ad92f38ee3f78cbd05b13f7096e886cc7079b2d00dfffbb",
+            "parameterCount": 53684224,
+            "tensorCount": 26
+          },
+          {
+            "reference": "coder.python@rtx-gemma-s42",
+            "requires": [
+              "coder@rtx-gemma-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": "cb0ae741cfb58ea48a878e5bd1ff87b9691827ab84365c5e281929253a3ee59a",
+            "parameterCount": 26842112,
+            "tensorCount": 13
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
-          "status": "partial",
+          "status": "measured",
           "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1",
           "sourceRuns": {
             "design": "2026-08-31-gemma-rtx-full-s42-v1",
@@ -927,18 +1739,71 @@
             "routing": "2026-08-31-gemma-rtx-full-s42-v1",
             "health": "2026-08-31-gemma-rtx-full-s42-v1"
           },
-          "sourceRunStatus": "running",
+          "sourceRunStatus": "evaluated",
           "facets": [],
           "quality": {
-            "generalMmluAccuracy": null,
-            "generalMmluWilson95": null,
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.2,
+            "generalMmluWilson95": [
+              0.127028,
+              0.300462
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 5,
+                "accuracy": 0.25,
+                "wilson95": [
+                  0.111862,
+                  0.468701
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.635417,
             "codingValidJsonRate": 0.541667,
             "codingFieldCoverage": 0.003788,
-            "pythonHumanEvalPassAt1": null,
-            "pythonHumanEvalWilson95": null,
-            "pythonHumanEvalPassed": null,
-            "pythonHumanEvalEvaluated": null
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.384146,
+            "pythonHumanEvalWilson95": [
+              0.313166,
+              0.46043
+            ],
+            "pythonHumanEvalPassed": 63,
+            "pythonHumanEvalEvaluated": 164
           },
           "qualityDeltaVsBase": null,
           "performance": {
@@ -964,7 +1829,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 2061142016,
-            "cudaReservedBytes": 2118123520
+            "cudaReservedBytes": 2118123520,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 572,
+              "peakRssUpperBoundBytes": 2691272704.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 2933492285.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 785567744.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 570620871.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-rtx-s42": {
+                  "peakRssBytes": 1905704960.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2362871414.0,
+                  "peakAcceleratorAllocatedBytes": 2190215680.0,
+                  "peakAcceleratorReservedBytes": 2227175424.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -976,18 +1876,768 @@
         },
         {
           "state": "base+coder",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-rtx-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-rtx-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-rtx-full-s42-v1",
+            "routing": "2026-08-31-gemma-rtx-full-s42-v1",
+            "health": "2026-08-31-gemma-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder@rtx-gemma-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.0,
+            "generalMmluWilson95": [
+              0.0,
+              0.045818
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.03125,
+            "codingValidJsonRate": 0.0,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.0,
+            "pythonHumanEvalWilson95": [
+              0.0,
+              0.022887
+            ],
+            "pythonHumanEvalPassed": 0,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.2,
+              "bootstrap95": [
+                -0.2875,
+                -0.1125
+              ],
+              "improved": 0,
+              "regressed": 16,
+              "unchanged": 64,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/professional_accounting/01",
+                "mmlu-general-v1/social_sciences/high_school_geography/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_biology/04",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.384146,
+              "bootstrap95": [
+                -0.457317,
+                -0.310976
+              ],
+              "improved": 0,
+              "regressed": 63,
+              "unchanged": 101,
+              "improvedIds": [],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/104",
+                "HumanEval/107",
+                "HumanEval/11",
+                "HumanEval/112",
+                "HumanEval/114",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/12",
+                "HumanEval/120",
+                "HumanEval/13",
+                "HumanEval/131",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/143",
+                "HumanEval/15",
+                "HumanEval/155",
+                "HumanEval/157",
+                "HumanEval/158",
+                "HumanEval/16",
+                "HumanEval/18",
+                "HumanEval/21",
+                "HumanEval/22",
+                "HumanEval/23",
+                "HumanEval/24",
+                "HumanEval/25",
+                "HumanEval/26",
+                "HumanEval/27",
+                "HumanEval/28",
+                "HumanEval/29",
+                "HumanEval/30",
+                "HumanEval/31",
+                "HumanEval/34",
+                "HumanEval/35",
+                "HumanEval/4",
+                "HumanEval/42",
+                "HumanEval/43",
+                "HumanEval/44",
+                "HumanEval/47",
+                "HumanEval/48",
+                "HumanEval/49",
+                "HumanEval/5",
+                "HumanEval/51",
+                "HumanEval/52",
+                "HumanEval/53",
+                "HumanEval/54",
+                "HumanEval/55",
+                "HumanEval/56",
+                "HumanEval/57",
+                "HumanEval/58",
+                "HumanEval/59",
+                "HumanEval/60",
+                "HumanEval/61",
+                "HumanEval/66",
+                "HumanEval/69",
+                "HumanEval/7",
+                "HumanEval/72",
+                "HumanEval/73",
+                "HumanEval/8",
+                "HumanEval/82",
+                "HumanEval/90",
+                "HumanEval/92",
+                "HumanEval/96"
+              ]
+            },
+            "codingSemanticCoverage": -0.604167
+          },
+          "performance": {
+            "stateWallSeconds": 3426.43627,
+            "designTokensPerSecond": 32.664908,
+            "humanEvalTokensPerSecond": 21.654919,
+            "designLatencyMs": {
+              "generationMean": 21232.010417,
+              "generationP50": 23385.402,
+              "generationP95": 24106.46805,
+              "totalMean": 21251.877375,
+              "totalP50": 23391.811,
+              "totalP95": 24113.2777
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 17729.594091,
+              "generationP50": 11946.02,
+              "generationP95": 47879.6758,
+              "totalMean": 17739.358091,
+              "totalP50": 11953.442,
+              "totalP95": 47898.3446
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2173100032,
+            "cudaReservedBytes": 2229272576,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 1276,
+              "peakRssUpperBoundBytes": 2692976640.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 2936360361.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 785575936.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 571422547.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-rtx-s42": {
+                  "peakRssBytes": 1907400704.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2364937814.0,
+                  "peakAcceleratorAllocatedBytes": 2247637504.0,
+                  "peakAcceleratorReservedBytes": 2283798528.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.054318,
+            "cudaReserved": 1.052475,
+            "humanEvalThroughput": 0.619065,
+            "humanEvalP50Latency": 2.185973
+          }
         },
         {
           "state": "base+parent+child",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-rtx-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-rtx-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-rtx-full-s42-v1",
+            "routing": "2026-08-31-gemma-rtx-full-s42-v1",
+            "health": "2026-08-31-gemma-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder.python@rtx-gemma-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.0,
+            "generalMmluWilson95": [
+              0.0,
+              0.045818
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.020833,
+            "codingValidJsonRate": 0.0,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.0,
+            "pythonHumanEvalWilson95": [
+              0.0,
+              0.022887
+            ],
+            "pythonHumanEvalPassed": 0,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.2,
+              "bootstrap95": [
+                -0.2875,
+                -0.1125
+              ],
+              "improved": 0,
+              "regressed": 16,
+              "unchanged": 64,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/professional_accounting/01",
+                "mmlu-general-v1/social_sciences/high_school_geography/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_biology/04",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.384146,
+              "bootstrap95": [
+                -0.457317,
+                -0.310976
+              ],
+              "improved": 0,
+              "regressed": 63,
+              "unchanged": 101,
+              "improvedIds": [],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/104",
+                "HumanEval/107",
+                "HumanEval/11",
+                "HumanEval/112",
+                "HumanEval/114",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/12",
+                "HumanEval/120",
+                "HumanEval/13",
+                "HumanEval/131",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/143",
+                "HumanEval/15",
+                "HumanEval/155",
+                "HumanEval/157",
+                "HumanEval/158",
+                "HumanEval/16",
+                "HumanEval/18",
+                "HumanEval/21",
+                "HumanEval/22",
+                "HumanEval/23",
+                "HumanEval/24",
+                "HumanEval/25",
+                "HumanEval/26",
+                "HumanEval/27",
+                "HumanEval/28",
+                "HumanEval/29",
+                "HumanEval/30",
+                "HumanEval/31",
+                "HumanEval/34",
+                "HumanEval/35",
+                "HumanEval/4",
+                "HumanEval/42",
+                "HumanEval/43",
+                "HumanEval/44",
+                "HumanEval/47",
+                "HumanEval/48",
+                "HumanEval/49",
+                "HumanEval/5",
+                "HumanEval/51",
+                "HumanEval/52",
+                "HumanEval/53",
+                "HumanEval/54",
+                "HumanEval/55",
+                "HumanEval/56",
+                "HumanEval/57",
+                "HumanEval/58",
+                "HumanEval/59",
+                "HumanEval/60",
+                "HumanEval/61",
+                "HumanEval/66",
+                "HumanEval/69",
+                "HumanEval/7",
+                "HumanEval/72",
+                "HumanEval/73",
+                "HumanEval/8",
+                "HumanEval/82",
+                "HumanEval/90",
+                "HumanEval/92",
+                "HumanEval/96"
+              ]
+            },
+            "codingSemanticCoverage": -0.614584
+          },
+          "performance": {
+            "stateWallSeconds": 36047.482813,
+            "designTokensPerSecond": 17.418927,
+            "humanEvalTokensPerSecond": 1.689497,
+            "designLatencyMs": {
+              "generationMean": 44089.972833,
+              "generationP50": 44105.047,
+              "generationP95": 44431.37815,
+              "totalMean": 44111.3485,
+              "totalP50": 44116.772,
+              "totalP95": 44445.05675
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 213323.000104,
+              "generationP50": 21987.0985,
+              "generationP95": 45782.2995,
+              "totalMean": 213336.009549,
+              "totalP50": 21998.15,
+              "totalP95": 45800.2383
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2228489216,
+            "cudaReservedBytes": 2287992832,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 1912,
+              "peakRssUpperBoundBytes": 5136683008.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 2939979707.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 785555456.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 572780734.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-rtx-s42": {
+                  "peakRssBytes": 4351127552.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2367198973.0,
+                  "peakAcceleratorAllocatedBytes": 2257290752.0,
+                  "peakAcceleratorReservedBytes": 2287992832.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.081191,
+            "cudaReserved": 1.080198,
+            "humanEvalThroughput": 0.048299,
+            "humanEvalP50Latency": 4.023365
+          }
         },
         {
           "state": "base+lsr+mi",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-08-31-gemma-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-rtx-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-rtx-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-rtx-full-s42-v1",
+            "routing": "2026-08-31-gemma-rtx-full-s42-v1",
+            "health": "2026-08-31-gemma-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.15,
+            "generalMmluWilson95": [
+              0.08794,
+              0.244132
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 5,
+                "accuracy": 0.25,
+                "wilson95": [
+                  0.111862,
+                  0.468701
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 1,
+                "accuracy": 0.05,
+                "wilson95": [
+                  0.008881,
+                  0.236131
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 2,
+                "accuracy": 0.1,
+                "wilson95": [
+                  0.027866,
+                  0.301034
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.03125,
+            "codingValidJsonRate": 0.0,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.006098,
+            "pythonHumanEvalWilson95": [
+              0.001077,
+              0.033726
+            ],
+            "pythonHumanEvalPassed": 1,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.05,
+              "bootstrap95": [
+                -0.1,
+                -0.0125
+              ],
+              "improved": 0,
+              "regressed": 4,
+              "unchanged": 76,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/professional_accounting/01",
+                "mmlu-general-v1/social_sciences/high_school_geography/02"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.378049,
+              "bootstrap95": [
+                -0.45122,
+                -0.304878
+              ],
+              "improved": 0,
+              "regressed": 62,
+              "unchanged": 102,
+              "improvedIds": [],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/104",
+                "HumanEval/107",
+                "HumanEval/11",
+                "HumanEval/112",
+                "HumanEval/114",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/12",
+                "HumanEval/120",
+                "HumanEval/13",
+                "HumanEval/131",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/143",
+                "HumanEval/15",
+                "HumanEval/155",
+                "HumanEval/157",
+                "HumanEval/158",
+                "HumanEval/16",
+                "HumanEval/18",
+                "HumanEval/21",
+                "HumanEval/22",
+                "HumanEval/23",
+                "HumanEval/25",
+                "HumanEval/26",
+                "HumanEval/27",
+                "HumanEval/28",
+                "HumanEval/29",
+                "HumanEval/30",
+                "HumanEval/31",
+                "HumanEval/34",
+                "HumanEval/35",
+                "HumanEval/4",
+                "HumanEval/42",
+                "HumanEval/43",
+                "HumanEval/44",
+                "HumanEval/47",
+                "HumanEval/48",
+                "HumanEval/49",
+                "HumanEval/5",
+                "HumanEval/51",
+                "HumanEval/52",
+                "HumanEval/53",
+                "HumanEval/54",
+                "HumanEval/55",
+                "HumanEval/56",
+                "HumanEval/57",
+                "HumanEval/58",
+                "HumanEval/59",
+                "HumanEval/60",
+                "HumanEval/61",
+                "HumanEval/66",
+                "HumanEval/69",
+                "HumanEval/7",
+                "HumanEval/72",
+                "HumanEval/73",
+                "HumanEval/8",
+                "HumanEval/82",
+                "HumanEval/90",
+                "HumanEval/92",
+                "HumanEval/96"
+              ]
+            },
+            "codingSemanticCoverage": -0.604167
+          },
+          "performance": {
+            "stateWallSeconds": 3313.162626,
+            "designTokensPerSecond": 21.969715,
+            "humanEvalTokensPerSecond": 23.435783,
+            "designLatencyMs": {
+              "generationMean": 31568.077958,
+              "generationP50": 27834.1925,
+              "generationP95": 86896.6351,
+              "totalMean": 31576.488333,
+              "totalP50": 27841.5795,
+              "totalP95": 86908.564
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 15301.543665,
+              "generationP50": 14876.6335,
+              "generationP95": 25929.3706,
+              "totalMean": 15311.100451,
+              "totalP50": 14885.1405,
+              "totalP95": 25949.0524
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2228489216,
+            "cudaReservedBytes": 2287992832,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 1232,
+              "peakRssUpperBoundBytes": 994426880.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 2941793429.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 433754112.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 573548973.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-rtx-s42": {
+                  "peakRssBytes": 560672768.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2368244456.0,
+                  "peakAcceleratorAllocatedBytes": 2250491392.0,
+                  "peakAcceleratorReservedBytes": 2308964352.0
+                }
+              }
+            }
+          },
+          "routing": {
+            "expectedDecisionRate": 0.843284,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": 0.525,
+            "latencyMs": {
+              "mean": 163.490317,
+              "p50": 138.285,
+              "p95": 326.71015
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.081191,
+            "cudaReserved": 1.080198,
+            "humanEvalThroughput": 0.669976,
+            "humanEvalP50Latency": 2.722238
+          }
         }
       ],
       "notes": []
@@ -999,10 +2649,62 @@
       "trainingRounds": 8,
       "inferenceHardware": "NVIDIA A40",
       "seed": 42,
+      "provenance": {
+        "runStatus": "running",
+        "configSha256": "10b3a3d248087dff6df1fcd3fe9c30e86d5fda0783b74bb0ab63f47c469445f8",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:885e5e15a92d6f03433d8bc9ca050acacd4b24b2c82efb19ad6bc7d27043a391",
+          "modelType": "gemma3_text",
+          "configSha256": "4f29a01c53105f332637b45d42103387314b15086d5d0ebddf8962ebfcc66123",
+          "baseLayerCount": 26,
+          "parameterCount": 999885952
+        },
+        "facets": [
+          {
+            "reference": "coder@rtx-gemma-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": "2588c25a3725aa6c3ad92f38ee3f78cbd05b13f7096e886cc7079b2d00dfffbb",
+            "parameterCount": 53684224,
+            "tensorCount": 26
+          },
+          {
+            "reference": "coder.python@rtx-gemma-s42",
+            "requires": [
+              "coder@rtx-gemma-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": "cb0ae741cfb58ea48a878e5bd1ff87b9691827ab84365c5e281929253a3ee59a",
+            "parameterCount": 26842112,
+            "tensorCount": 13
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
-          "status": "partial",
+          "status": "measured",
           "sourceRun": "2026-08-31-gemma-a40-full-s42-v1",
           "sourceRuns": {
             "design": "2026-08-31-gemma-a40-full-s42-v1",
@@ -1014,15 +2716,68 @@
           "sourceRunStatus": "running",
           "facets": [],
           "quality": {
-            "generalMmluAccuracy": null,
-            "generalMmluWilson95": null,
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.2,
+            "generalMmluWilson95": [
+              0.127028,
+              0.300462
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 5,
+                "accuracy": 0.25,
+                "wilson95": [
+                  0.111862,
+                  0.468701
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
             "codingSemanticCoverage": 0.625,
             "codingValidJsonRate": 0.333333,
             "codingFieldCoverage": 0.0,
-            "pythonHumanEvalPassAt1": null,
-            "pythonHumanEvalWilson95": null,
-            "pythonHumanEvalPassed": null,
-            "pythonHumanEvalEvaluated": null
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.390244,
+            "pythonHumanEvalWilson95": [
+              0.318915,
+              0.466597
+            ],
+            "pythonHumanEvalPassed": 64,
+            "pythonHumanEvalEvaluated": 164
           },
           "qualityDeltaVsBase": null,
           "performance": {
@@ -1048,7 +2803,42 @@
           },
           "resources": {
             "cudaAllocatedBytes": 2008320000,
-            "cudaReservedBytes": 2065694720
+            "cudaReservedBytes": 2065694720,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 682,
+              "peakRssUpperBoundBytes": 2374332416.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 567160897.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 786690048.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 564329684.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-a40-s42": {
+                  "peakRssBytes": 1587642368.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2831213.0,
+                  "peakAcceleratorAllocatedBytes": 2130295808.0,
+                  "peakAcceleratorReservedBytes": 2151677952.0
+                }
+              }
+            }
           },
           "routing": null,
           "costVsBase": {
@@ -1060,18 +2850,533 @@
         },
         {
           "state": "base+coder",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-a40-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-a40-full-s42-v1",
+            "routing": "2026-08-31-gemma-a40-full-s42-v1",
+            "health": "2026-08-31-gemma-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "running",
+          "facets": [
+            "coder@rtx-gemma-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.0,
+            "generalMmluWilson95": [
+              0.0,
+              0.045818
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 0,
+                "accuracy": 0.0,
+                "wilson95": [
+                  0.0,
+                  0.161125
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.03125,
+            "codingValidJsonRate": 0.0,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.0,
+            "pythonHumanEvalWilson95": [
+              0.0,
+              0.022887
+            ],
+            "pythonHumanEvalPassed": 0,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.2,
+              "bootstrap95": [
+                -0.2875,
+                -0.1125
+              ],
+              "improved": 0,
+              "regressed": 16,
+              "unchanged": 64,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/professional_accounting/01",
+                "mmlu-general-v1/social_sciences/high_school_geography/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_biology/04",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.390244,
+              "bootstrap95": [
+                -0.463415,
+                -0.317073
+              ],
+              "improved": 0,
+              "regressed": 64,
+              "unchanged": 100,
+              "improvedIds": [],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/104",
+                "HumanEval/107",
+                "HumanEval/11",
+                "HumanEval/112",
+                "HumanEval/114",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/12",
+                "HumanEval/120",
+                "HumanEval/13",
+                "HumanEval/131",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/143",
+                "HumanEval/15",
+                "HumanEval/155",
+                "HumanEval/157",
+                "HumanEval/158",
+                "HumanEval/16",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/21",
+                "HumanEval/22",
+                "HumanEval/23",
+                "HumanEval/24",
+                "HumanEval/25",
+                "HumanEval/26",
+                "HumanEval/27",
+                "HumanEval/28",
+                "HumanEval/29",
+                "HumanEval/30",
+                "HumanEval/31",
+                "HumanEval/34",
+                "HumanEval/35",
+                "HumanEval/4",
+                "HumanEval/42",
+                "HumanEval/43",
+                "HumanEval/44",
+                "HumanEval/47",
+                "HumanEval/48",
+                "HumanEval/49",
+                "HumanEval/5",
+                "HumanEval/51",
+                "HumanEval/52",
+                "HumanEval/53",
+                "HumanEval/54",
+                "HumanEval/55",
+                "HumanEval/56",
+                "HumanEval/57",
+                "HumanEval/58",
+                "HumanEval/59",
+                "HumanEval/60",
+                "HumanEval/61",
+                "HumanEval/66",
+                "HumanEval/69",
+                "HumanEval/7",
+                "HumanEval/72",
+                "HumanEval/73",
+                "HumanEval/8",
+                "HumanEval/82",
+                "HumanEval/90",
+                "HumanEval/92",
+                "HumanEval/96"
+              ]
+            },
+            "codingSemanticCoverage": -0.59375
+          },
+          "performance": {
+            "stateWallSeconds": 3043.341221,
+            "designTokensPerSecond": 26.389246,
+            "humanEvalTokensPerSecond": 26.592121,
+            "designLatencyMs": {
+              "generationMean": 27119.633125,
+              "generationP50": 29102.5775,
+              "generationP95": 29743.772,
+              "totalMean": 27139.882375,
+              "totalP50": 29110.5965,
+              "totalP95": 29752.6315
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 14440.367256,
+              "generationP50": 14484.555,
+              "generationP95": 14963.6918,
+              "totalMean": 14447.426634,
+              "totalP50": 14491.5725,
+              "totalP95": 14970.50885
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2115690496,
+            "cudaReservedBytes": 2176843776,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 1144,
+              "peakRssUpperBoundBytes": 2388709376.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 572445043.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 786690048.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 565074100.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-a40-s42": {
+                  "peakRssBytes": 1602019328.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 7370943.0,
+                  "peakAcceleratorAllocatedBytes": 2187578880.0,
+                  "peakAcceleratorReservedBytes": 2197815296.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.053463,
+            "cudaReserved": 1.053807,
+            "humanEvalThroughput": 0.911591,
+            "humanEvalP50Latency": 2.224256
+          }
         },
         {
           "state": "base+parent+child",
           "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1",
+          "resources": {
+            "rm": {
+              "status": "not-measured",
+              "resolution": null,
+              "sampleCount": null,
+              "peakRssUpperBoundBytes": null,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": null,
+              "sources": [],
+              "confidence": [],
+              "instances": {}
+            }
+          }
         },
         {
           "state": "base+lsr+mi",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-08-31-gemma-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-08-31-gemma-a40-full-s42-v1",
+            "humanEval": "2026-08-31-gemma-a40-full-s42-v1",
+            "generalMmlu": "2026-08-31-gemma-a40-full-s42-v1",
+            "routing": "2026-08-31-gemma-a40-full-s42-v1",
+            "health": "2026-08-31-gemma-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "running",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.15,
+            "generalMmluWilson95": [
+              0.08794,
+              0.244132
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 5,
+                "accuracy": 0.25,
+                "wilson95": [
+                  0.111862,
+                  0.468701
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 1,
+                "accuracy": 0.05,
+                "wilson95": [
+                  0.008881,
+                  0.236131
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 2,
+                "accuracy": 0.1,
+                "wilson95": [
+                  0.027866,
+                  0.301034
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.03125,
+            "codingValidJsonRate": 0.0,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.006098,
+            "pythonHumanEvalWilson95": [
+              0.001077,
+              0.033726
+            ],
+            "pythonHumanEvalPassed": 1,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.05,
+              "bootstrap95": [
+                -0.1,
+                -0.0125
+              ],
+              "improved": 0,
+              "regressed": 4,
+              "unchanged": 76,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/professional_accounting/01",
+                "mmlu-general-v1/social_sciences/high_school_geography/02"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.384146,
+              "bootstrap95": [
+                -0.463415,
+                -0.310976
+              ],
+              "improved": 0,
+              "regressed": 63,
+              "unchanged": 101,
+              "improvedIds": [],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/104",
+                "HumanEval/107",
+                "HumanEval/11",
+                "HumanEval/112",
+                "HumanEval/114",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/12",
+                "HumanEval/120",
+                "HumanEval/13",
+                "HumanEval/131",
+                "HumanEval/138",
+                "HumanEval/14",
+                "HumanEval/143",
+                "HumanEval/15",
+                "HumanEval/155",
+                "HumanEval/157",
+                "HumanEval/158",
+                "HumanEval/16",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/21",
+                "HumanEval/22",
+                "HumanEval/23",
+                "HumanEval/25",
+                "HumanEval/26",
+                "HumanEval/27",
+                "HumanEval/28",
+                "HumanEval/29",
+                "HumanEval/30",
+                "HumanEval/31",
+                "HumanEval/34",
+                "HumanEval/35",
+                "HumanEval/4",
+                "HumanEval/42",
+                "HumanEval/43",
+                "HumanEval/44",
+                "HumanEval/47",
+                "HumanEval/48",
+                "HumanEval/49",
+                "HumanEval/5",
+                "HumanEval/51",
+                "HumanEval/52",
+                "HumanEval/53",
+                "HumanEval/54",
+                "HumanEval/55",
+                "HumanEval/56",
+                "HumanEval/57",
+                "HumanEval/58",
+                "HumanEval/59",
+                "HumanEval/60",
+                "HumanEval/61",
+                "HumanEval/66",
+                "HumanEval/69",
+                "HumanEval/7",
+                "HumanEval/72",
+                "HumanEval/73",
+                "HumanEval/8",
+                "HumanEval/82",
+                "HumanEval/90",
+                "HumanEval/92",
+                "HumanEval/96"
+              ]
+            },
+            "codingSemanticCoverage": -0.59375
+          },
+          "performance": {
+            "stateWallSeconds": 2937.009321,
+            "designTokensPerSecond": 26.425308,
+            "humanEvalTokensPerSecond": 26.278263,
+            "designLatencyMs": {
+              "generationMean": 27082.623333,
+              "generationP50": 29132.5885,
+              "generationP95": 29499.87455,
+              "totalMean": 27090.527542,
+              "totalP50": 29140.2565,
+              "totalP95": 29507.518
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 13649.87928,
+              "generationP50": 14531.855,
+              "generationP95": 14952.6648,
+              "totalMean": 13657.087671,
+              "totalP50": 14540.3085,
+              "totalP95": 14959.9355
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2169375744,
+            "cudaReservedBytes": 2218786816,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 1100,
+              "peakRssUpperBoundBytes": 2030690304.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 637688864.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 424509440.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 567849453.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-gemma-a40-s42": {
+                  "peakRssBytes": 1606180864.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 69839411.0,
+                  "peakAcceleratorAllocatedBytes": 2187649536.0,
+                  "peakAcceleratorReservedBytes": 2218786816.0
+                }
+              }
+            }
+          },
+          "routing": {
+            "expectedDecisionRate": 0.843284,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": 0.525,
+            "latencyMs": {
+              "mean": 134.467795,
+              "p50": 118.9045,
+              "p95": 257.75015
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.080194,
+            "cudaReserved": 1.074112,
+            "humanEvalThroughput": 0.900832,
+            "humanEvalP50Latency": 2.231519
+          }
         }
       ],
       "notes": []
@@ -1083,26 +3388,898 @@
       "trainingRounds": 8,
       "inferenceHardware": "RTX 5070 Laptop",
       "seed": 42,
+      "provenance": {
+        "runStatus": "evaluated",
+        "configSha256": "dbc40abb7cbfd526def94fa7d3def941fb97535425a7ca9087320e485650893e",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:562ad7211ff3bf51020bb2df713d6bb700c06f1bcbca6158662a33933c8fc698",
+          "modelType": "llama",
+          "configSha256": "340ee2caf4ba0b4658eff1dcac8e550b21b3eed89374f8a716b25962089c9f87",
+          "baseLayerCount": 16,
+          "parameterCount": 1235814400
+        },
+        "facets": [
+          {
+            "reference": "coder@rtx-llama-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": "a465fde75691c70ec21e1c4f9dab3255b67b86f8063751888c77d239254723f0",
+            "parameterCount": 121643008,
+            "tensorCount": 18
+          },
+          {
+            "reference": "coder.python@rtx-llama-s42",
+            "requires": [
+              "coder@rtx-llama-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": "f68a2380f333d73d5d10de088af35eda87edea464fcb32ba791b078c7bfc1a5b",
+            "parameterCount": 60821504,
+            "tensorCount": 9
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-rtx-full-s42-v1",
+            "humanEval": "2026-09-01-llama-rtx-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-rtx-full-s42-v1",
+            "routing": "2026-09-01-llama-rtx-full-s42-v1",
+            "health": "2026-09-01-llama-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.425,
+            "generalMmluWilson95": [
+              0.322566,
+              0.534307
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 9,
+                "accuracy": 0.45,
+                "wilson95": [
+                  0.258198,
+                  0.657915
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 7,
+                "accuracy": 0.35,
+                "wilson95": [
+                  0.181192,
+                  0.567146
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.489583,
+            "codingValidJsonRate": 0.291667,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.335366,
+            "pythonHumanEvalWilson95": [
+              0.26761,
+              0.410658
+            ],
+            "pythonHumanEvalPassed": 55,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 447.031255,
+            "designTokensPerSecond": 58.992556,
+            "humanEvalTokensPerSecond": 59.745365,
+            "designLatencyMs": {
+              "generationMean": 10725.929542,
+              "generationP50": 12699.6505,
+              "generationP95": 13228.80235,
+              "totalMean": 10732.394042,
+              "totalP50": 12704.059,
+              "totalP95": 13233.2796
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1110.403518,
+              "generationP50": 965.5945,
+              "generationP95": 2184.14685,
+              "totalMean": 1115.054079,
+              "totalP50": 970.867,
+              "totalP95": 2189.1513
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2481197568,
+            "cudaReservedBytes": 2661285888,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 198,
+              "peakRssUpperBoundBytes": 2681372672.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 3793301348.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 786767872.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 573726222.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-rtx-s42": {
+                  "peakRssBytes": 1894604800.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 3219575126.0,
+                  "peakAcceleratorAllocatedBytes": 2756734464.0,
+                  "peakAcceleratorReservedBytes": 2864709632.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
         },
         {
           "state": "base+coder",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-rtx-full-s42-v1",
+            "humanEval": "2026-09-01-llama-rtx-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-rtx-full-s42-v1",
+            "routing": "2026-09-01-llama-rtx-full-s42-v1",
+            "health": "2026-09-01-llama-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder@rtx-llama-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.15,
+            "generalMmluWilson95": [
+              0.08794,
+              0.244132
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.416667,
+            "codingValidJsonRate": 0.25,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.317073,
+            "pythonHumanEvalWilson95": [
+              0.250737,
+              0.391783
+            ],
+            "pythonHumanEvalPassed": 52,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.275,
+              "bootstrap95": [
+                -0.4,
+                -0.15
+              ],
+              "improved": 5,
+              "regressed": 27,
+              "unchanged": 48,
+              "improvedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/nutrition/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_european_history/02",
+                "mmlu-general-v1/humanities/high_school_us_history/01",
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/01",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/03",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/other/management/02",
+                "mmlu-general-v1/other/nutrition/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/01",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/social_sciences/sociology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03",
+                "mmlu-general-v1/stem_non_cs/college_physics/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/01"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.018293,
+              "bootstrap95": [
+                -0.073171,
+                0.036585
+              ],
+              "improved": 9,
+              "regressed": 12,
+              "unchanged": 143,
+              "improvedIds": [
+                "HumanEval/110",
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/124",
+                "HumanEval/133",
+                "HumanEval/149",
+                "HumanEval/73",
+                "HumanEval/77"
+              ],
+              "regressedIds": [
+                "HumanEval/105",
+                "HumanEval/116",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/72",
+                "HumanEval/92"
+              ]
+            },
+            "codingSemanticCoverage": -0.072916
+          },
+          "performance": {
+            "stateWallSeconds": 438.869045,
+            "designTokensPerSecond": 54.275309,
+            "humanEvalTokensPerSecond": 55.182772,
+            "designLatencyMs": {
+              "generationMean": 9924.709375,
+              "generationP50": 10588.889,
+              "generationP95": 14333.1742,
+              "totalMean": 9954.53925,
+              "totalP50": 10594.4955,
+              "totalP95": 14338.4301
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1174.146933,
+              "generationP50": 1034.302,
+              "generationP95": 2221.0579,
+              "totalMean": 1179.16139,
+              "totalP50": 1039.539,
+              "totalP95": 2225.6115
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2724483584,
+            "cudaReservedBytes": 2866806784,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 176,
+              "peakRssUpperBoundBytes": 2681704448.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 3793796315.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 786767872.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 573820299.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-rtx-s42": {
+                  "peakRssBytes": 1894936576.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 3219976016.0,
+                  "peakAcceleratorAllocatedBytes": 2891023872.0,
+                  "peakAcceleratorReservedBytes": 2969567232.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.098052,
+            "cudaReserved": 1.077226,
+            "humanEvalThroughput": 0.923633,
+            "humanEvalP50Latency": 1.071156
+          }
         },
         {
           "state": "base+parent+child",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-rtx-full-s42-v1",
+            "humanEval": "2026-09-01-llama-rtx-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-rtx-full-s42-v1",
+            "routing": "2026-09-01-llama-rtx-full-s42-v1",
+            "health": "2026-09-01-llama-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder.python@rtx-llama-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.1625,
+            "generalMmluWilson95": [
+              0.097498,
+              0.258429
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.40625,
+            "codingValidJsonRate": 0.083333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.292683,
+            "pythonHumanEvalWilson95": [
+              0.22843,
+              0.366425
+            ],
+            "pythonHumanEvalPassed": 48,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.2625,
+              "bootstrap95": [
+                -0.3875,
+                -0.1375
+              ],
+              "improved": 6,
+              "regressed": 27,
+              "unchanged": 47,
+              "improvedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/nutrition/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_european_history/02",
+                "mmlu-general-v1/humanities/high_school_us_history/01",
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/01",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/03",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/other/management/02",
+                "mmlu-general-v1/other/nutrition/02",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/01",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/social_sciences/sociology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/03",
+                "mmlu-general-v1/stem_non_cs/college_physics/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/01"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.042683,
+              "bootstrap95": [
+                -0.103659,
+                0.018293
+              ],
+              "improved": 9,
+              "regressed": 16,
+              "unchanged": 139,
+              "improvedIds": [
+                "HumanEval/110",
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/124",
+                "HumanEval/14",
+                "HumanEval/149",
+                "HumanEval/73",
+                "HumanEval/9"
+              ],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/112",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/5",
+                "HumanEval/61",
+                "HumanEval/72",
+                "HumanEval/92"
+              ]
+            },
+            "codingSemanticCoverage": -0.083333
+          },
+          "performance": {
+            "stateWallSeconds": 470.961403,
+            "designTokensPerSecond": 51.81687,
+            "humanEvalTokensPerSecond": 54.251824,
+            "designLatencyMs": {
+              "generationMean": 11560.745875,
+              "generationP50": 13650.617,
+              "generationP95": 15546.1291,
+              "totalMean": 11577.477292,
+              "totalP50": 13655.8525,
+              "totalP95": 15551.2952
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1131.91653,
+              "generationP50": 1012.1555,
+              "generationP95": 2309.8393,
+              "totalMean": 1136.649683,
+              "totalP50": 1018.112,
+              "totalP95": 2314.18285
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2846126592,
+            "cudaReservedBytes": 2990538752,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 198,
+              "peakRssUpperBoundBytes": 2744205312.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 3794349629.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 849215488.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 573938193.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-rtx-s42": {
+                  "peakRssBytes": 1894989824.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 3220411436.0,
+                  "peakAcceleratorAllocatedBytes": 2891052032.0,
+                  "peakAcceleratorReservedBytes": 2990538752.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.147078,
+            "cudaReserved": 1.123719,
+            "humanEvalThroughput": 0.908051,
+            "humanEvalP50Latency": 1.04822
+          }
         },
         {
           "state": "base+lsr+mi",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-rtx-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-rtx-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-rtx-full-s42-v1",
+            "humanEval": "2026-09-01-llama-rtx-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-rtx-full-s42-v1",
+            "routing": "2026-09-01-llama-rtx-full-s42-v1",
+            "health": "2026-09-01-llama-rtx-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.275,
+            "generalMmluWilson95": [
+              0.189178,
+              0.381441
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 6,
+                "accuracy": 0.3,
+                "wilson95": [
+                  0.145477,
+                  0.518973
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 7,
+                "accuracy": 0.35,
+                "wilson95": [
+                  0.181192,
+                  0.567146
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 5,
+                "accuracy": 0.25,
+                "wilson95": [
+                  0.111862,
+                  0.468701
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.385417,
+            "codingValidJsonRate": 0.25,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.292683,
+            "pythonHumanEvalWilson95": [
+              0.22843,
+              0.366425
+            ],
+            "pythonHumanEvalPassed": 48,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.15,
+              "bootstrap95": [
+                -0.2375,
+                -0.075
+              ],
+              "improved": 0,
+              "regressed": 12,
+              "unchanged": 68,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/01"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.042683,
+              "bootstrap95": [
+                -0.103659,
+                0.018293
+              ],
+              "improved": 9,
+              "regressed": 16,
+              "unchanged": 139,
+              "improvedIds": [
+                "HumanEval/110",
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/124",
+                "HumanEval/14",
+                "HumanEval/149",
+                "HumanEval/73",
+                "HumanEval/9"
+              ],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/112",
+                "HumanEval/116",
+                "HumanEval/117",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/5",
+                "HumanEval/61",
+                "HumanEval/72",
+                "HumanEval/92"
+              ]
+            },
+            "codingSemanticCoverage": -0.104166
+          },
+          "performance": {
+            "stateWallSeconds": 457.358984,
+            "designTokensPerSecond": 56.377217,
+            "humanEvalTokensPerSecond": 54.466244,
+            "designLatencyMs": {
+              "generationMean": 9795.623708,
+              "generationP50": 11505.9885,
+              "generationP95": 13685.2767,
+              "totalMean": 9800.461542,
+              "totalP50": 11511.2445,
+              "totalP95": 13690.03725
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 1137.983866,
+              "generationP50": 989.475,
+              "generationP95": 2277.18355,
+              "totalMean": 1143.019634,
+              "totalP50": 994.096,
+              "totalP95": 2282.6322
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2846126592,
+            "cudaReservedBytes": 2990538752,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 176,
+              "peakRssUpperBoundBytes": 2843361280.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 3794759556.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-local-s42": {
+                  "peakRssBytes": 948310016.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 574034915.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-rtx-s42": {
+                  "peakRssBytes": 1895051264.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 3220724641.0,
+                  "peakAcceleratorAllocatedBytes": 2878613504.0,
+                  "peakAcceleratorReservedBytes": 2990538752.0
+                }
+              }
+            }
+          },
+          "routing": {
+            "expectedDecisionRate": 0.843284,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": 0.525,
+            "latencyMs": {
+              "mean": 125.869041,
+              "p50": 107.4885,
+              "p95": 260.96335
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.147078,
+            "cudaReserved": 1.123719,
+            "humanEvalThroughput": 0.91164,
+            "humanEvalP50Latency": 1.024731
+          }
         }
       ],
       "notes": []
@@ -1114,32 +4291,1158 @@
       "trainingRounds": 8,
       "inferenceHardware": "NVIDIA A40",
       "seed": 42,
+      "provenance": {
+        "runStatus": "evaluated",
+        "configSha256": "24c0db0ac7bd445b817246259d99ca2c968e9f0c81ca10b9774a35af7b40513c",
+        "suites": {
+          "coderDesign": {
+            "sha256": "dd27baa714886e359736e25f329a10448a78f3da645c93384cd0434664148330",
+            "records": 24
+          },
+          "humanEval": {
+            "sourceSha256": "b796127e635a67f93fb35c04f4cb03cf06f38c8072ee7cee8833d7bee06979ef",
+            "evaluationSha256": "760b6c307db7970f3c2028c25c546425cbf2a964e821aeca13b3ef0ebb264c09",
+            "evaluationFile": "humaneval-problems.jsonl",
+            "records": 164
+          },
+          "generalMmlu": {
+            "sourceSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationSha256": "dfc1aec2550b6c08e1a11827ff70861e7ebc6bf0d1d37645377aab2aa40d7fb4",
+            "evaluationFile": "general-mmlu-problems.jsonl",
+            "records": 80,
+            "protocol": "zero-shot single-letter generation; not official five-shot MMLU"
+          }
+        },
+        "base": {
+          "modelId": "sha256:562ad7211ff3bf51020bb2df713d6bb700c06f1bcbca6158662a33933c8fc698",
+          "modelType": "llama",
+          "configSha256": "340ee2caf4ba0b4658eff1dcac8e550b21b3eed89374f8a716b25962089c9f87",
+          "baseLayerCount": 16,
+          "parameterCount": 1235814400
+        },
+        "facets": [
+          {
+            "reference": "coder@rtx-llama-s42",
+            "requires": [],
+            "slots": 2,
+            "blocks": 2,
+            "artifactSha256": "a465fde75691c70ec21e1c4f9dab3255b67b86f8063751888c77d239254723f0",
+            "parameterCount": 121643008,
+            "tensorCount": 18
+          },
+          {
+            "reference": "coder.python@rtx-llama-s42",
+            "requires": [
+              "coder@rtx-llama-s42"
+            ],
+            "slots": 1,
+            "blocks": 1,
+            "artifactSha256": "f68a2380f333d73d5d10de088af35eda87edea464fcb32ba791b078c7bfc1a5b",
+            "parameterCount": 60821504,
+            "tensorCount": 9
+          }
+        ]
+      },
       "states": [
         {
           "state": "base",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-a40-full-s42-v1",
+            "humanEval": "2026-09-01-llama-a40-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-a40-full-s42-v1",
+            "routing": "2026-09-01-llama-a40-full-s42-v1",
+            "health": "2026-09-01-llama-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.45,
+            "generalMmluWilson95": [
+              0.345777,
+              0.558805
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 10,
+                "accuracy": 0.5,
+                "wilson95": [
+                  0.299298,
+                  0.700702
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 8,
+                "accuracy": 0.4,
+                "wilson95": [
+                  0.218807,
+                  0.613418
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 11,
+                "accuracy": 0.55,
+                "wilson95": [
+                  0.342085,
+                  0.741802
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 7,
+                "accuracy": 0.35,
+                "wilson95": [
+                  0.181192,
+                  0.567146
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.46875,
+            "codingValidJsonRate": 0.208333,
+            "codingFieldCoverage": 0.0,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.317073,
+            "pythonHumanEvalWilson95": [
+              0.250737,
+              0.391783
+            ],
+            "pythonHumanEvalPassed": 52,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": null,
+          "performance": {
+            "stateWallSeconds": 366.869194,
+            "designTokensPerSecond": 75.115285,
+            "humanEvalTokensPerSecond": 76.504609,
+            "designLatencyMs": {
+              "generationMean": 8567.386375,
+              "generationP50": 10092.777,
+              "generationP95": 10524.85225,
+              "totalMean": 8573.409833,
+              "totalP50": 10096.7725,
+              "totalP95": 10529.15115
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 859.265945,
+              "generationP50": 758.821,
+              "generationP95": 1742.296,
+              "totalMean": 862.709104,
+              "totalP50": 762.4545,
+              "totalP95": 1746.30855
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2480148992,
+            "cudaReservedBytes": 2560622592,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 154,
+              "peakRssUpperBoundBytes": 2181423104.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 571217993.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 787128320.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 570510190.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-a40-s42": {
+                  "peakRssBytes": 1394294784.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 707803.0,
+                  "peakAcceleratorAllocatedBytes": 2746641920.0,
+                  "peakAcceleratorReservedBytes": 2791309312.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.0,
+            "cudaReserved": 1.0,
+            "humanEvalThroughput": 1.0,
+            "humanEvalP50Latency": 1.0
+          }
         },
         {
           "state": "base+coder",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-a40-full-s42-v1",
+            "humanEval": "2026-09-01-llama-a40-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-a40-full-s42-v1",
+            "routing": "2026-09-01-llama-a40-full-s42-v1",
+            "health": "2026-09-01-llama-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder@rtx-llama-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.15,
+            "generalMmluWilson95": [
+              0.08794,
+              0.244132
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.416667,
+            "codingValidJsonRate": 0.333333,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.317073,
+            "pythonHumanEvalWilson95": [
+              0.250737,
+              0.391783
+            ],
+            "pythonHumanEvalPassed": 52,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.3,
+              "bootstrap95": [
+                -0.425,
+                -0.175
+              ],
+              "improved": 5,
+              "regressed": 29,
+              "unchanged": 46,
+              "improvedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/nutrition/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_european_history/02",
+                "mmlu-general-v1/humanities/high_school_european_history/03",
+                "mmlu-general-v1/humanities/high_school_us_history/01",
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/01",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/03",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/other/management/02",
+                "mmlu-general-v1/other/nutrition/02",
+                "mmlu-general-v1/other/professional_accounting/04",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/01",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/social_sciences/sociology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": 0.0,
+              "bootstrap95": [
+                -0.054878,
+                0.054878
+              ],
+              "improved": 10,
+              "regressed": 10,
+              "unchanged": 144,
+              "improvedIds": [
+                "HumanEval/110",
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/124",
+                "HumanEval/133",
+                "HumanEval/149",
+                "HumanEval/45",
+                "HumanEval/73",
+                "HumanEval/77"
+              ],
+              "regressedIds": [
+                "HumanEval/105",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/72"
+              ]
+            },
+            "codingSemanticCoverage": -0.052083
+          },
+          "performance": {
+            "stateWallSeconds": 340.708921,
+            "designTokensPerSecond": 68.203501,
+            "humanEvalTokensPerSecond": 68.823321,
+            "designLatencyMs": {
+              "generationMean": 6839.213875,
+              "generationP50": 6188.1505,
+              "generationP95": 11570.2375,
+              "totalMean": 6868.314917,
+              "totalP50": 6192.177,
+              "totalP95": 11574.62455
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 934.790201,
+              "generationP50": 827.7815,
+              "generationP95": 1849.0365,
+              "totalMean": 938.670713,
+              "totalP50": 831.617,
+              "totalP95": 1854.0689
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2723435008,
+            "cudaReservedBytes": 2814377984,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 154,
+              "peakRssUpperBoundBytes": 2378858496.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 571849193.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 787132416.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 570606430.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-a40-s42": {
+                  "peakRssBytes": 1591726080.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 1242763.0,
+                  "peakAcceleratorAllocatedBytes": 2878164480.0,
+                  "peakAcceleratorReservedBytes": 2900361216.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.098093,
+            "cudaReserved": 1.099099,
+            "humanEvalThroughput": 0.899597,
+            "humanEvalP50Latency": 1.090878
+          }
         },
         {
           "state": "base+parent+child",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-a40-full-s42-v1",
+            "humanEval": "2026-09-01-llama-a40-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-a40-full-s42-v1",
+            "routing": "2026-09-01-llama-a40-full-s42-v1",
+            "health": "2026-09-01-llama-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [
+            "coder.python@rtx-llama-s42"
+          ],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.1625,
+            "generalMmluWilson95": [
+              0.097498,
+              0.258429
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 3,
+                "accuracy": 0.15,
+                "wilson95": [
+                  0.052369,
+                  0.360419
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.40625,
+            "codingValidJsonRate": 0.083333,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.29878,
+            "pythonHumanEvalWilson95": [
+              0.233986,
+              0.372786
+            ],
+            "pythonHumanEvalPassed": 49,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.2875,
+              "bootstrap95": [
+                -0.4125,
+                -0.15
+              ],
+              "improved": 6,
+              "regressed": 29,
+              "unchanged": 45,
+              "improvedIds": [
+                "mmlu-general-v1/humanities/high_school_us_history/02",
+                "mmlu-general-v1/humanities/international_law/03",
+                "mmlu-general-v1/humanities/world_religions/04",
+                "mmlu-general-v1/other/nutrition/01",
+                "mmlu-general-v1/other/nutrition/04",
+                "mmlu-general-v1/stem_non_cs/electrical_engineering/02"
+              ],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_european_history/02",
+                "mmlu-general-v1/humanities/high_school_european_history/03",
+                "mmlu-general-v1/humanities/high_school_us_history/01",
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/humanities/philosophy/04",
+                "mmlu-general-v1/humanities/world_religions/01",
+                "mmlu-general-v1/humanities/world_religions/03",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/03",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/other/management/02",
+                "mmlu-general-v1/other/nutrition/02",
+                "mmlu-general-v1/other/professional_accounting/04",
+                "mmlu-general-v1/social_sciences/high_school_geography/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/01",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/03",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/social_sciences/sociology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_biology/03",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.018293,
+              "bootstrap95": [
+                -0.079268,
+                0.042683
+              ],
+              "improved": 11,
+              "regressed": 14,
+              "unchanged": 139,
+              "improvedIds": [
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/123",
+                "HumanEval/124",
+                "HumanEval/133",
+                "HumanEval/14",
+                "HumanEval/149",
+                "HumanEval/45",
+                "HumanEval/73",
+                "HumanEval/9"
+              ],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/112",
+                "HumanEval/117",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/5",
+                "HumanEval/61",
+                "HumanEval/72"
+              ]
+            },
+            "codingSemanticCoverage": -0.0625
+          },
+          "performance": {
+            "stateWallSeconds": 418.817726,
+            "designTokensPerSecond": 64.946079,
+            "humanEvalTokensPerSecond": 65.991153,
+            "designLatencyMs": {
+              "generationMean": 10050.00375,
+              "generationP50": 11535.55,
+              "generationP95": 12036.70345,
+              "totalMean": 10067.296667,
+              "totalP50": 11539.98,
+              "totalP95": 12041.0024
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 936.378293,
+              "generationP50": 822.834,
+              "generationP95": 1920.5395,
+              "totalMean": 940.423561,
+              "totalP50": 826.6815,
+              "totalP95": 1924.40295
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2845078016,
+            "cudaReservedBytes": 2942304256,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 176,
+              "peakRssUpperBoundBytes": 2481459200.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 572587527.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 889733120.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 570714700.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-a40-s42": {
+                  "peakRssBytes": 1591726080.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 1872827.0,
+                  "peakAcceleratorAllocatedBytes": 2879460352.0,
+                  "peakAcceleratorReservedBytes": 2942304256.0
+                }
+              }
+            }
+          },
+          "routing": null,
+          "costVsBase": {
+            "cudaAllocated": 1.14714,
+            "cudaReserved": 1.149058,
+            "humanEvalThroughput": 0.862577,
+            "humanEvalP50Latency": 1.084358
+          }
         },
         {
           "state": "base+lsr+mi",
-          "status": "not-measured",
-          "sourceRun": "2026-08-31-llama-a40-full-s42-v1"
+          "status": "measured",
+          "sourceRun": "2026-09-01-llama-a40-full-s42-v1",
+          "sourceRuns": {
+            "design": "2026-09-01-llama-a40-full-s42-v1",
+            "humanEval": "2026-09-01-llama-a40-full-s42-v1",
+            "generalMmlu": "2026-09-01-llama-a40-full-s42-v1",
+            "routing": "2026-09-01-llama-a40-full-s42-v1",
+            "health": "2026-09-01-llama-a40-full-s42-v1"
+          },
+          "sourceRunStatus": "evaluated",
+          "facets": [],
+          "quality": {
+            "generalMmluAttempted": 80,
+            "generalMmluCompleted": 80,
+            "generalMmluErrors": 0,
+            "generalMmluAccuracy": 0.2625,
+            "generalMmluWilson95": [
+              0.178574,
+              0.36819
+            ],
+            "generalMmluCategories": {
+              "humanities": {
+                "records": 20,
+                "correct": 6,
+                "accuracy": 0.3,
+                "wilson95": [
+                  0.145477,
+                  0.518973
+                ]
+              },
+              "other": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              },
+              "social_sciences": {
+                "records": 20,
+                "correct": 7,
+                "accuracy": 0.35,
+                "wilson95": [
+                  0.181192,
+                  0.567146
+                ]
+              },
+              "stem_non_cs": {
+                "records": 20,
+                "correct": 4,
+                "accuracy": 0.2,
+                "wilson95": [
+                  0.080658,
+                  0.416017
+                ]
+              }
+            },
+            "codingAttempted": 24,
+            "codingCompleted": 24,
+            "codingErrors": 0,
+            "codingSemanticCoverage": 0.416667,
+            "codingValidJsonRate": 0.333333,
+            "codingFieldCoverage": 0.003788,
+            "pythonHumanEvalAttempted": 164,
+            "pythonHumanEvalCompleted": 164,
+            "pythonHumanEvalErrors": 0,
+            "pythonHumanEvalPassAt1": 0.29878,
+            "pythonHumanEvalWilson95": [
+              0.233986,
+              0.372786
+            ],
+            "pythonHumanEvalPassed": 49,
+            "pythonHumanEvalEvaluated": 164
+          },
+          "qualityDeltaVsBase": {
+            "generalMmlu": {
+              "pairedRecords": 80,
+              "delta": -0.1875,
+              "bootstrap95": [
+                -0.275,
+                -0.1125
+              ],
+              "improved": 0,
+              "regressed": 15,
+              "unchanged": 65,
+              "improvedIds": [],
+              "regressedIds": [
+                "mmlu-general-v1/humanities/high_school_european_history/03",
+                "mmlu-general-v1/humanities/high_school_us_history/04",
+                "mmlu-general-v1/humanities/international_law/01",
+                "mmlu-general-v1/humanities/international_law/02",
+                "mmlu-general-v1/other/business_ethics/02",
+                "mmlu-general-v1/other/business_ethics/04",
+                "mmlu-general-v1/other/clinical_knowledge/04",
+                "mmlu-general-v1/other/professional_accounting/04",
+                "mmlu-general-v1/social_sciences/high_school_government_and_politics/04",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/02",
+                "mmlu-general-v1/social_sciences/high_school_macroeconomics/03",
+                "mmlu-general-v1/social_sciences/sociology/01",
+                "mmlu-general-v1/stem_non_cs/college_biology/02",
+                "mmlu-general-v1/stem_non_cs/college_chemistry/02",
+                "mmlu-general-v1/stem_non_cs/college_physics/03"
+              ]
+            },
+            "pythonHumanEval": {
+              "pairedRecords": 164,
+              "delta": -0.018293,
+              "bootstrap95": [
+                -0.079268,
+                0.042683
+              ],
+              "improved": 11,
+              "regressed": 14,
+              "unchanged": 139,
+              "improvedIds": [
+                "HumanEval/12",
+                "HumanEval/121",
+                "HumanEval/122",
+                "HumanEval/123",
+                "HumanEval/124",
+                "HumanEval/133",
+                "HumanEval/14",
+                "HumanEval/149",
+                "HumanEval/45",
+                "HumanEval/73",
+                "HumanEval/9"
+              ],
+              "regressedIds": [
+                "HumanEval/0",
+                "HumanEval/112",
+                "HumanEval/117",
+                "HumanEval/152",
+                "HumanEval/156",
+                "HumanEval/162",
+                "HumanEval/18",
+                "HumanEval/2",
+                "HumanEval/3",
+                "HumanEval/36",
+                "HumanEval/40",
+                "HumanEval/5",
+                "HumanEval/61",
+                "HumanEval/72"
+              ]
+            },
+            "codingSemanticCoverage": -0.052083
+          },
+          "performance": {
+            "stateWallSeconds": 362.007376,
+            "designTokensPerSecond": 67.714605,
+            "humanEvalTokensPerSecond": 66.123212,
+            "designLatencyMs": {
+              "generationMean": 7062.730458,
+              "generationP50": 6657.4815,
+              "generationP95": 11523.0342,
+              "totalMean": 7067.175792,
+              "totalP50": 6661.652,
+              "totalP95": 11527.4018
+            },
+            "humanEvalLatencyMs": {
+              "generationMean": 942.069823,
+              "generationP50": 810.0575,
+              "generationP95": 1918.6461,
+              "totalMean": 946.135799,
+              "totalP50": 814.072,
+              "totalP95": 1922.66085
+            }
+          },
+          "resources": {
+            "cudaAllocatedBytes": 2845078016,
+            "cudaReservedBytes": 2942304256,
+            "rm": {
+              "status": "captured",
+              "resolution": "minute",
+              "sampleCount": 154,
+              "peakRssUpperBoundBytes": 2344042496.0,
+              "meanCpuPercentSum": null,
+              "peakCpuPercentUpperBound": null,
+              "cpuMeasurementStatus": "unavailable-all-zero",
+              "peakStorageUsedBytes": 573206444.0,
+              "sources": [
+                "jester-rm-minute-rollup"
+              ],
+              "confidence": [
+                "estimated",
+                "exact"
+              ],
+              "instances": {
+                "lsr-golden-a40-local-s42": {
+                  "peakRssBytes": 950755328.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 570807573.0,
+                  "peakAcceleratorAllocatedBytes": 0.0,
+                  "peakAcceleratorReservedBytes": 0.0
+                },
+                "mi-serve-llama-a40-s42": {
+                  "peakRssBytes": 1393287168.0,
+                  "meanCpuPercent": 0.0,
+                  "peakCpuPercent": 0.0,
+                  "peakStorageUsedBytes": 2398871.0,
+                  "peakAcceleratorAllocatedBytes": 2877816320.0,
+                  "peakAcceleratorReservedBytes": 2942304256.0
+                }
+              }
+            }
+          },
+          "routing": {
+            "expectedDecisionRate": 0.843284,
+            "expectedRecall": 0.978723,
+            "expectedAbstentionRate": 0.525,
+            "latencyMs": {
+              "mean": 113.735784,
+              "p50": 99.753,
+              "p95": 217.7809
+            }
+          },
+          "costVsBase": {
+            "cudaAllocated": 1.14714,
+            "cudaReserved": 1.149058,
+            "humanEvalThroughput": 0.864304,
+            "humanEvalP50Latency": 1.067521
+          }
         }
       ],
       "notes": []
     }
   ],
+  "parameterOverhead": [
+    {
+      "model": "Qwen2.5-1.5B-Instruct",
+      "baseParameters": 1543714304,
+      "facets": [
+        {
+          "reference": "coder@a40-qwen-s42",
+          "requires": [],
+          "parameters": 93595648,
+          "slots": 2,
+          "blocks": 2
+        },
+        {
+          "reference": "coder.python@a40-qwen-s42",
+          "requires": [
+            "coder@a40-qwen-s42"
+          ],
+          "parameters": 46797824,
+          "slots": 1,
+          "blocks": 1
+        }
+      ],
+      "insertedParameters": 140393472,
+      "insertedVsBase": 0.090945,
+      "composedParameters": 1684107776
+    },
+    {
+      "model": "Gemma-3-1B-IT",
+      "baseParameters": 999885952,
+      "facets": [
+        {
+          "reference": "coder@rtx-gemma-s42",
+          "requires": [],
+          "parameters": 53684224,
+          "slots": 2,
+          "blocks": 2
+        },
+        {
+          "reference": "coder.python@rtx-gemma-s42",
+          "requires": [
+            "coder@rtx-gemma-s42"
+          ],
+          "parameters": 26842112,
+          "slots": 1,
+          "blocks": 1
+        }
+      ],
+      "insertedParameters": 80526336,
+      "insertedVsBase": 0.080536,
+      "composedParameters": 1080412288
+    },
+    {
+      "model": "Llama-3.2-1B-Instruct",
+      "baseParameters": 1235814400,
+      "facets": [
+        {
+          "reference": "coder@rtx-llama-s42",
+          "requires": [],
+          "parameters": 121643008,
+          "slots": 2,
+          "blocks": 2
+        },
+        {
+          "reference": "coder.python@rtx-llama-s42",
+          "requires": [
+            "coder@rtx-llama-s42"
+          ],
+          "parameters": 60821504,
+          "slots": 1,
+          "blocks": 1
+        }
+      ],
+      "insertedParameters": 182464512,
+      "insertedVsBase": 0.147647,
+      "composedParameters": 1418278912
+    }
+  ],
+  "crossHardware": [
+    {
+      "model": "Gemma-3-1B-IT",
+      "state": "base",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": -0.010417,
+        "humanEval": 0.006098
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 0.833936,
+        "cudaAllocated": 0.974372
+      }
+    },
+    {
+      "model": "Gemma-3-1B-IT",
+      "state": "base+coder",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": 0.0,
+        "humanEval": 0.0
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.227994,
+        "cudaAllocated": 0.973582
+      }
+    },
+    {
+      "model": "Gemma-3-1B-IT",
+      "state": "base+parent+child",
+      "status": "not-measured",
+      "a40MinusRtx": {
+        "generalMmlu": null,
+        "codingSemantic": null,
+        "humanEval": null
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": null,
+        "cudaAllocated": null
+      }
+    },
+    {
+      "model": "Gemma-3-1B-IT",
+      "state": "base+lsr+mi",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": 0.0,
+        "humanEval": 0.0
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.121288,
+        "cudaAllocated": 0.973474
+      }
+    },
+    {
+      "model": "Llama-3.2-1B-Instruct",
+      "state": "base",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.025,
+        "codingSemantic": -0.020833,
+        "humanEval": -0.018293
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.280511,
+        "cudaAllocated": 0.999577
+      }
+    },
+    {
+      "model": "Llama-3.2-1B-Instruct",
+      "state": "base+coder",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": 0.0,
+        "humanEval": 0.0
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.247189,
+        "cudaAllocated": 0.999615
+      }
+    },
+    {
+      "model": "Llama-3.2-1B-Instruct",
+      "state": "base+parent+child",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": 0.0,
+        "humanEval": 0.006097
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.216386,
+        "cudaAllocated": 0.999632
+      }
+    },
+    {
+      "model": "Llama-3.2-1B-Instruct",
+      "state": "base+lsr+mi",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": -0.0125,
+        "codingSemantic": 0.03125,
+        "humanEval": 0.006097
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.214022,
+        "cudaAllocated": 0.999632
+      }
+    },
+    {
+      "model": "Qwen2.5-1.5B-Instruct",
+      "state": "base",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": 0.0,
+        "codingSemantic": 0.0625,
+        "humanEval": 0.0
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.086845,
+        "cudaAllocated": 0.999704
+      }
+    },
+    {
+      "model": "Qwen2.5-1.5B-Instruct",
+      "state": "base+coder",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": -0.0125,
+        "codingSemantic": 0.041666,
+        "humanEval": -0.012195
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.078892,
+        "cudaAllocated": 0.999721
+      }
+    },
+    {
+      "model": "Qwen2.5-1.5B-Instruct",
+      "state": "base+parent+child",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": -0.0125,
+        "codingSemantic": 0.03125,
+        "humanEval": 0.012195
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.076109,
+        "cudaAllocated": 0.999728
+      }
+    },
+    {
+      "model": "Qwen2.5-1.5B-Instruct",
+      "state": "base+lsr+mi",
+      "status": "measured",
+      "a40MinusRtx": {
+        "generalMmlu": -0.0125,
+        "codingSemantic": 0.052083,
+        "humanEval": 0.012195
+      },
+      "a40VsRtxRatio": {
+        "humanEvalThroughput": 1.486977,
+        "cudaAllocated": 0.999728
+      }
+    }
+  ],
   "training": [],
+  "trainingBaselineId": null,
   "limitations": [
     "All quality runs use one deterministic seed; they do not establish between-seed variance.",
     "The design suite contains 24 cases and is a project golden, not a public leaderboard.",

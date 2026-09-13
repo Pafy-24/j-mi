@@ -64,16 +64,33 @@ def _summarize_samples(samples: list[dict[str, Any]]) -> dict[str, Any]:
     instances: dict[str, dict[str, Any]] = {}
     for (instance_id, metric), records in sorted(grouped.items()):
         records.sort(key=lambda item: str(item.get("sampledAt") or ""))
-        values = sorted(float(item["value"]) for item in records)
         chronological = [float(item["value"]) for item in records]
+        rollups = [item.get("statistics") for item in records]
+        has_rollups = all(isinstance(item, dict) for item in rollups)
+        if has_rollups:
+            count = sum(int(item.get("samples", 0)) for item in rollups)
+            minimum = min(float(item["minimum"]) for item in rollups)
+            maximum = max(float(item["maximum"]) for item in rollups)
+            total = sum(float(item.get("sum", 0.0)) for item in rollups)
+            mean = total / count if count else None
+            p50 = None
+            p95 = None
+        else:
+            values = sorted(chronological)
+            count = len(values)
+            minimum = values[0]
+            maximum = values[-1]
+            mean = statistics.fmean(values)
+            p50 = _percentile(values, 0.50)
+            p95 = _percentile(values, 0.95)
         instances.setdefault(instance_id, {})[metric] = {
-            "count": len(values),
+            "count": count,
             "unit": records[0].get("unit"),
-            "minimum": values[0],
-            "maximum": values[-1],
-            "mean": statistics.fmean(values),
-            "p50": _percentile(values, 0.50),
-            "p95": _percentile(values, 0.95),
+            "minimum": minimum,
+            "maximum": maximum,
+            "mean": mean,
+            "p50": p50,
+            "p95": p95,
             "first": chronological[0],
             "last": chronological[-1],
             "delta": chronological[-1] - chronological[0],
@@ -132,11 +149,61 @@ def capture(
     token: str,
     limit: int,
     timeout: float,
+    run_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     manifest = _read_json(manifest_path)
     base = manifest_path.parent.resolve()
     captured: list[dict[str, Any]] = []
+    topology_instances: dict[str, list[str]] = {}
+    metric_cache: dict[str, list[dict[str, Any]]] = {}
+    metric_errors: dict[str, str] = {}
+
+    def instances_for(topology_id: str) -> list[str]:
+        if topology_id not in topology_instances:
+            endpoint = (
+                rm_url.rstrip("/")
+                + f"/v1/topologies/{quote(topology_id, safe='')}/nodes"
+            )
+            response = _request_json(endpoint, token, timeout)
+            topology_instances[topology_id] = sorted(
+                {
+                    str(item["instanceId"])
+                    for item in response.get("items", [])
+                    if item.get("instanceId")
+                }
+            )
+        return topology_instances[topology_id]
+
+    def metrics_for(instance_id: str) -> list[dict[str, Any]]:
+        if instance_id in metric_cache:
+            return metric_cache[instance_id]
+        if instance_id in metric_errors:
+            return []
+        query = urlencode({"limit": limit, "resolution": "minute"})
+        endpoint = (
+            rm_url.rstrip("/")
+            + f"/v1/instances/{quote(instance_id, safe='')}/metrics?{query}"
+        )
+        try:
+            response = _request_json(endpoint, token, timeout)
+            metric_cache[instance_id] = list(response.get("items") or [])
+        except Exception as exc:
+            metric_errors[instance_id] = f"{type(exc).__name__}: {exc}"
+            metric_cache[instance_id] = []
+        return metric_cache[instance_id]
+
+    def overlaps(sample: dict[str, Any], start: float, finish: float) -> bool:
+        raw = sample.get("sampledAt")
+        if not raw:
+            return False
+        sampled = datetime.fromisoformat(str(raw).replace("Z", "+00:00")).timestamp()
+        # Minute rollups are labelled by minute start. Include every bucket
+        # which overlaps the exact benchmark interval.
+        return sampled < finish and sampled + 60.0 > start
+
     for run_entry in manifest.get("runs", []):
+        if run_ids and run_entry.get("id") not in run_ids:
+            continue
         states: list[dict[str, Any]] = []
         for state_id in STATE_ORDER:
             source_raw = run_entry.get("stateSources", {}).get(
@@ -165,16 +232,19 @@ def capture(
                     }
                 )
                 continue
-            since = _iso_timestamp(float(state["startedAtUnix"]))
-            until = _iso_timestamp(float(state["finishedAtUnix"]))
-            query = urlencode({"limit": limit, "since": since, "until": until})
-            url = (
-                rm_url.rstrip("/")
-                + f"/v1/topologies/{quote(str(topology_id), safe='')}/metrics?{query}"
-            )
+            start = float(state["startedAtUnix"])
+            finish = float(state["finishedAtUnix"])
+            since = _iso_timestamp(start)
+            until = _iso_timestamp(finish)
             try:
-                response = _request_json(url, token, timeout)
-                samples = response.get("samples") or []
+                instance_ids = instances_for(str(topology_id))
+                samples = []
+                for instance_id in instance_ids:
+                    samples.extend(
+                        item
+                        for item in metrics_for(instance_id)
+                        if overlaps(item, start, finish)
+                    )
                 summary = _summarize_samples(samples)
                 states.append(
                     {
@@ -183,7 +253,17 @@ def capture(
                         "sourceRun": run_dir.name,
                         "topologyId": topology_id,
                         "interval": {"since": since, "until": until},
-                        "truncated": len(samples) >= limit,
+                        "resolution": "minute",
+                        "instanceIds": instance_ids,
+                        "truncated": any(
+                            len(metric_cache.get(instance_id, [])) >= limit
+                            for instance_id in instance_ids
+                        ),
+                        "instanceErrors": {
+                            instance_id: metric_errors[instance_id]
+                            for instance_id in instance_ids
+                            if instance_id in metric_errors
+                        },
                         "metrics": summary,
                     }
                 )
@@ -221,6 +301,7 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--limit", type=int, default=100_000)
     parser.add_argument("--timeout", type=float, default=120.0)
+    parser.add_argument("--run-id", action="append", dest="run_ids")
     args = parser.parse_args()
     if not 1 <= args.limit <= 100_000:
         parser.error("--limit must be between 1 and 100000")
@@ -233,6 +314,7 @@ def main() -> None:
         token=token,
         limit=args.limit,
         timeout=args.timeout,
+        run_ids=set(args.run_ids) if args.run_ids else None,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

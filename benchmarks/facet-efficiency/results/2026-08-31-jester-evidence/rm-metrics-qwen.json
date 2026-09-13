@@ -1,0 +1,3412 @@
+{
+  "schemaVersion": "jester-rm-benchmark-evidence-v1",
+  "manifest": "evidence-manifest.2026-08-31.json",
+  "runs": [
+    {
+      "id": "qwen-rtx-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "inferenceHardware": "RTX 5070 Laptop",
+      "states": [
+        {
+          "state": "base",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "topologyId": "inference-qwen-rtx-s42",
+          "interval": {
+            "since": "2026-08-31T10:08:21.949284Z",
+            "until": "2026-08-31T10:17:01.202709Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-local-s42",
+            "mi-serve-qwen-rtx-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 220,
+            "firstSampleAt": "2026-08-31T10:08:00Z",
+            "lastSampleAt": "2026-08-31T10:17:00Z",
+            "instances": {
+              "lsr-golden-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 282,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 284,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 282,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 282,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 283,
+                  "unit": "bytes",
+                  "minimum": 786743296.0,
+                  "maximum": 787030016.0,
+                  "mean": 786900015.0388693,
+                  "p50": null,
+                  "p95": null,
+                  "first": 786768964.0,
+                  "last": 787019548.0,
+                  "delta": 250584.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 43,
+                  "unit": "bytes",
+                  "minimum": 559339270.0,
+                  "maximum": 559679476.0,
+                  "mean": 559514436.8372093,
+                  "p50": null,
+                  "p95": null,
+                  "first": 559356533.0,
+                  "last": 559667748.0,
+                  "delta": 311215.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 422,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 2.563576702251164,
+                  "mean": 0.2917367144347318,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.18978206041784806,
+                  "last": 0.3034342109039508,
+                  "delta": 0.11365215048610272,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 422,
+                  "unit": "bytes",
+                  "minimum": 198409738.0,
+                  "maximum": 198409738.0,
+                  "mean": 198409738.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 198409738.0,
+                  "last": 198409738.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 422,
+                  "unit": "bytes",
+                  "minimum": 28908.0,
+                  "maximum": 374169.0,
+                  "mean": 207034.40995260663,
+                  "p50": null,
+                  "p95": null,
+                  "first": 48070.0,
+                  "last": 357975.0,
+                  "delta": 309905.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 422,
+                  "unit": "bytes",
+                  "minimum": 786743296.0,
+                  "maximum": 787030016.0,
+                  "mean": 786904039.7345972,
+                  "p50": null,
+                  "p95": null,
+                  "first": 786763053.0,
+                  "last": 787019633.0,
+                  "delta": 256580.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 422,
+                  "unit": "bytes",
+                  "minimum": 1347874816.0,
+                  "maximum": 1348124672.0,
+                  "mean": 1347960822.293839,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1348030223.0,
+                  "last": 1347931969.0,
+                  "delta": -98254.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-rtx-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 267,
+                  "unit": "bytes",
+                  "minimum": 3088346624.0,
+                  "maximum": 3307801600.0,
+                  "mean": 3123875924.3745317,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3099978075.0,
+                  "last": 3296485888.0,
+                  "delta": 196507813.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 264,
+                  "unit": "bytes",
+                  "minimum": 3088346624.0,
+                  "maximum": 3327034880.0,
+                  "mean": 3153692150.3030305,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3106944310.0,
+                  "last": 3318232207.0,
+                  "delta": 211287897.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 267,
+                  "unit": "bytes",
+                  "minimum": 3286237184.0,
+                  "maximum": 3550478336.0,
+                  "mean": 3364224533.093633,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3305560941.0,
+                  "last": 3541166981.0,
+                  "delta": 235606040.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 267,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 266,
+                  "unit": "bytes",
+                  "minimum": 791363584.0,
+                  "maximum": 1926602752.0,
+                  "mean": 1854326814.7969925,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1488554818.0,
+                  "last": 1926558187.0,
+                  "delta": 438003369.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 43,
+                  "unit": "bytes",
+                  "minimum": 4224389776.0,
+                  "maximum": 4224777659.0,
+                  "mean": 4224589430.2325583,
+                  "p50": null,
+                  "p95": null,
+                  "first": 4224409619.0,
+                  "last": 4224764078.0,
+                  "delta": 354459.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 425,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 117.66194331562339,
+                  "mean": 96.17620490906506,
+                  "p50": null,
+                  "p95": null,
+                  "first": 76.83989294596897,
+                  "last": 98.97728606620944,
+                  "delta": 22.137393120240475,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 425,
+                  "unit": "bytes",
+                  "minimum": 191542523.0,
+                  "maximum": 566211665.0,
+                  "mean": 228816841.82352942,
+                  "p50": null,
+                  "p95": null,
+                  "first": 191766951.0,
+                  "last": 557504953.0,
+                  "delta": 365738002.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 425,
+                  "unit": "bytes",
+                  "minimum": 40342.0,
+                  "maximum": 433990.0,
+                  "mean": 243066.37647058823,
+                  "p50": null,
+                  "p95": null,
+                  "first": 62690.0,
+                  "last": 415363.0,
+                  "delta": 352673.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 425,
+                  "unit": "bytes",
+                  "minimum": 791363584.0,
+                  "maximum": 1926602752.0,
+                  "mean": 1877130791.755294,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1669455872.0,
+                  "last": 1925799650.0,
+                  "delta": 256343778.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 425,
+                  "unit": "bytes",
+                  "minimum": 5125779456.0,
+                  "maximum": 6489485312.0,
+                  "mean": 6441974824.96,
+                  "p50": null,
+                  "p95": null,
+                  "first": 6185418869.0,
+                  "last": 6281648937.0,
+                  "delta": 96230068.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "topologyId": "inference-qwen-rtx-s42",
+          "interval": {
+            "since": "2026-08-31T10:17:01.258523Z",
+            "until": "2026-08-31T10:25:44.531598Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-local-s42",
+            "mi-serve-qwen-rtx-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 198,
+            "firstSampleAt": "2026-08-31T10:17:00Z",
+            "lastSampleAt": "2026-08-31T10:25:00Z",
+            "instances": {
+              "lsr-golden-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 238,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 239,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 239,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 237,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 235,
+                  "unit": "bytes",
+                  "minimum": 786993152.0,
+                  "maximum": 787025920.0,
+                  "mean": 787011313.8382978,
+                  "p50": null,
+                  "p95": null,
+                  "first": 787019548.0,
+                  "last": 787009536.0,
+                  "delta": -10012.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 38,
+                  "unit": "bytes",
+                  "minimum": 559656382.0,
+                  "maximum": 559934512.0,
+                  "mean": 559796281.7368422,
+                  "p50": null,
+                  "p95": null,
+                  "first": 559667748.0,
+                  "last": 559923685.0,
+                  "delta": 255937.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 381,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 2.563576702251164,
+                  "mean": 0.26779258614230095,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.3034342109039508,
+                  "last": 0.26135229693708584,
+                  "delta": -0.04208191396686495,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 198409738.0,
+                  "maximum": 198409738.0,
+                  "mean": 198409738.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 198409738.0,
+                  "last": 198409738.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 342171.0,
+                  "maximum": 629688.0,
+                  "mean": 486606.3385826772,
+                  "p50": null,
+                  "p95": null,
+                  "first": 357975.0,
+                  "last": 614166.0,
+                  "delta": 256191.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 786993152.0,
+                  "maximum": 787025920.0,
+                  "mean": 787011277.6062992,
+                  "p50": null,
+                  "p95": null,
+                  "first": 787019633.0,
+                  "last": 787009536.0,
+                  "delta": -10097.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 1347874816.0,
+                  "maximum": 1347940352.0,
+                  "mean": 1347911540.2414699,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1347931969.0,
+                  "last": 1347907584.0,
+                  "delta": -24385.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-rtx-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 217,
+                  "unit": "bytes",
+                  "minimum": 3284057600.0,
+                  "maximum": 3390542848.0,
+                  "mean": 3296361738.6175117,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3296485888.0,
+                  "last": 3317324755.0,
+                  "delta": 20838867.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 220,
+                  "unit": "bytes",
+                  "minimum": 3292529152.0,
+                  "maximum": 3399496704.0,
+                  "mean": 3329428950.109091,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3318232207.0,
+                  "last": 3350460480.0,
+                  "delta": 32228273.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 219,
+                  "unit": "bytes",
+                  "minimum": 3527409664.0,
+                  "maximum": 3642753024.0,
+                  "mean": 3555524907.2511415,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3541166981.0,
+                  "last": 3576692736.0,
+                  "delta": 35525755.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 219,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 218,
+                  "unit": "bytes",
+                  "minimum": 1899356160.0,
+                  "maximum": 1927356416.0,
+                  "mean": 1916462145.761468,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1926558187.0,
+                  "last": 1906649088.0,
+                  "delta": -19909099.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 38,
+                  "unit": "bytes",
+                  "minimum": 4224751091.0,
+                  "maximum": 4225067250.0,
+                  "mean": 4224910023.3157897,
+                  "p50": null,
+                  "p95": null,
+                  "first": 4224764078.0,
+                  "last": 4225054850.0,
+                  "delta": 290772.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 381,
+                  "unit": "percent",
+                  "minimum": 91.33096366485174,
+                  "maximum": 117.66194331562339,
+                  "mean": 97.95791955256479,
+                  "p50": null,
+                  "p95": null,
+                  "first": 98.97728606620944,
+                  "last": 97.82637864746454,
+                  "delta": -1.1509074187449073,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 191823059.0,
+                  "maximum": 753407094.0,
+                  "mean": 571124936.7637795,
+                  "p50": null,
+                  "p95": null,
+                  "first": 557504953.0,
+                  "last": 618452249.0,
+                  "delta": 60947296.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 397385.0,
+                  "maximum": 723874.0,
+                  "mean": 561502.8923884515,
+                  "p50": null,
+                  "p95": null,
+                  "first": 415363.0,
+                  "last": 707020.0,
+                  "delta": 291657.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 1893486592.0,
+                  "maximum": 1927356416.0,
+                  "mean": 1916454035.8215222,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1925799650.0,
+                  "last": 1907451665.0,
+                  "delta": -18347985.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 381,
+                  "unit": "bytes",
+                  "minimum": 6227591168.0,
+                  "maximum": 6489485312.0,
+                  "mean": 6268742583.433071,
+                  "p50": null,
+                  "p95": null,
+                  "first": 6281648937.0,
+                  "last": 6271328446.0,
+                  "delta": -10320491.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+parent+child",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-full-s42-v1",
+          "topologyId": "inference-qwen-rtx-s42",
+          "interval": {
+            "since": "2026-08-31T10:25:44.578271Z",
+            "until": "2026-08-31T10:34:34.613583Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-local-s42",
+            "mi-serve-qwen-rtx-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 220,
+            "firstSampleAt": "2026-08-31T10:25:00Z",
+            "lastSampleAt": "2026-08-31T10:34:00Z",
+            "instances": {
+              "lsr-golden-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 248,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 245,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 246,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 248,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 248,
+                  "unit": "bytes",
+                  "minimum": 786993152.0,
+                  "maximum": 847736832.0,
+                  "mean": 789333817.8064516,
+                  "p50": null,
+                  "p95": null,
+                  "first": 787009536.0,
+                  "last": 811033258.0,
+                  "delta": 24023722.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 42,
+                  "unit": "bytes",
+                  "minimum": 559912858.0,
+                  "maximum": 560204500.0,
+                  "mean": 560059751.6666666,
+                  "p50": null,
+                  "p95": null,
+                  "first": 559923685.0,
+                  "last": 560193610.0,
+                  "delta": 269925.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 420,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 27.032871972369154,
+                  "mean": 0.35855425846614347,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.26135229693708584,
+                  "last": 1.5403337772211685,
+                  "delta": 1.2789814802840827,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 420,
+                  "unit": "bytes",
+                  "minimum": 198409738.0,
+                  "maximum": 343490188.0,
+                  "mean": 202727608.5357143,
+                  "p50": null,
+                  "p95": null,
+                  "first": 198409738.0,
+                  "last": 242641582.0,
+                  "delta": 44231844.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 420,
+                  "unit": "bytes",
+                  "minimum": 598647.0,
+                  "maximum": 898194.0,
+                  "mean": 749152.7714285714,
+                  "p50": null,
+                  "p95": null,
+                  "first": 614166.0,
+                  "last": 883653.0,
+                  "delta": 269487.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 420,
+                  "unit": "bytes",
+                  "minimum": 786993152.0,
+                  "maximum": 847736832.0,
+                  "mean": 789211740.647619,
+                  "p50": null,
+                  "p95": null,
+                  "first": 787009536.0,
+                  "last": 809575498.0,
+                  "delta": 22565962.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 420,
+                  "unit": "bytes",
+                  "minimum": 1314131968.0,
+                  "maximum": 1347907584.0,
+                  "mean": 1346781154.7428572,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1347907584.0,
+                  "last": 1336382139.0,
+                  "delta": -11525445.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-rtx-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 225,
+                  "unit": "bytes",
+                  "minimum": 3284057600.0,
+                  "maximum": 3410378752.0,
+                  "mean": 3380461825.137778,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3317324755.0,
+                  "last": 3387973050.0,
+                  "delta": 70648295.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 229,
+                  "unit": "bytes",
+                  "minimum": 3335624192.0,
+                  "maximum": 3429647872.0,
+                  "mean": 3415053875.4235806,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3350460480.0,
+                  "last": 3429647872.0,
+                  "delta": 79187392.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 226,
+                  "unit": "bytes",
+                  "minimum": 3554672640.0,
+                  "maximum": 3665821696.0,
+                  "mean": 3640720828.035398,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3576692736.0,
+                  "last": 3665821696.0,
+                  "delta": 89128960.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 226,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 230,
+                  "unit": "bytes",
+                  "minimum": 1899745280.0,
+                  "maximum": 1927643136.0,
+                  "mean": 1925289503.1652174,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1906649088.0,
+                  "last": 1927636805.0,
+                  "delta": 20987717.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 41,
+                  "unit": "bytes",
+                  "minimum": 4225042451.0,
+                  "maximum": 4225373793.0,
+                  "mean": 4225208709.634146,
+                  "p50": null,
+                  "p95": null,
+                  "first": 4225054850.0,
+                  "last": 4225361841.0,
+                  "delta": 306991.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 418,
+                  "unit": "percent",
+                  "minimum": 74.97143945360504,
+                  "maximum": 107.16035271351485,
+                  "mean": 97.64581470402273,
+                  "p50": null,
+                  "p95": null,
+                  "first": 97.82637864746454,
+                  "last": 96.65646152861937,
+                  "delta": -1.169917118845163,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 418,
+                  "unit": "bytes",
+                  "minimum": 566211665.0,
+                  "maximum": 753407094.0,
+                  "mean": 739524179.4090909,
+                  "p50": null,
+                  "p95": null,
+                  "first": 618452249.0,
+                  "last": 753407094.0,
+                  "delta": 134954845.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 418,
+                  "unit": "bytes",
+                  "minimum": 689633.0,
+                  "maximum": 1029406.0,
+                  "mean": 860660.6818181818,
+                  "p50": null,
+                  "p95": null,
+                  "first": 707020.0,
+                  "last": 1013350.0,
+                  "delta": 306330.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 418,
+                  "unit": "bytes",
+                  "minimum": 1899745280.0,
+                  "maximum": 1927643136.0,
+                  "mean": 1925404319.2344499,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1907451665.0,
+                  "last": 1927636142.0,
+                  "delta": 20184477.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 418,
+                  "unit": "bytes",
+                  "minimum": 6227935232.0,
+                  "maximum": 6406541312.0,
+                  "mean": 6376962822.124402,
+                  "p50": null,
+                  "p95": null,
+                  "first": 6271328446.0,
+                  "last": 6406541312.0,
+                  "delta": 135212866.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-lsr-filtered-s42-v2",
+          "topologyId": "inference-qwen-rtx-s42",
+          "interval": {
+            "since": "2026-08-31T15:24:12.604220Z",
+            "until": "2026-08-31T15:42:10.970510Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-local-s42",
+            "mi-serve-qwen-rtx-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 418,
+            "firstSampleAt": "2026-08-31T15:24:00Z",
+            "lastSampleAt": "2026-08-31T15:42:00Z",
+            "instances": {
+              "lsr-golden-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 203,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 204,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 204,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 204,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 204,
+                  "unit": "bytes",
+                  "minimum": 362201088.0,
+                  "maximum": 854597632.0,
+                  "mean": 567461948.2352941,
+                  "p50": null,
+                  "p95": null,
+                  "first": 846964736.0,
+                  "last": 396017291.0,
+                  "delta": -450947445.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 50,
+                  "unit": "bytes",
+                  "minimum": 566474225.0,
+                  "maximum": 566719400.0,
+                  "mean": 566594892.48,
+                  "p50": null,
+                  "p95": null,
+                  "first": 566478879.0,
+                  "last": 566716873.0,
+                  "delta": 237994.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 502,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 88.84150675154288,
+                  "mean": 9.014112210503086,
+                  "p50": null,
+                  "p95": null,
+                  "first": 2.550448544620837,
+                  "last": 4.646687627373573,
+                  "delta": 2.0962390827527355,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 502,
+                  "unit": "bytes",
+                  "minimum": 227517758.0,
+                  "maximum": 3937546788.0,
+                  "mean": 1399094516.8286853,
+                  "p50": null,
+                  "p95": null,
+                  "first": 282201927.0,
+                  "last": 3931941894.0,
+                  "delta": 3649739967.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 502,
+                  "unit": "bytes",
+                  "minimum": 333987.0,
+                  "maximum": 580602.0,
+                  "mean": 454654.0378486056,
+                  "p50": null,
+                  "p95": null,
+                  "first": 339818.0,
+                  "last": 574795.0,
+                  "delta": 234977.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 502,
+                  "unit": "bytes",
+                  "minimum": 361816064.0,
+                  "maximum": 864944128.0,
+                  "mean": 571550454.8207171,
+                  "p50": null,
+                  "p95": null,
+                  "first": 847109356.0,
+                  "last": 396568088.0,
+                  "delta": -450541268.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 502,
+                  "unit": "bytes",
+                  "minimum": 1354571776.0,
+                  "maximum": 1459183616.0,
+                  "mean": 1379365851.2828686,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1369434742.0,
+                  "last": 1414454905.0,
+                  "delta": 45020163.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-rtx-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 181,
+                  "unit": "bytes",
+                  "minimum": 3104223232.0,
+                  "maximum": 3404666880.0,
+                  "mean": 3355151057.325967,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3251850922.0,
+                  "last": 3378856601.0,
+                  "delta": 127005679.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 179,
+                  "unit": "bytes",
+                  "minimum": 3147130368.0,
+                  "maximum": 3429219840.0,
+                  "mean": 3388251050.1899443,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3273719360.0,
+                  "last": 3429219840.0,
+                  "delta": 155500480.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 180,
+                  "unit": "bytes",
+                  "minimum": 3351248896.0,
+                  "maximum": 3663724544.0,
+                  "mean": 3614185153.422222,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3498282552.0,
+                  "last": 3663724544.0,
+                  "delta": 165441992.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 181,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 178,
+                  "unit": "bytes",
+                  "minimum": 392155136.0,
+                  "maximum": 1920131072.0,
+                  "mean": 1170352841.3483145,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1912804693.0,
+                  "last": 402317312.0,
+                  "delta": -1510487381.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 51,
+                  "unit": "bytes",
+                  "minimum": 4232473870.0,
+                  "maximum": 4232737971.0,
+                  "mean": 4232603380.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 4232478984.0,
+                  "last": 4232734873.0,
+                  "delta": 255889.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 500,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 100.83378524721694,
+                  "mean": 89.38227315634573,
+                  "p50": null,
+                  "p95": null,
+                  "first": 97.38513424345413,
+                  "last": 20.9212572676574,
+                  "delta": -76.46387697579674,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 500,
+                  "unit": "bytes",
+                  "minimum": 191912518.0,
+                  "maximum": 753496553.0,
+                  "mean": 688352566.228,
+                  "p50": null,
+                  "p95": null,
+                  "first": 494303315.0,
+                  "last": 753496553.0,
+                  "delta": 259193238.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 500,
+                  "unit": "bytes",
+                  "minimum": 366662.0,
+                  "maximum": 632237.0,
+                  "mean": 496390.55,
+                  "p50": null,
+                  "p95": null,
+                  "first": 372952.0,
+                  "last": 626070.0,
+                  "delta": 253118.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 500,
+                  "unit": "bytes",
+                  "minimum": 392155136.0,
+                  "maximum": 1920131072.0,
+                  "mean": 1179700142.08,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1913786525.0,
+                  "last": 406672530.0,
+                  "delta": -1507113995.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 500,
+                  "unit": "bytes",
+                  "minimum": 6275391488.0,
+                  "maximum": 6502191104.0,
+                  "mean": 6368095895.552,
+                  "p50": null,
+                  "p95": null,
+                  "first": 6327823596.0,
+                  "last": 6416945152.0,
+                  "delta": 89121556.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "qwen-a40-s42",
+      "model": "Qwen2.5-1.5B-Instruct",
+      "inferenceHardware": "NVIDIA A40",
+      "states": [
+        {
+          "state": "base",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "topologyId": "inference-qwen-a40-s42",
+          "interval": {
+            "since": "2026-08-31T15:43:36.030887Z",
+            "until": "2026-08-31T15:51:49.344410Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-a40-local-s42",
+            "mi-serve-qwen-a40-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 198,
+            "firstSampleAt": "2026-08-31T15:43:00Z",
+            "lastSampleAt": "2026-08-31T15:51:00Z",
+            "instances": {
+              "lsr-golden-a40-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 443,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 442,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 443,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 443,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 443,
+                  "unit": "bytes",
+                  "minimum": 787738624.0,
+                  "maximum": 838180864.0,
+                  "mean": 836933331.503386,
+                  "p50": null,
+                  "p95": null,
+                  "first": 828646513.0,
+                  "last": 838167756.0,
+                  "delta": 9521243.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 26,
+                  "unit": "bytes",
+                  "minimum": 557608079.0,
+                  "maximum": 558125369.0,
+                  "mean": 557875580.3076923,
+                  "p50": null,
+                  "p95": null,
+                  "first": 557621913.0,
+                  "last": 558105641.0,
+                  "delta": 483728.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 257,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 15.266243283134257,
+                  "mean": 0.6476542966051448,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1.142102098708427,
+                  "last": 0.696009137464726,
+                  "delta": -0.4460929612437009,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 257,
+                  "unit": "bytes",
+                  "minimum": 198385860.0,
+                  "maximum": 213098705.0,
+                  "mean": 212812462.87937742,
+                  "p50": null,
+                  "p95": null,
+                  "first": 210269311.0,
+                  "last": 213098705.0,
+                  "delta": 2829394.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 257,
+                  "unit": "bytes",
+                  "minimum": 100609.0,
+                  "maximum": 634741.0,
+                  "mean": 377224.5914396887,
+                  "p50": null,
+                  "p95": null,
+                  "first": 131285.0,
+                  "last": 607197.0,
+                  "delta": 475912.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 257,
+                  "unit": "bytes",
+                  "minimum": 787738624.0,
+                  "maximum": 838180864.0,
+                  "mean": 837095184.9338522,
+                  "p50": null,
+                  "p95": null,
+                  "first": 828289024.0,
+                  "last": 838166457.0,
+                  "delta": 9877433.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 257,
+                  "unit": "bytes",
+                  "minimum": 1344827392.0,
+                  "maximum": 1382707200.0,
+                  "mean": 1381910918.474708,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1375415059.0,
+                  "last": 1382618359.0,
+                  "delta": 7203300.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-a40-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 530,
+                  "unit": "bytes",
+                  "minimum": 3087429120.0,
+                  "maximum": 3295388160.0,
+                  "mean": 3107893240.271698,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3094427960.0,
+                  "last": 3141122325.0,
+                  "delta": 46694365.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 530,
+                  "unit": "bytes",
+                  "minimum": 3087429120.0,
+                  "maximum": 3297134592.0,
+                  "mean": 3126028988.3773584,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3096385041.0,
+                  "last": 3167834797.0,
+                  "delta": 71449756.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 530,
+                  "unit": "bytes",
+                  "minimum": 3149922304.0,
+                  "maximum": 3328180224.0,
+                  "mean": 3181620954.324528,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3156604754.0,
+                  "last": 3211237341.0,
+                  "delta": 54632587.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 530,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 530,
+                  "unit": "bytes",
+                  "minimum": 755826688.0,
+                  "maximum": 1630208000.0,
+                  "mean": 1298872010.8679245,
+                  "p50": null,
+                  "p95": null,
+                  "first": 994304347.0,
+                  "last": 1347764571.0,
+                  "delta": 353460224.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 50,
+                  "unit": "bytes",
+                  "minimum": 187919.0,
+                  "maximum": 971162.0,
+                  "mean": 574629.84,
+                  "p50": null,
+                  "p95": null,
+                  "first": 228839.0,
+                  "last": 939956.0,
+                  "delta": 711117.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 501,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 101.41184987057925,
+                  "mean": 90.39160535905559,
+                  "p50": null,
+                  "p95": null,
+                  "first": 44.34307160108355,
+                  "last": 95.89886711481624,
+                  "delta": 51.55579551373269,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 501,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 421888.0,
+                  "mean": 396968.622754491,
+                  "p50": null,
+                  "p95": null,
+                  "first": 186329.0,
+                  "last": 421888.0,
+                  "delta": 235559.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 501,
+                  "unit": "bytes",
+                  "minimum": 229376.0,
+                  "maximum": 1396736.0,
+                  "mean": 818962.9061876248,
+                  "p50": null,
+                  "p95": null,
+                  "first": 293984.0,
+                  "last": 1336978.0,
+                  "delta": 1042994.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 501,
+                  "unit": "bytes",
+                  "minimum": 755826688.0,
+                  "maximum": 1369923584.0,
+                  "mean": 1301864268.1357286,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1009601014.0,
+                  "last": 1343121261.0,
+                  "delta": 333520247.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 501,
+                  "unit": "bytes",
+                  "minimum": 118032822272.0,
+                  "maximum": 122203209728.0,
+                  "mean": 121891131007.7445,
+                  "p50": null,
+                  "p95": null,
+                  "first": 119875714376.0,
+                  "last": 122142538825.0,
+                  "delta": 2266824449.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+coder",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "topologyId": "inference-qwen-a40-s42",
+          "interval": {
+            "since": "2026-08-31T15:51:49.458445Z",
+            "until": "2026-08-31T16:00:11.282843Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-a40-local-s42",
+            "mi-serve-qwen-a40-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 220,
+            "firstSampleAt": "2026-08-31T15:51:00Z",
+            "lastSampleAt": "2026-08-31T16:00:00Z",
+            "instances": {
+              "lsr-golden-a40-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 413,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 413,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 414,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 414,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 414,
+                  "unit": "bytes",
+                  "minimum": 838148096.0,
+                  "maximum": 838180864.0,
+                  "mean": 838165746.3961352,
+                  "p50": null,
+                  "p95": null,
+                  "first": 838167756.0,
+                  "last": 838164480.0,
+                  "delta": -3276.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 29,
+                  "unit": "bytes",
+                  "minimum": 558085913.0,
+                  "maximum": 558573610.0,
+                  "mean": 558341744.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 558105641.0,
+                  "last": 558558289.0,
+                  "delta": 452648.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 288,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 3.3620225927977185,
+                  "mean": 0.500172344337416,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.696009137464726,
+                  "last": 0.21200127285004708,
+                  "delta": -0.48400786461467893,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 288,
+                  "unit": "bytes",
+                  "minimum": 213098705.0,
+                  "maximum": 213098705.0,
+                  "mean": 213098705.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 213098705.0,
+                  "last": 213098705.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 288,
+                  "unit": "bytes",
+                  "minimum": 581809.0,
+                  "maximum": 1083460.0,
+                  "mean": 844603.3923611111,
+                  "p50": null,
+                  "p95": null,
+                  "first": 607197.0,
+                  "last": 1060393.0,
+                  "delta": 453196.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 288,
+                  "unit": "bytes",
+                  "minimum": 838148096.0,
+                  "maximum": 838180864.0,
+                  "mean": 838165418.6666666,
+                  "p50": null,
+                  "p95": null,
+                  "first": 838166457.0,
+                  "last": 838164480.0,
+                  "delta": -1977.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 288,
+                  "unit": "bytes",
+                  "minimum": 1382572032.0,
+                  "maximum": 1382637568.0,
+                  "mean": 1382607644.4444444,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1382618359.0,
+                  "last": 1382604800.0,
+                  "delta": -13559.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-a40-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 589,
+                  "unit": "bytes",
+                  "minimum": 3095948800.0,
+                  "maximum": 3390524416.0,
+                  "mean": 3285096158.533107,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3141122325.0,
+                  "last": 3370587378.0,
+                  "delta": 229465053.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 589,
+                  "unit": "bytes",
+                  "minimum": 3135775744.0,
+                  "maximum": 3392137216.0,
+                  "mean": 3306167874.064516,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3167834797.0,
+                  "last": 3380792996.0,
+                  "delta": 212958199.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 589,
+                  "unit": "bytes",
+                  "minimum": 3181379584.0,
+                  "maximum": 3418357760.0,
+                  "mean": 3336985413.976231,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3211237341.0,
+                  "last": 3408760623.0,
+                  "delta": 197523282.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 589,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 589,
+                  "unit": "bytes",
+                  "minimum": 1336545280.0,
+                  "maximum": 1630208000.0,
+                  "mean": 1367702314.1595926,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1347764571.0,
+                  "last": 1369389021.0,
+                  "delta": 21624450.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 56,
+                  "unit": "bytes",
+                  "minimum": 908750.0,
+                  "maximum": 1766172.0,
+                  "mean": 1337514.0714285714,
+                  "p50": null,
+                  "p95": null,
+                  "first": 939956.0,
+                  "last": 1735263.0,
+                  "delta": 795307.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 560,
+                  "unit": "percent",
+                  "minimum": 74.56514659986439,
+                  "maximum": 101.44196789505622,
+                  "mean": 95.69236522086568,
+                  "p50": null,
+                  "p95": null,
+                  "first": 95.89886711481624,
+                  "last": 97.90557536767878,
+                  "delta": 2.0067082528625377,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 560,
+                  "unit": "bytes",
+                  "minimum": 421888.0,
+                  "maximum": 421888.0,
+                  "mean": 421888.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 421888.0,
+                  "last": 421888.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 560,
+                  "unit": "bytes",
+                  "minimum": 1273856.0,
+                  "maximum": 2572288.0,
+                  "mean": 1922530.7428571428,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1336978.0,
+                  "last": 2509312.0,
+                  "delta": 1172334.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 560,
+                  "unit": "bytes",
+                  "minimum": 1336545280.0,
+                  "maximum": 1370021888.0,
+                  "mean": 1367242276.5714285,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1343121261.0,
+                  "last": 1369394834.0,
+                  "delta": 26273573.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 560,
+                  "unit": "bytes",
+                  "minimum": 122127708160.0,
+                  "maximum": 122203209728.0,
+                  "mean": 122197142637.71428,
+                  "p50": null,
+                  "p95": null,
+                  "first": 122142538825.0,
+                  "last": 122203209728.0,
+                  "delta": 60670903.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+parent+child",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "topologyId": "inference-qwen-a40-s42",
+          "interval": {
+            "since": "2026-08-31T16:00:11.409871Z",
+            "until": "2026-08-31T16:08:28.907240Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-a40-local-s42",
+            "mi-serve-qwen-a40-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 198,
+            "firstSampleAt": "2026-08-31T16:00:00Z",
+            "lastSampleAt": "2026-08-31T16:08:00Z",
+            "instances": {
+              "lsr-golden-a40-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 322,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 323,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 322,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 323,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 323,
+                  "unit": "bytes",
+                  "minimum": 838131712.0,
+                  "maximum": 851431424.0,
+                  "mean": 838763117.374613,
+                  "p50": null,
+                  "p95": null,
+                  "first": 838164480.0,
+                  "last": 844041743.0,
+                  "delta": 5877263.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 27,
+                  "unit": "bytes",
+                  "minimum": 558542810.0,
+                  "maximum": 558921755.0,
+                  "mean": 558736173.4814814,
+                  "p50": null,
+                  "p95": null,
+                  "first": 558558289.0,
+                  "last": 558907801.0,
+                  "delta": 349512.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 268,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 19.230769230769234,
+                  "mean": 0.4433306937177667,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.21200127285004708,
+                  "last": 1.7557022875122335,
+                  "delta": 1.5437010146621863,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 268,
+                  "unit": "bytes",
+                  "minimum": 213098705.0,
+                  "maximum": 300146975.0,
+                  "mean": 216346774.7761194,
+                  "p50": null,
+                  "p95": null,
+                  "first": 213098705.0,
+                  "last": 243115349.0,
+                  "delta": 30016644.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 268,
+                  "unit": "bytes",
+                  "minimum": 1037746.0,
+                  "maximum": 1429924.0,
+                  "mean": 1237910.6753731344,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1060393.0,
+                  "last": 1410560.0,
+                  "delta": 350167.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 268,
+                  "unit": "bytes",
+                  "minimum": 838131712.0,
+                  "maximum": 851431424.0,
+                  "mean": 838815881.5522388,
+                  "p50": null,
+                  "p95": null,
+                  "first": 838164480.0,
+                  "last": 844203537.0,
+                  "delta": 6039057.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 268,
+                  "unit": "bytes",
+                  "minimum": 1353736192.0,
+                  "maximum": 1385209856.0,
+                  "mean": 1381348841.074627,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1382604800.0,
+                  "last": 1371010436.0,
+                  "delta": -11594364.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-a40-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 531,
+                  "unit": "bytes",
+                  "minimum": 3288171520.0,
+                  "maximum": 3404174848.0,
+                  "mean": 3384426066.922787,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3370587378.0,
+                  "last": 3386577477.0,
+                  "delta": 15990099.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 531,
+                  "unit": "bytes",
+                  "minimum": 3323823104.0,
+                  "maximum": 3417846784.0,
+                  "mean": 3405862736.512241,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3380792996.0,
+                  "last": 3417846784.0,
+                  "delta": 37053788.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 531,
+                  "unit": "bytes",
+                  "minimum": 3355443200.0,
+                  "maximum": 3462397952.0,
+                  "mean": 3435178419.826742,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3408760623.0,
+                  "last": 3462397952.0,
+                  "delta": 53637329.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 531,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 531,
+                  "unit": "bytes",
+                  "minimum": 1369255936.0,
+                  "maximum": 1370021888.0,
+                  "mean": 1369403322.5762713,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1369389021.0,
+                  "last": 1369460041.0,
+                  "delta": 71020.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 50,
+                  "unit": "bytes",
+                  "minimum": 1703760.0,
+                  "maximum": 2483910.0,
+                  "mean": 2087861.28,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1735263.0,
+                  "last": 2452704.0,
+                  "delta": 717441.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 506,
+                  "unit": "percent",
+                  "minimum": 66.42743762612656,
+                  "maximum": 101.4899867562922,
+                  "mean": 95.78403676382496,
+                  "p50": null,
+                  "p95": null,
+                  "first": 97.90557536767878,
+                  "last": 96.02221895532936,
+                  "delta": -1.8833564123494142,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 506,
+                  "unit": "bytes",
+                  "minimum": 421888.0,
+                  "maximum": 421888.0,
+                  "mean": 421888.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 421888.0,
+                  "last": 421888.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 506,
+                  "unit": "bytes",
+                  "minimum": 2449408.0,
+                  "maximum": 3616768.0,
+                  "mean": 3030044.33201581,
+                  "p50": null,
+                  "p95": null,
+                  "first": 2509312.0,
+                  "last": 3552621.0,
+                  "delta": 1043309.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 506,
+                  "unit": "bytes",
+                  "minimum": 1369255936.0,
+                  "maximum": 1370021888.0,
+                  "mean": 1369403651.035573,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1369394834.0,
+                  "last": 1369460150.0,
+                  "delta": 65316.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 506,
+                  "unit": "bytes",
+                  "minimum": 122203209728.0,
+                  "maximum": 122204258304.0,
+                  "mean": 122204009629.84981,
+                  "p50": null,
+                  "p95": null,
+                  "first": 122203209728.0,
+                  "last": 122204258304.0,
+                  "delta": 1048576.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "state": "base+lsr+mi",
+          "status": "captured",
+          "sourceRun": "2026-08-31-qwen-a40-full-s42-v1",
+          "topologyId": "inference-qwen-a40-s42",
+          "interval": {
+            "since": "2026-08-31T16:08:28.992519Z",
+            "until": "2026-08-31T16:17:22.119673Z"
+          },
+          "resolution": "minute",
+          "instanceIds": [
+            "lsr-golden-a40-local-s42",
+            "mi-serve-qwen-a40-s42"
+          ],
+          "truncated": false,
+          "instanceErrors": {},
+          "metrics": {
+            "sampleCount": 220,
+            "firstSampleAt": "2026-08-31T16:08:00Z",
+            "lastSampleAt": "2026-08-31T16:17:00Z",
+            "instances": {
+              "lsr-golden-a40-local-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 320,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 322,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 320,
+                  "unit": "bytes",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 319,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 318,
+                  "unit": "bytes",
+                  "minimum": 838148096.0,
+                  "maximum": 951304192.0,
+                  "mean": 882983027.9245284,
+                  "p50": null,
+                  "p95": null,
+                  "first": 844041743.0,
+                  "last": 918790963.0,
+                  "delta": 74749220.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 30,
+                  "unit": "bytes",
+                  "minimum": 558893126.0,
+                  "maximum": 559268944.0,
+                  "mean": 559083174.9,
+                  "p50": null,
+                  "p95": null,
+                  "first": 558907801.0,
+                  "last": 559255227.0,
+                  "delta": 347426.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 297,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 63.217089371322956,
+                  "mean": 12.675841686779222,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1.7557022875122335,
+                  "last": 7.562410058053898,
+                  "delta": 5.806707770541665,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 297,
+                  "unit": "bytes",
+                  "minimum": 213098705.0,
+                  "maximum": 3923127735.0,
+                  "mean": 1710102643.3973064,
+                  "p50": null,
+                  "p95": null,
+                  "first": 243115349.0,
+                  "last": 3893248147.0,
+                  "delta": 3650132798.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 297,
+                  "unit": "bytes",
+                  "minimum": 1391428.0,
+                  "maximum": 1776151.0,
+                  "mean": 1585909.9191919193,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1410560.0,
+                  "last": 1758611.0,
+                  "delta": 348051.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 297,
+                  "unit": "bytes",
+                  "minimum": 838148096.0,
+                  "maximum": 951304192.0,
+                  "mean": 883745623.057239,
+                  "p50": null,
+                  "p95": null,
+                  "first": 844203537.0,
+                  "last": 919476299.0,
+                  "delta": 75272762.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 297,
+                  "unit": "bytes",
+                  "minimum": 1350856704.0,
+                  "maximum": 1457164288.0,
+                  "mean": 1385001690.936027,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1371010436.0,
+                  "last": 1413539157.0,
+                  "delta": 42528721.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              },
+              "mi-serve-qwen-a40-s42": {
+                "accelerator.memory.allocated": {
+                  "count": 588,
+                  "unit": "bytes",
+                  "minimum": 3376735744.0,
+                  "maximum": 3403348992.0,
+                  "mean": 3385093261.0612245,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3386577477.0,
+                  "last": 3379136954.0,
+                  "delta": -7440523.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.peak": {
+                  "count": 588,
+                  "unit": "bytes",
+                  "minimum": 3417846784.0,
+                  "maximum": 3417846784.0,
+                  "mean": 3417846784.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3417846784.0,
+                  "last": 3417846784.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "accelerator.memory.reserved": {
+                  "count": 588,
+                  "unit": "bytes",
+                  "minimum": 3462397952.0,
+                  "maximum": 3462397952.0,
+                  "mean": 3462397952.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3462397952.0,
+                  "last": 3462397952.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.cpu.percent": {
+                  "count": 588,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 0.0,
+                  "mean": 0.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 0.0,
+                  "last": 0.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "component.memory.rss": {
+                  "count": 588,
+                  "unit": "bytes",
+                  "minimum": 1369448448.0,
+                  "maximum": 1369616384.0,
+                  "mean": 1369569760.6530612,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1369460041.0,
+                  "last": 1369616384.0,
+                  "delta": 156343.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "instance.storage.used": {
+                  "count": 56,
+                  "unit": "bytes",
+                  "minimum": 2421498.0,
+                  "maximum": 3283378.0,
+                  "mean": 2850108.125,
+                  "p50": null,
+                  "p95": null,
+                  "first": 2452704.0,
+                  "last": 3249794.0,
+                  "delta": 797090.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "estimated"
+                  ]
+                },
+                "process.cpu.percent": {
+                  "count": 558,
+                  "unit": "percent",
+                  "minimum": 0.0,
+                  "maximum": 101.52670290676618,
+                  "mean": 87.01936823226899,
+                  "p50": null,
+                  "p95": null,
+                  "first": 96.02221895532936,
+                  "last": 32.61365626153425,
+                  "delta": -63.40856269379511,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.read": {
+                  "count": 558,
+                  "unit": "bytes",
+                  "minimum": 421888.0,
+                  "maximum": 421888.0,
+                  "mean": 421888.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 421888.0,
+                  "last": 421888.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.io.write": {
+                  "count": 558,
+                  "unit": "bytes",
+                  "minimum": 3489792.0,
+                  "maximum": 4788224.0,
+                  "mean": 4135279.0250896057,
+                  "p50": null,
+                  "p95": null,
+                  "first": 3552621.0,
+                  "last": 4724508.0,
+                  "delta": 1171887.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.rss": {
+                  "count": 558,
+                  "unit": "bytes",
+                  "minimum": 1369448448.0,
+                  "maximum": 1369616384.0,
+                  "mean": 1369569573.6200716,
+                  "p50": null,
+                  "p95": null,
+                  "first": 1369460150.0,
+                  "last": 1369616384.0,
+                  "delta": 156234.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                },
+                "process.memory.vms": {
+                  "count": 558,
+                  "unit": "bytes",
+                  "minimum": 122204258304.0,
+                  "maximum": 122204258304.0,
+                  "mean": 122204258304.0,
+                  "p50": null,
+                  "p95": null,
+                  "first": 122204258304.0,
+                  "last": 122204258304.0,
+                  "delta": 0.0,
+                  "sources": [
+                    "jester-rm-minute-rollup"
+                  ],
+                  "confidence": [
+                    "exact"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

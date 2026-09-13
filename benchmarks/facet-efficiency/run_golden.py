@@ -134,13 +134,30 @@ def request_json(
     if payload is not None:
         headers["Content-Type"] = "application/json"
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {exc.code} from {url}: {detail}") from exc
+    # This harness only uses POST for deterministic, side-effect-free LSR rank
+    # and MI generation calls.  A reset SSH relay may drop the response after
+    # the worker has computed it, so repeating the same requestId/seed is safer
+    # than writing a synthetic failed golden sample.  The longer window gives
+    # RM's explicit channel reconcile enough time to replace a dead forward.
+    safe_to_retry = method.upper() in {"GET", "POST"}
+    attempts = 10 if safe_to_retry else 1
+    for attempt in range(attempts):
+        request = urllib.request.Request(
+            url, data=data, headers=headers, method=method
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            retryable = exc.code in {408, 429, 500, 502, 503, 504}
+            if not safe_to_retry or not retryable or attempt + 1 == attempts:
+                raise RuntimeError(f"HTTP {exc.code} from {url}: {detail}") from exc
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError):
+            if not safe_to_retry or attempt + 1 == attempts:
+                raise
+        time.sleep(min(0.5 * (2**attempt), 4.0))
+    raise RuntimeError(f"Request retries exhausted for {url}")
 
 
 def extract_root_json(text: str) -> dict[str, Any] | None:
@@ -659,16 +676,180 @@ def control_plane_snapshot(config: dict[str, Any], root: Path) -> dict[str, Any]
     return result
 
 
+def recover_completed_state(
+    *,
+    state: dict[str, Any],
+    designs: list[dict[str, Any]],
+    problems: list[dict[str, Any]],
+    design_output: Path,
+    samples_output: Path,
+    telemetry_output: Path,
+    previous_state: dict[str, Any],
+    health_after: dict[str, Any],
+) -> dict[str, Any]:
+    design_records = load_jsonl(design_output)
+    samples = load_jsonl(samples_output)
+    human_telemetry = load_jsonl(telemetry_output)
+    if len(design_records) != len(designs):
+        raise RuntimeError(
+            f"Cannot recover {state['id']}: design output is incomplete "
+            f"({len(design_records)}/{len(designs)})"
+        )
+    if len(samples) != len(problems) or len(human_telemetry) != len(problems):
+        raise RuntimeError(
+            f"Cannot recover {state['id']}: HumanEval output is incomplete "
+            f"({len(samples)}/{len(human_telemetry)}/{len(problems)})"
+        )
+    if {str(item.get("id")) for item in design_records} != {
+        str(item["id"]) for item in designs
+    }:
+        raise RuntimeError(f"Cannot recover {state['id']}: design IDs differ")
+    expected_tasks = {str(item["task_id"]) for item in problems}
+    if {str(item.get("task_id")) for item in samples} != expected_tasks or {
+        str(item.get("task_id")) for item in human_telemetry
+    } != expected_tasks:
+        raise RuntimeError(f"Cannot recover {state['id']}: HumanEval IDs differ")
+
+    syntax_passes = sum(
+        1 for item in human_telemetry if item.get("syntaxPassed") is True
+    )
+    human_errors = sum(1 for item in human_telemetry if item.get("error"))
+    finished = max(
+        design_output.stat().st_mtime,
+        samples_output.stat().st_mtime,
+        telemetry_output.stat().st_mtime,
+    )
+    previous_finished = float(previous_state.get("finishedAtUnix") or finished)
+    started = min(previous_finished, finished)
+    health_before = previous_state.get("miHealthAfter") or health_after
+    state_id = str(state["id"])
+    return {
+        "id": state_id,
+        "facets": state.get("facets", []),
+        "routeWithLsr": bool(state.get("routeWithLsr")),
+        "startedAtUnix": started,
+        "finishedAtUnix": finished,
+        "wallSeconds": round(max(0.0, finished - started), 6),
+        "timingProvenance": "recovered-from-complete-jsonl-file-timestamps",
+        "recoveredFromCompleteOutputs": True,
+        "miHealthBefore": health_before,
+        "miHealthAfter": health_after,
+        "design": aggregate_design(design_records),
+        "humanEval": {
+            **aggregate_generation(human_telemetry),
+            "attempted": len(problems),
+            "generationErrors": human_errors,
+            "syntaxPassRate": round(syntax_passes / len(problems), 6)
+            if problems
+            else None,
+            "functionalPassAt1": "pending-container-evaluation",
+            "samples": samples_output.name,
+            "telemetry": telemetry_output.name,
+        },
+        "routing": aggregate_routing([*design_records, *human_telemetry]),
+    }
+
+
+def archive_failed_states(
+    run_directory: Path,
+    record: dict[str, Any],
+    state_ids: list[str],
+) -> dict[str, Any]:
+    """Archive generated state evidence before an explicit selective retry.
+
+    State retries are intentionally opt-in and cannot replace the baseline.  The
+    failed files and their previous run metadata remain immutable evidence under
+    ``invalid-states`` instead of being deleted or overwritten.
+    """
+
+    if not state_ids:
+        raise RuntimeError("--retry-state requires at least one explicit --state")
+    requested = set(state_ids)
+    if "base" in requested:
+        raise RuntimeError("The base state cannot be retried in place; use a new run")
+    states_by_id = {
+        str(item.get("id")): item for item in record.get("states", [])
+    }
+    archived: list[dict[str, Any]] = []
+    for state_id in state_ids:
+        safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", state_id)
+        stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        archive = run_directory / "invalid-states" / f"{safe_id}-attempt-{stamp}"
+        suffix = 1
+        while archive.exists():
+            archive = run_directory / "invalid-states" / (
+                f"{safe_id}-attempt-{stamp}-{suffix}"
+            )
+            suffix += 1
+        archive.mkdir(parents=True)
+        candidates = [
+            run_directory / f"design.{safe_id}.jsonl",
+            run_directory / f"humaneval-samples.{safe_id}.jsonl",
+            run_directory / f"humaneval-telemetry.{safe_id}.jsonl",
+            run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl",
+            run_directory / f"humaneval-samples.{safe_id}.jsonl_results.jsonl.gz",
+        ]
+        existing = [path for path in candidates if path.is_file()]
+        required = candidates[:3]
+        if not all(path.is_file() for path in required):
+            raise RuntimeError(
+                f"Cannot retry {state_id}: generated state evidence is incomplete"
+            )
+        moved: list[str] = []
+        for path in existing:
+            destination = archive / path.name
+            shutil.move(str(path), str(destination))
+            moved.append(path.name)
+        attempt = {
+            "stateId": state_id,
+            "archivedAtUnix": time.time(),
+            "previousState": states_by_id.get(state_id),
+            "wasCommitted": state_id in states_by_id,
+            "files": moved,
+        }
+        atomic_json(archive / "attempt.json", attempt)
+        archived.append(
+            {
+                "stateId": state_id,
+                "archiveDirectory": archive.relative_to(run_directory).as_posix(),
+                "files": moved,
+            }
+        )
+
+    record["states"] = [
+        item for item in record.get("states", []) if str(item.get("id")) not in requested
+    ]
+    for field in ("pairedHumanEval", "pairedDesign", "pairedGeneralMmlu"):
+        values = record.get(field)
+        if isinstance(values, dict):
+            for state_id in requested:
+                values.pop(state_id, None)
+    record.setdefault("invalidStateAttempts", []).extend(archived)
+    record["status"] = "generated"
+    return record
+
+
 def run(
     config_path: Path,
     output: Path,
     design_limit: int,
     humaneval_limit: int,
     state_ids: list[str] | None = None,
+    resume: bool = False,
+    mi_url_override: str | None = None,
+    lsr_url_override: str | None = None,
+    retry_state: bool = False,
 ) -> None:
     config_path = config_path.resolve()
     root = config_path.parent
     config = json.loads(config_path.read_text(encoding="utf-8"))
+    runtime_config = {
+        **config,
+        "lsr": {
+            **(config.get("lsr") or {}),
+            **({"url": lsr_url_override} if lsr_url_override else {}),
+        },
+    }
     design_path = (root / config["designSuite"]).resolve()
     humaneval_path = (root / config["humanEvalSuite"]).resolve()
     if sha256_file(humaneval_path) != HUMANEVAL_SHA256:
@@ -691,46 +872,126 @@ def run(
         states = [item for item in configured_states if str(item["id"]) in selected]
     else:
         states = configured_states
-    if not states or str(states[0]["id"]) != "base":
+    if not states:
+        raise RuntimeError("At least one state must be selected")
+    if not resume and str(states[0]["id"]) != "base":
         raise RuntimeError("Every standalone run must include base as its first state")
-    mi_url = str(config["miUrl"]).rstrip("/")
-    effective_config = {**config, "states": states}
-    preflight = provenance_preflight(effective_config, root, mi_url)
+    mi_url = str(mi_url_override or config["miUrl"]).rstrip("/")
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    config_snapshot = output / "experiment-config.json"
-    if config_snapshot.exists():
-        raise RuntimeError("Experiment config snapshot already exists; use a new run directory")
-    shutil.copyfile(config_path, config_snapshot)
-    evaluation_problems = output / "humaneval-problems.jsonl"
-    if evaluation_problems.exists():
-        raise RuntimeError(
-            "HumanEval problem snapshot already exists; use a new run directory"
+    run_path = output / "run.json"
+    if resume:
+        if not run_path.is_file():
+            raise RuntimeError("--resume requires an existing run.json")
+        run_record = json.loads(run_path.read_text(encoding="utf-8"))
+        if run_record.get("schemaVersion") != SCHEMA_VERSION:
+            raise RuntimeError("Cannot resume an incompatible run schema")
+        if run_record.get("configSha256") != sha256_file(config_path):
+            raise RuntimeError("Current config does not match the immutable run config")
+        config_snapshot = output / str(run_record.get("configSnapshot", ""))
+        if not config_snapshot.is_file() or sha256_file(config_snapshot) != sha256_file(
+            config_path
+        ):
+            raise RuntimeError("Immutable experiment config snapshot mismatch")
+        evaluation_problems = output / str(
+            run_record.get("suites", {})
+            .get("humanEval", {})
+            .get("evaluationFile", "")
         )
-    atomic_jsonl(evaluation_problems, problems)
-    started = time.time()
-    run_record: dict[str, Any] = {
-        "schemaVersion": SCHEMA_VERSION,
-        "status": "running",
-        "startedAtUnix": started,
-        "configSha256": sha256_file(config_path),
-        "configSnapshot": config_snapshot.name,
-        "family": config.get("family"),
-        "selectedStateIds": [str(item["id"]) for item in states],
-        "suites": {
-            "coderDesign": {"sha256": sha256_file(design_path), "records": len(designs)},
-            "humanEval": {
-                "sourceSha256": sha256_file(humaneval_path),
-                "evaluationSha256": sha256_file(evaluation_problems),
-                "evaluationFile": evaluation_problems.name,
-                "records": len(problems),
+        if not evaluation_problems.is_file():
+            raise RuntimeError("HumanEval problem snapshot is missing")
+        expected_evaluation = (
+            run_record.get("suites", {})
+            .get("humanEval", {})
+            .get("evaluationSha256")
+        )
+        if expected_evaluation != sha256_file(evaluation_problems):
+            raise RuntimeError("HumanEval problem snapshot digest mismatch")
+        if (
+            run_record.get("suites", {}).get("coderDesign", {}).get("records")
+            != len(designs)
+            or run_record.get("suites", {}).get("humanEval", {}).get("records")
+            != len(problems)
+        ):
+            raise RuntimeError("Resume suite limits differ from the original run")
+        if retry_state:
+            run_record = archive_failed_states(
+                output,
+                run_record,
+                [str(item["id"]) for item in states],
+            )
+            # Archival is a material mutation and must be durable even when the
+            # following model/channel preflight fails.  Otherwise the evidence
+            # remains on disk but the run manifest silently loses its pointer.
+            atomic_json(run_path, run_record)
+        completed_ids = {str(item["id"]) for item in run_record.get("states", [])}
+        duplicate_ids = [str(item["id"]) for item in states if str(item["id"]) in completed_ids]
+        if duplicate_ids:
+            raise RuntimeError(f"Selected states are already complete: {duplicate_ids}")
+        if not run_record.get("states") or run_record["states"][0].get("id") != "base":
+            raise RuntimeError("A resumed run requires an existing base state")
+        preflight = provenance_preflight({**config, "states": configured_states}, root, mi_url)
+        started = float(run_record["startedAtUnix"])
+        run_record["status"] = "running"
+        run_record.setdefault("resumeAttempts", []).append(
+            {
+                "startedAtUnix": time.time(),
+                "selectedStateIds": [str(item["id"]) for item in states],
+                "miEndpointOverridden": mi_url_override is not None,
+                "lsrEndpointOverridden": lsr_url_override is not None,
+                "preflight": preflight,
+                "controlPlaneBefore": control_plane_snapshot(config, root),
+                "retriedStateIds": [str(item["id"]) for item in states]
+                if retry_state
+                else [],
+            }
+        )
+        atomic_json(run_path, run_record)
+    else:
+        if retry_state:
+            raise RuntimeError("--retry-state requires --resume")
+        effective_config = {**config, "states": states}
+        preflight = provenance_preflight(effective_config, root, mi_url)
+        config_snapshot = output / "experiment-config.json"
+        if config_snapshot.exists():
+            raise RuntimeError(
+                "Experiment config snapshot already exists; use a new run directory"
+            )
+        shutil.copyfile(config_path, config_snapshot)
+        evaluation_problems = output / "humaneval-problems.jsonl"
+        if evaluation_problems.exists():
+            raise RuntimeError(
+                "HumanEval problem snapshot already exists; use a new run directory"
+            )
+        atomic_jsonl(evaluation_problems, problems)
+        started = time.time()
+        run_record = {
+            "schemaVersion": SCHEMA_VERSION,
+            "status": "running",
+            "startedAtUnix": started,
+            "configSha256": sha256_file(config_path),
+            "configSnapshot": config_snapshot.name,
+            "family": config.get("family"),
+            "selectedStateIds": [str(item["id"]) for item in states],
+            "miEndpointOverridden": mi_url_override is not None,
+            "lsrEndpointOverridden": lsr_url_override is not None,
+            "suites": {
+                "coderDesign": {
+                    "sha256": sha256_file(design_path),
+                    "records": len(designs),
+                },
+                "humanEval": {
+                    "sourceSha256": sha256_file(humaneval_path),
+                    "evaluationSha256": sha256_file(evaluation_problems),
+                    "evaluationFile": evaluation_problems.name,
+                    "records": len(problems),
+                },
             },
-        },
-        "controlPlaneBefore": control_plane_snapshot(config, root),
-        "preflight": preflight,
-        "states": [],
-    }
-    atomic_json(output / "run.json", run_record)
+            "controlPlaneBefore": control_plane_snapshot(config, root),
+            "preflight": preflight,
+            "states": [],
+        }
+        atomic_json(run_path, run_record)
     for state in states:
         state_started = time.time()
         health_before = request_json("GET", f"{mi_url}/health", timeout=60)
@@ -739,15 +1000,40 @@ def run(
         design_output = output / f"design.{safe_id}.jsonl"
         samples_output = output / f"humaneval-samples.{safe_id}.jsonl"
         telemetry_output = output / f"humaneval-telemetry.{safe_id}.jsonl"
-        if design_output.exists() or samples_output.exists() or telemetry_output.exists():
-            raise RuntimeError(f"Output for state {state_id} already exists; use a new run directory")
+        existing_outputs = [
+            design_output.exists(),
+            samples_output.exists(),
+            telemetry_output.exists(),
+        ]
+        if any(existing_outputs):
+            if not resume or not all(existing_outputs):
+                raise RuntimeError(
+                    f"Partial or unexpected output exists for state {state_id}; "
+                    "refusing an ambiguous resume"
+                )
+            recovered = recover_completed_state(
+                state=state,
+                designs=designs,
+                problems=problems,
+                design_output=design_output,
+                samples_output=samples_output,
+                telemetry_output=telemetry_output,
+                previous_state=run_record["states"][-1],
+                health_after=health_before,
+            )
+            run_record["states"].append(recovered)
+            run_record["resumeAttempts"][-1].setdefault(
+                "recoveredStateIds", []
+            ).append(state_id)
+            atomic_json(run_path, run_record)
+            continue
         design_records: list[dict[str, Any]] = []
         for item in designs:
             facets: list[str] = []
             route: dict[str, Any] | None = None
             try:
                 facets, route = request_facets(
-                    config, state, str(item["prompt"]), "coder"
+                    runtime_config, state, str(item["prompt"]), "coder"
                 )
                 payload = {
                     "requestId": f"golden:{state_id}:design:{item['id']}",
@@ -804,7 +1090,7 @@ def run(
             }
             try:
                 facets, route = request_facets(
-                    config, state, str(item["prompt"]), "coder.python"
+                    runtime_config, state, str(item["prompt"]), "coder.python"
                 )
                 payload["facets"] = facets
                 response = request_json("POST", f"{mi_url}/generate", payload)
@@ -872,17 +1158,142 @@ def run(
             }
         )
         atomic_json(output / "run.json", run_record)
+    state_order = {
+        str(item["id"]): index for index, item in enumerate(configured_states)
+    }
+    run_record["states"].sort(
+        key=lambda item: state_order.get(str(item.get("id")), len(state_order))
+    )
     run_record["status"] = "generated"
     run_record["finishedAtUnix"] = time.time()
     run_record["wallSeconds"] = round(run_record["finishedAtUnix"] - started, 6)
     run_record["controlPlaneAfter"] = control_plane_snapshot(config, root)
-    atomic_json(output / "run.json", run_record)
+    if resume:
+        run_record["resumeAttempts"][-1]["completedAtUnix"] = run_record[
+            "finishedAtUnix"
+        ]
+    atomic_json(run_path, run_record)
 
 
-def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
+def archive_failed_general_attempt(
+    run_directory: Path, record: dict[str, Any]
+) -> dict[str, Any]:
+    suite = record.get("suites", {}).get("generalMmlu")
+    if not isinstance(suite, dict):
+        raise RuntimeError("--retry-failed requires an existing general-retention attempt")
+    state_ids = [str(item["id"]) for item in record.get("states", [])]
+    snapshot = run_directory / "general-mmlu-problems.jsonl"
+    outputs = [
+        run_directory
+        / f"general-mmlu.{re.sub(r'[^A-Za-z0-9._-]+', '_', state_id)}.jsonl"
+        for state_id in state_ids
+    ]
+    existing = [path for path in [snapshot, *outputs] if path.is_file()]
+    if not existing:
+        raise RuntimeError("The failed general-retention attempt has no files to archive")
+    result_files = [path for path in outputs if path.is_file()]
+    if not result_files:
+        raise RuntimeError("The failed general-retention attempt has no result files")
+    for path in result_files:
+        rows = load_jsonl(path)
+        if not rows or any(not row.get("error") for row in rows):
+            raise RuntimeError(
+                "--retry-failed only replaces attempts whose existing rows are all errors"
+            )
+    archive = run_directory / "invalid-general" / f"attempt-{int(time.time())}"
+    archive.mkdir(parents=True, exist_ok=False)
+    for path in existing:
+        path.replace(archive / path.name)
+    previous = {
+        "archivedAtUnix": time.time(),
+        "archiveDirectory": str(archive.relative_to(run_directory)),
+        "suite": suite,
+        "generalRetention": record.get("generalRetention"),
+        "stateSummaries": {
+            str(state["id"]): state.get("generalMmlu")
+            for state in record.get("states", [])
+            if state.get("generalMmlu") is not None
+        },
+    }
+    record.setdefault("invalidGeneralAttempts", []).append(previous)
+    record.setdefault("suites", {}).pop("generalMmlu", None)
+    record.pop("generalRetention", None)
+    record.pop("pairedGeneralMmlu", None)
+    for state in record.get("states", []):
+        state.pop("generalMmlu", None)
+    record["status"] = "generated"
+    atomic_json(run_directory / "run.json", record)
+    return record
+
+
+def reconcile_invalid_state_attempts(
+    run_directory: Path, record: dict[str, Any]
+) -> dict[str, Any]:
+    """Restore manifest pointers for durable retry archives.
+
+    Older harness revisions moved evidence before model/channel preflight but
+    persisted ``run.json`` only after preflight.  A failed preflight could
+    therefore leave a valid ``attempt.json`` on disk without a manifest entry.
+    Summarization recovers that immutable provenance without changing results.
+    """
+
+    archive_root = run_directory / "invalid-states"
+    if not archive_root.is_dir():
+        return record
+    existing = {
+        str(item.get("archiveDirectory"))
+        for item in record.get("invalidStateAttempts", [])
+        if item.get("archiveDirectory")
+    }
+    recovered: list[dict[str, Any]] = []
+    for attempt_path in sorted(archive_root.glob("*/attempt.json")):
+        relative_directory = attempt_path.parent.relative_to(run_directory).as_posix()
+        if relative_directory in existing:
+            continue
+        attempt = json.loads(attempt_path.read_text(encoding="utf-8"))
+        files = attempt.get("files")
+        if not isinstance(files, list) or not files:
+            raise RuntimeError(f"Invalid archived state manifest: {attempt_path}")
+        missing = [
+            str(name)
+            for name in files
+            if not (attempt_path.parent / str(name)).is_file()
+        ]
+        if missing:
+            raise RuntimeError(
+                f"Archived state attempt {attempt_path.parent} is missing files: {missing}"
+            )
+        recovered.append(
+            {
+                "stateId": str(attempt.get("stateId")),
+                "archiveDirectory": relative_directory,
+                "files": [str(name) for name in files],
+                "recoveredFromArchiveManifest": True,
+            }
+        )
+    if recovered:
+        record.setdefault("invalidStateAttempts", []).extend(recovered)
+    return record
+
+
+def run_general(
+    config_path: Path,
+    run_directory: Path,
+    limit: int,
+    mi_url_override: str | None = None,
+    lsr_url_override: str | None = None,
+    retry_failed: bool = False,
+) -> None:
     config_path = config_path.resolve()
     root = config_path.parent
     config = json.loads(config_path.read_text(encoding="utf-8"))
+    runtime_config = {
+        **config,
+        "lsr": {
+            **(config.get("lsr") or {}),
+            **({"url": lsr_url_override} if lsr_url_override else {}),
+        },
+    }
     suite_value = config.get("generalSuite")
     if not suite_value:
         raise RuntimeError("The experiment config has no generalSuite")
@@ -896,6 +1307,8 @@ def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
     run_directory = run_directory.resolve()
     record_path = run_directory / "run.json"
     record = json.loads(record_path.read_text(encoding="utf-8"))
+    if retry_failed:
+        record = archive_failed_general_attempt(run_directory, record)
     if record.get("status") not in {"generated", "evaluated"}:
         raise RuntimeError("The coding/HumanEval generation run must finish first")
     recorded_ids = [str(item["id"]) for item in record.get("states", [])]
@@ -907,6 +1320,18 @@ def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
     configured_ids = recorded_ids
     if record.get("suites", {}).get("generalMmlu"):
         raise RuntimeError("The run already contains a general-retention suite")
+
+    mi_url = str(mi_url_override or config["miUrl"]).rstrip("/")
+    general_preflight = provenance_preflight(
+        {**runtime_config, "states": configured_states}, root, mi_url
+    )
+    if any(state.get("routeWithLsr") for state in configured_states):
+        lsr_url = str((runtime_config.get("lsr") or {}).get("url") or "").rstrip("/")
+        if not lsr_url:
+            raise RuntimeError("A routed general-retention state requires lsr.url")
+        general_preflight["lsrHealth"] = request_json(
+            "GET", f"{lsr_url}/health", timeout=60
+        )
 
     snapshot = run_directory / "general-mmlu-problems.jsonl"
     output_paths = [
@@ -929,10 +1354,12 @@ def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
         "status": "running",
         "startedAtUnix": started,
         "configSha256": sha256_file(config_path),
+        "miEndpointOverridden": mi_url_override is not None,
+        "lsrEndpointOverridden": lsr_url_override is not None,
+        "preflight": general_preflight,
     }
     atomic_json(record_path, record)
 
-    mi_url = str(config["miUrl"]).rstrip("/")
     state_records = {str(item["id"]): item for item in record["states"]}
     for state, output_path in zip(configured_states, output_paths, strict=True):
         state_id = str(state["id"])
@@ -943,7 +1370,7 @@ def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
             facets: list[str] = []
             route: dict[str, Any] | None = None
             try:
-                facets, route = request_facets(config, state, prompt, None)
+                facets, route = request_facets(runtime_config, state, prompt, None)
                 response = request_json(
                     "POST",
                     f"{mi_url}/generate",
@@ -1009,13 +1436,15 @@ def run_general(config_path: Path, run_directory: Path, limit: int) -> None:
         atomic_json(record_path, record)
 
     finished = time.time()
-    record["generalRetention"] = {
-        "status": "generated",
-        "startedAtUnix": started,
-        "finishedAtUnix": finished,
-        "wallSeconds": round(finished - started, 6),
-        "configSha256": sha256_file(config_path),
-    }
+    record["generalRetention"].update(
+        {
+            "status": "generated",
+            "startedAtUnix": started,
+            "finishedAtUnix": finished,
+            "wallSeconds": round(finished - started, 6),
+            "configSha256": sha256_file(config_path),
+        }
+    )
     record["controlPlaneAfterGeneral"] = control_plane_snapshot(config, root)
     atomic_json(record_path, record)
 
@@ -1053,6 +1482,7 @@ def summarize(run_directory: Path) -> None:
     run_directory = run_directory.resolve()
     record_path = run_directory / "run.json"
     record = json.loads(record_path.read_text(encoding="utf-8"))
+    record = reconcile_invalid_state_attempts(run_directory, record)
     for item in record.get("preflight", {}).get("files", []):
         path = Path(str(item.get("path") or ""))
         if (
@@ -1094,6 +1524,12 @@ def summarize(run_directory: Path) -> None:
                     f"General-retention results for {state['id']} contain "
                     f"{len(general_rows)} rows and {len(set(general_ids))} unique IDs; "
                     f"expected {expected_general}"
+                )
+            general_errors = sum(bool(item.get("error")) for item in general_rows)
+            if general_errors:
+                raise RuntimeError(
+                    f"General-retention results for {state['id']} contain "
+                    f"{general_errors} infrastructure errors; refusing to score them"
                 )
             state.setdefault("generalMmlu", {}).update(aggregate_mmlu(general_rows))
             general_passes[str(state["id"])] = {
@@ -1160,10 +1596,17 @@ def main() -> None:
     execute.add_argument("--design-limit", type=int, default=0)
     execute.add_argument("--humaneval-limit", type=int, default=0)
     execute.add_argument("--state", action="append", dest="states")
+    execute.add_argument("--resume", action="store_true")
+    execute.add_argument("--retry-state", action="store_true")
+    execute.add_argument("--mi-url")
+    execute.add_argument("--lsr-url")
     general = subparsers.add_parser("general")
     general.add_argument("--config", type=Path, required=True)
     general.add_argument("--run", type=Path, required=True)
     general.add_argument("--limit", type=int, default=0)
+    general.add_argument("--mi-url")
+    general.add_argument("--lsr-url")
+    general.add_argument("--retry-failed", action="store_true")
     summary = subparsers.add_parser("summarize")
     summary.add_argument("--run", type=Path, required=True)
     args = parser.parse_args()
@@ -1174,9 +1617,20 @@ def main() -> None:
             args.design_limit,
             args.humaneval_limit,
             args.states,
+            args.resume,
+            args.mi_url,
+            args.lsr_url,
+            args.retry_state,
         )
     elif args.command == "general":
-        run_general(args.config, args.run, args.limit)
+        run_general(
+            args.config,
+            args.run,
+            args.limit,
+            args.mi_url,
+            args.lsr_url,
+            args.retry_failed,
+        )
     else:
         summarize(args.run)
 

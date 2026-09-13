@@ -1,7 +1,7 @@
 {
   "schemaVersion": "jester-facet-efficiency-config-v1",
   "family": "llama-3.2-1b-instruct",
-  "miUrl": "http://127.0.0.1:0",
+  "miUrl": "http://127.0.0.1:51748",
   "designSuite": "../../../datasets/golden/coder-design-v1.jsonl",
   "humanEvalSuite": "../../../datasets/golden/humaneval/HumanEval.jsonl.gz",
   "generalSuite": "../../../datasets/golden/mmlu-general-v1/mmlu-general-v1.jsonl",
@@ -16,7 +16,7 @@
   "humanEvalGeneration": {"max_new_tokens": 384, "do_sample": false, "use_cache": true},
   "generalGeneration": {"max_new_tokens": 8, "do_sample": false, "use_cache": true},
   "lsr": {
-    "url": "http://127.0.0.1:0",
+    "url": "http://127.0.0.1:51785",
     "topK": 1,
     "requireCandidateFilter": true,
     "facetReferences": {

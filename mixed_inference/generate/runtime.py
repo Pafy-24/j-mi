@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import inspect
 import threading
 import time
 import uuid
@@ -255,6 +256,16 @@ class MixedInferenceRuntime:
             inputs = dict(tokenizer(prompt, return_tensors="pt"))
         else:
             raise ConfigurationError("Generate request requires prompt or messages")
+        # Some generic/fast tokenizers emit ``token_type_ids`` even when the
+        # loaded decoder-only model (for example Llama) does not accept them.
+        # Newer Transformers versions reject such unused kwargs before the
+        # forward pass.  Keep token type IDs for architectures that explicitly
+        # support them and remove only this tokenizer-derived optional input
+        # when the model's forward contract does not.
+        if "token_type_ids" in inputs:
+            forward_parameters = inspect.signature(base.model.forward).parameters
+            if "token_type_ids" not in forward_parameters:
+                inputs.pop("token_type_ids")
         return {name: tensor.to(base.device) for name, tensor in inputs.items()}
 
     def _require_base(self) -> LoadedBaseModel:

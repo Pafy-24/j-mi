@@ -1,0 +1,282 @@
+{
+  "stateId": "base+parent+child",
+  "archivedAtUnix": 1788290627.4129562,
+  "previousState": {
+    "id": "base+parent+child",
+    "facets": [
+      "coder.python@rtx-gemma-s42"
+    ],
+    "routeWithLsr": false,
+    "startedAtUnix": 1788211589.8225305,
+    "finishedAtUnix": 1788214572.1434479,
+    "wallSeconds": 2982.320917,
+    "timingProvenance": "recovered-from-complete-jsonl-file-timestamps",
+    "recoveredFromCompleteOutputs": true,
+    "miHealthBefore": {
+      "service": "Jester Mixed Inference",
+      "component": 2,
+      "componentCount": 5,
+      "schemaVersion": "mi-health-v1",
+      "status": "ready",
+      "uptimeSeconds": 4924.06,
+      "base": {
+        "modelId": "sha256:885e5e15a92d6f03433d8bc9ca050acacd4b24b2c82efb19ad6bc7d27043a391",
+        "revision": null,
+        "modelType": "gemma3_text",
+        "configSha256": "4f29a01c53105f332637b45d42103387314b15086d5d0ebddf8962ebfcc66123",
+        "layerPath": "model.layers",
+        "baseLayerCount": 26,
+        "device": "cuda:0",
+        "parameters": {
+          "total": 999885952,
+          "trainable": 999885952
+        }
+      },
+      "registry": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9",
+      "availableFacets": [
+        {
+          "id": "coder",
+          "version": "rtx-gemma-s42",
+          "reference": "coder@rtx-gemma-s42",
+          "status": "trained",
+          "path": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9/coder/rtx-gemma-s42",
+          "loaded": true,
+          "requires": [],
+          "slots": 2,
+          "blocks": 2,
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "2588c25a3725aa6c3ad92f38ee3f78cbd05b13f7096e886cc7079b2d00dfffbb"
+          }
+        },
+        {
+          "id": "coder.python",
+          "version": "rtx-gemma-s42",
+          "reference": "coder.python@rtx-gemma-s42",
+          "status": "trained",
+          "path": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9/coder.python/rtx-gemma-s42",
+          "loaded": false,
+          "requires": [
+            "coder@rtx-gemma-s42"
+          ],
+          "slots": 1,
+          "blocks": 1,
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "cb0ae741cfb58ea48a878e5bd1ff87b9691827ab84365c5e281929253a3ee59a"
+          }
+        }
+      ],
+      "loadedFacets": [
+        "coder@rtx-gemma-s42"
+      ],
+      "generationCount": 376,
+      "memory": {
+        "cudaAllocatedBytes": 2115690496,
+        "cudaReservedBytes": 2176843776
+      },
+      "resourcePolicy": {
+        "mode": "rm-managed",
+        "note": "RM owns placement; Trainer owns every training job and optimizer"
+      }
+    },
+    "miHealthAfter": {
+      "service": "Jester Mixed Inference",
+      "component": 2,
+      "componentCount": 5,
+      "schemaVersion": "mi-health-v1",
+      "status": "ready",
+      "uptimeSeconds": 44102.226,
+      "base": {
+        "modelId": "sha256:885e5e15a92d6f03433d8bc9ca050acacd4b24b2c82efb19ad6bc7d27043a391",
+        "revision": null,
+        "modelType": "gemma3_text",
+        "configSha256": "4f29a01c53105f332637b45d42103387314b15086d5d0ebddf8962ebfcc66123",
+        "layerPath": "model.layers",
+        "baseLayerCount": 26,
+        "device": "cuda:0",
+        "parameters": {
+          "total": 999885952,
+          "trainable": 999885952
+        }
+      },
+      "registry": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9",
+      "availableFacets": [
+        {
+          "id": "coder",
+          "version": "rtx-gemma-s42",
+          "reference": "coder@rtx-gemma-s42",
+          "status": "trained",
+          "path": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9/coder/rtx-gemma-s42",
+          "loaded": true,
+          "requires": [],
+          "slots": 2,
+          "blocks": 2,
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "2588c25a3725aa6c3ad92f38ee3f78cbd05b13f7096e886cc7079b2d00dfffbb"
+          }
+        },
+        {
+          "id": "coder.python",
+          "version": "rtx-gemma-s42",
+          "reference": "coder.python@rtx-gemma-s42",
+          "status": "trained",
+          "path": "/mnt/ssd/ollama_models/jester-rm-stefan-romas/.jester-rm/mounts/mi-serve-gemma-a40-s42/artifacts/cas/1c659a4b862536820613edef930ac927229113262c60d8f9f203a2ddb0f3c8d9/coder.python/rtx-gemma-s42",
+          "loaded": true,
+          "requires": [
+            "coder@rtx-gemma-s42"
+          ],
+          "slots": 1,
+          "blocks": 1,
+          "artifact": {
+            "weights": "facet.safetensors",
+            "format": "safetensors",
+            "sha256": "cb0ae741cfb58ea48a878e5bd1ff87b9691827ab84365c5e281929253a3ee59a"
+          }
+        }
+      ],
+      "loadedFacets": [
+        "coder.python@rtx-gemma-s42",
+        "coder@rtx-gemma-s42"
+      ],
+      "generationCount": 557,
+      "memory": {
+        "cudaAllocatedBytes": 2169375744,
+        "cudaReservedBytes": 2218786816
+      },
+      "resourcePolicy": {
+        "mode": "rm-managed",
+        "note": "RM owns placement; Trainer owns every training job and optimizer"
+      }
+    },
+    "design": {
+      "attempted": 24,
+      "completed": 24,
+      "errors": 0,
+      "generatedTokens": 18432,
+      "generationSeconds": 732.65536,
+      "tokensPerSecond": 25.157804,
+      "latencyMs": {
+        "generationMean": 30527.306667,
+        "generationP50": 30738.6915,
+        "generationP95": 31335.59715,
+        "totalMean": 30541.795,
+        "totalP50": 30746.374,
+        "totalP95": 31343.0091
+      },
+      "strictPassRate": 0.0,
+      "strictPassWilson95": [
+        0.0,
+        0.137976
+      ],
+      "validRootJsonRate": 0.0,
+      "fieldCoverage": 0.0,
+      "semanticCoverage": 0.020833
+    },
+    "humanEval": {
+      "attempted": 164,
+      "completed": 156,
+      "errors": 8,
+      "generatedTokens": 56408,
+      "generationSeconds": 2170.854111,
+      "tokensPerSecond": 25.984243,
+      "latencyMs": {
+        "generationMean": 13915.731481,
+        "generationP50": 14647.42,
+        "generationP95": 15342.48525,
+        "totalMean": 13922.83241,
+        "totalP50": 14654.715,
+        "totalP95": 15349.28775
+      },
+      "generationErrors": 8,
+      "syntaxPassRate": 0.0,
+      "functionalPassAt1": 0.0,
+      "samples": "humaneval-samples.base_parent_child.jsonl",
+      "telemetry": "humaneval-telemetry.base_parent_child.jsonl",
+      "functionalPassWilson95": [
+        0.0,
+        0.022887
+      ],
+      "evaluated": 164,
+      "passed": 0,
+      "resultsSha256": "82ba572224ce8b94bb188ec72348c3c3f2e556a9e9e1eab5c992c2a655479ae5"
+    },
+    "routing": null,
+    "generalMmlu": {
+      "attempted": 80,
+      "completed": 80,
+      "errors": 0,
+      "generatedTokens": 640,
+      "generationSeconds": 24.187628,
+      "tokensPerSecond": 26.459808,
+      "latencyMs": {
+        "generationMean": 302.34535,
+        "generationP50": 301.5485,
+        "generationP95": 305.094,
+        "totalMean": 309.901187,
+        "totalP50": 307.806,
+        "totalP95": 312.8587
+      },
+      "correct": 0,
+      "accuracy": 0.0,
+      "wilson95": [
+        0.0,
+        0.045818
+      ],
+      "exactFormatRate": 0.0,
+      "categories": {
+        "humanities": {
+          "records": 20,
+          "correct": 0,
+          "accuracy": 0.0,
+          "wilson95": [
+            0.0,
+            0.161125
+          ]
+        },
+        "other": {
+          "records": 20,
+          "correct": 0,
+          "accuracy": 0.0,
+          "wilson95": [
+            0.0,
+            0.161125
+          ]
+        },
+        "social_sciences": {
+          "records": 20,
+          "correct": 0,
+          "accuracy": 0.0,
+          "wilson95": [
+            0.0,
+            0.161125
+          ]
+        },
+        "stem_non_cs": {
+          "records": 20,
+          "correct": 0,
+          "accuracy": 0.0,
+          "wilson95": [
+            0.0,
+            0.161125
+          ]
+        }
+      },
+      "protocol": "zero-shot single-letter generation; not official five-shot MMLU",
+      "startedAtUnix": 1788288653.581234,
+      "finishedAtUnix": 1788288683.5881486,
+      "wallSeconds": 30.006915,
+      "recordsFile": "general-mmlu.base_parent_child.jsonl"
+    }
+  },
+  "files": [
+    "design.base_parent_child.jsonl",
+    "humaneval-samples.base_parent_child.jsonl",
+    "humaneval-telemetry.base_parent_child.jsonl",
+    "humaneval-samples.base_parent_child.jsonl_results.jsonl"
+  ]
+}
