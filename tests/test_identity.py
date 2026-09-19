@@ -100,6 +100,26 @@ def test_bin_and_loader_selection_overrides_cannot_be_verified(tmp_path) -> None
             canonical_artifact_manifest(supported_files),
             model_kwargs={"use_safetensors": False},
         )
+    with pytest.raises(ConfigurationError, match="use_fast=false"):
+        verify_local_artifact(
+            tmp_path,
+            supported_files,
+            canonical_artifact_manifest(supported_files),
+            tokenizer_kwargs={"use_fast": False},
+        )
+
+
+def test_empty_safetensors_index_is_not_a_verified_weight_contract(tmp_path) -> None:
+    config = tmp_path / "config.json"
+    index = tmp_path / "model.safetensors.index.json"
+    config.write_text("{}", encoding="utf-8")
+    index.write_text(json.dumps({"weight_map": {}}), encoding="utf-8")
+    files = [
+        {"path": item.name, "sizeBytes": item.stat().st_size, "sha256": hashlib.sha256(item.read_bytes()).hexdigest()}
+        for item in (config, index)
+    ]
+    with pytest.raises(ConfigurationError, match="weight_map"):
+        verify_local_artifact(tmp_path, files, canonical_artifact_manifest(files))
 
 
 class _Backend:

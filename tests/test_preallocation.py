@@ -91,10 +91,9 @@ def test_bounded_facet_without_artifact_metadata_is_rejected_before_clone(tmp_pa
     manifest = SimpleNamespace(artifact=None)
     with pytest.raises(CompositionError, match="requires safetensors tensor metadata"):
         _facet_staging_footprint(
+            None,
             runtime.registry,
             manifest,
-            torch.device("cpu"),
-            target_element_bytes=4,
             bounded=True,
         )
 

@@ -120,7 +120,11 @@ def _loader_contract_files(
         try:
             payload = json.loads(index.read_text(encoding="utf-8"))
             weights = payload.get("weight_map", {})
-            if not isinstance(weights, dict) or not all(isinstance(value, str) for value in weights.values()):
+            if (
+                not isinstance(weights, dict)
+                or not weights
+                or not all(isinstance(key, str) and key and isinstance(value, str) and value for key, value in weights.items())
+            ):
                 raise ValueError("weight_map must map tensor names to shard names")
             required.update(str(value).replace("\\", "/") for value in weights.values())
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
@@ -135,15 +139,19 @@ def _loader_contract_files(
         required.add("generation_config.json")
     tokenizer_json = root / "tokenizer.json"
     legacy_tokenizer_inputs = ("vocab.json", "merges.txt", "vocab.txt", "spiece.model")
+    if tokenizer_kwargs.get("use_fast") is False:
+        raise ConfigurationError(
+            "verified local artifact identity does not support use_fast=false tokenizer selection"
+        )
+    if any((root / name).is_file() for name in legacy_tokenizer_inputs):
+        raise ConfigurationError(
+            "verified local artifact identity does not support legacy tokenizer file selection"
+        )
     if tokenizer_json.is_file():
         required.add("tokenizer.json")
         for name in ("tokenizer_config.json", "special_tokens_map.json", "added_tokens.json"):
             if (root / name).is_file():
                 required.add(name)
-    elif any((root / name).is_file() for name in legacy_tokenizer_inputs):
-        raise ConfigurationError(
-            "verified local artifact identity does not support legacy tokenizer file selection"
-        )
     return required
 
 

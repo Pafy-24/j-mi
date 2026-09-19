@@ -217,6 +217,7 @@ class MixedInferenceRuntime:
                 )
             admission = None
             previous_training = None
+            composition_blocks = 0
 
             def admit(loaded_facets: dict[str, Any]) -> None:
                 nonlocal admission
@@ -226,7 +227,13 @@ class MixedInferenceRuntime:
                 }
                 admission = self.residency.admit(
                     requested_footprints,
-                    kv_cache=_estimate_kv_cache(base, inputs, request),
+                    kv_cache=_estimate_request_footprint(
+                        base,
+                        inputs,
+                        request,
+                        composition_blocks=composition_blocks,
+                        bounded=_has_bounded_budget(self.residency),
+                    ),
                 )
                 self.registry.evict_cache_keys(admission.evicted)
 
@@ -234,8 +241,17 @@ class MixedInferenceRuntime:
                 resolved = self.registry.resolve(requested)
                 plan, manifests = resolved
                 self._validate_plan_for_base(plan)
+                composition_blocks = len(plan.blocks)
                 self._preflight_facet_staging(
-                    base, manifests, kv_cache=_estimate_kv_cache(base, inputs, request)
+                    base,
+                    manifests,
+                    kv_cache=_estimate_request_footprint(
+                        base,
+                        inputs,
+                        request,
+                        composition_blocks=composition_blocks,
+                        bounded=_has_bounded_budget(self.residency),
+                    ),
                 )
                 plan, loaded = self.registry.load_resolved(
                     requested,
@@ -261,6 +277,7 @@ class MixedInferenceRuntime:
                 model = base.model
                 previous_training = model.training
                 model.eval()
+                inputs = _move_inputs(inputs, base.device)
                 composed_at = time.perf_counter()
                 with ActivatedComposition(base, plan, provide):
                     compose_elapsed = time.perf_counter() - composed_at
@@ -395,7 +412,7 @@ class MixedInferenceRuntime:
             forward_parameters = inspect.signature(base.model.forward).parameters
             if "token_type_ids" not in forward_parameters:
                 inputs.pop("token_type_ids")
-        return {name: tensor.to(base.device) for name, tensor in inputs.items()}
+        return inputs
 
     def _require_base(self) -> LoadedBaseModel:
         if self.base is None:
@@ -424,10 +441,9 @@ class MixedInferenceRuntime:
     ) -> None:
         staged = [
             _facet_staging_footprint(
+                base,
                 self.registry,
                 manifest,
-                base.device,
-                target_element_bytes=_model_element_bytes(base.model),
                 bounded=_has_bounded_budget(self.residency),
             )
             for manifest in manifests.values()
@@ -552,11 +568,10 @@ def _base_staging_footprint(
 
 
 def _facet_staging_footprint(
+    base: LoadedBaseModel,
     registry: FacetRegistry,
     manifest: Any,
-    target_device: Any,
     *,
-    target_element_bytes: int,
     bounded: bool,
 ) -> Footprint:
     """Account safetensors source and instantiated target tensors before load."""
@@ -569,8 +584,8 @@ def _facet_staging_footprint(
         return Footprint()
     artifact_path = registry.manifest_path(manifest).parent / artifact.weights
     try:
-        source_bytes, target_bytes = safetensors_tensor_bytes(
-            artifact_path, target_element_bytes=target_element_bytes
+        source_bytes, header_target_bytes = safetensors_tensor_bytes(
+            artifact_path, target_element_bytes=_model_element_bytes(base.model)
         )
     except ConfigurationError as exc:
         if bounded:
@@ -578,7 +593,9 @@ def _facet_staging_footprint(
                 "composition_residency_denied: bounded facet tensor metadata is unavailable"
             ) from exc
         return Footprint()
-    if str(target_device).startswith("cuda"):
+    clone_target_bytes = _facet_clone_target_bytes(base, manifest)
+    target_bytes = max(header_target_bytes, clone_target_bytes)
+    if str(base.device).startswith("cuda"):
         return Footprint(ram_bytes=source_bytes, accelerator_bytes=target_bytes)
     return Footprint(ram_bytes=source_bytes + target_bytes)
 
@@ -587,6 +604,34 @@ def _model_element_bytes(model: Any) -> int:
     for tensor in (*model.parameters(), *model.buffers()):
         return int(tensor.element_size())
     raise CompositionError("composition_residency_denied: base has no tensors to size")
+
+
+def _facet_clone_target_bytes(base: LoadedBaseModel, manifest: Any) -> int:
+    """Count every cloned source layer tensor, including persistent buffers."""
+    total = 0
+    layers = base.stack.layers
+    for slot in manifest.slots:
+        for block in slot.blocks:
+            if block.source_layer >= len(layers):
+                raise CompositionError(
+                    "composition_residency_denied: facet source layer is outside loaded base"
+                )
+            total += _tensor_bytes(layers[block.source_layer])
+    if total <= 0:
+        raise CompositionError(
+            "composition_residency_denied: facet clone has no verifiable tensors"
+        )
+    return total
+
+
+def _tensor_bytes(module: Any) -> int:
+    seen: set[int] = set()
+    total = 0
+    for tensor in (*module.parameters(), *module.buffers()):
+        if id(tensor) not in seen:
+            seen.add(id(tensor))
+            total += int(tensor.numel()) * int(tensor.element_size())
+    return total
 
 
 def _module_footprint(module: Any, target_device: Any) -> Footprint:
@@ -617,26 +662,57 @@ def _facet_footprint(facet: Any, target_device: Any) -> Footprint:
     return Footprint(ram_bytes=byte_count)
 
 
-def _estimate_kv_cache(base: LoadedBaseModel, inputs: dict[str, Any], request: dict[str, Any]) -> Footprint:
-    """Conservative KV reservation for admission; MI does not reuse it between requests."""
+def _estimate_request_footprint(
+    base: LoadedBaseModel,
+    inputs: dict[str, Any],
+    request: dict[str, Any],
+    *,
+    composition_blocks: int,
+    bounded: bool,
+) -> Footprint:
+    """Request input plus conservative non-reused KV reservation."""
     generation = normalize_generation_options(request.get("generation"))
     input_ids = inputs.get("input_ids")
     batch = int(getattr(input_ids, "shape", [1])[0]) if input_ids is not None else 1
     prompt_tokens = int(getattr(input_ids, "shape", [1, 0])[-1]) if input_ids is not None else 0
     config = base.model.config
-    layers = int(getattr(config, "num_hidden_layers", base.binding.base_layer_count) or base.binding.base_layer_count)
+    layers = int(getattr(config, "num_hidden_layers", 0) or 0)
     hidden = int(getattr(config, "hidden_size", 0) or 0)
     if not hidden or not layers:
-        return Footprint()
+        if bounded:
+            raise CompositionError(
+                "composition_residency_denied: bounded KV admission requires hidden_size and num_hidden_layers"
+            )
+        return _input_footprint(inputs, base.device)
+    if bounded and layers != base.binding.base_layer_count:
+        raise CompositionError(
+            "composition_residency_denied: base layer metadata differs from model KV metadata"
+        )
     torch = require_torch()
     parameter = next(base.model.parameters(), None)
     element_size = int(parameter.element_size()) if parameter is not None else int(torch.tensor([], dtype=torch.float32).element_size())
-    # K and V, one hidden-state-sized allocation per layer/token.  Architectures
-    # with grouped KV heads reserve at most this simple upper bound.
-    byte_count = 2 * batch * (prompt_tokens + int(generation["max_new_tokens"])) * layers * hidden * element_size
+    expanded_batch = max(int(generation["num_beams"]), int(generation["num_return_sequences"]))
+    # K and V, one hidden-state-sized allocation per resolved decoder layer/token.
+    # Using hidden_size is an upper bound for grouped-KV models.
+    byte_count = 2 * batch * expanded_batch * (prompt_tokens + int(generation["max_new_tokens"])) * (layers + composition_blocks) * hidden * element_size
     if str(base.device).startswith("cuda"):
-        return Footprint(accelerator_bytes=byte_count)
-    return Footprint(ram_bytes=byte_count)
+        return _input_footprint(inputs, base.device) + Footprint(accelerator_bytes=byte_count)
+    return _input_footprint(inputs, base.device) + Footprint(ram_bytes=byte_count)
+
+
+def _input_footprint(inputs: dict[str, Any], target_device: Any) -> Footprint:
+    source_bytes = sum(
+        int(tensor.numel()) * int(tensor.element_size())
+        for tensor in inputs.values()
+        if hasattr(tensor, "numel") and hasattr(tensor, "element_size")
+    )
+    if str(target_device).startswith("cuda"):
+        return Footprint(ram_bytes=source_bytes, accelerator_bytes=source_bytes)
+    return Footprint(ram_bytes=source_bytes)
+
+
+def _move_inputs(inputs: dict[str, Any], target_device: Any) -> dict[str, Any]:
+    return {name: tensor.to(target_device) for name, tensor in inputs.items()}
 
 
 def normalize_generation_options(raw: Any) -> dict[str, Any]:
@@ -666,6 +742,21 @@ def normalize_generation_options(raw: Any) -> dict[str, Any]:
         raise ConfigurationError("generation.max_new_tokens must be an integer") from exc
     if options["max_new_tokens"] <= 0:
         raise ConfigurationError("generation.max_new_tokens must be positive")
+    for name in ("num_beams", "num_return_sequences"):
+        try:
+            options[name] = int(options.get(name, 1))
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError(f"generation.{name} must be an integer") from exc
+        if options[name] <= 0:
+            raise ConfigurationError(f"generation.{name} must be positive")
+    if options["num_beams"] == 1 and options["num_return_sequences"] > 1 and not bool(options.get("do_sample", False)):
+        raise ConfigurationError(
+            "generation.num_return_sequences > 1 requires do_sample=true when num_beams=1"
+        )
+    if options["num_beams"] > 1 and options["num_return_sequences"] > options["num_beams"]:
+        raise ConfigurationError(
+            "generation.num_return_sequences cannot exceed generation.num_beams"
+        )
     if cache in {"static", "offloaded_static", "quantized"}:
         raise ConfigurationError(
             "MI v1 supports the default dynamic cache or offloaded dynamic cache only; "
