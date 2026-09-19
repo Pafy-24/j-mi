@@ -13,7 +13,7 @@ from ..core.errors import ConfigurationError, MIError
 from ..core.specs import BaseModelRequest
 from ..generate.runtime import MixedInferenceRuntime
 from ..rm_integration import is_managed
-from ..channel_sessions import ChannelSessionDenied, ManagedChannelGuard
+from ..channel_sessions import ChannelSessionDenied, ManagedChannelGuard, guard_from_managed_environment
 
 
 DEFAULT_MAX_REQUEST_BYTES = 2 * 1024 * 1024
@@ -98,6 +98,8 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         try:
             path = _path(self.path)
+            if self.server.require_managed_session and path not in {"/", "/health"}:
+                raise ChannelSessionDenied("managed channel request is not authorized")
             if path in {"/", "/health"}:
                 response = self.server.service.health()
             elif path == "/facets":
@@ -163,6 +165,8 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
             else:
                 raise MIError("Not found", code="not_found", status=404)
             self._write_json(HTTPStatus.OK, response)
+        except ChannelSessionDenied:
+            self._write_json(HTTPStatus.UNAUTHORIZED, {"code": "channel_session_denied", "detail": "managed channel session is not authorized"})
         except MIError as exc:
             self._write_error(exc)
         except json.JSONDecodeError:
@@ -293,11 +297,15 @@ def serve(
     if base_model is not None:
         with service.resource_lock:
             service.runtime.load_base(base_model)
+    managed = is_managed()
+    try:
+        guard = guard_from_managed_environment() if managed else None
+    except ChannelSessionDenied as exc:
+        service.close()
+        raise ConfigurationError("managed channel context is required") from exc
     server = MixedInferenceHTTPServer(
-        (host, port),
-        service,
-        workers=workers,
-        max_request_bytes=max_request_bytes,
+        (host, port), service, workers=workers, max_request_bytes=max_request_bytes,
+        managed_channel_guard=guard, require_managed_session=managed,
     )
     print(f"Jester MI component 2/5 ready on http://{host}:{port}")
     try:
