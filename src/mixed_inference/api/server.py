@@ -13,6 +13,7 @@ from ..core.errors import ConfigurationError, MIError
 from ..core.specs import BaseModelRequest
 from ..generate.runtime import MixedInferenceRuntime
 from ..rm_integration import is_managed
+from ..channel_sessions import ChannelSessionDenied, ManagedChannelGuard
 
 
 DEFAULT_MAX_REQUEST_BYTES = 2 * 1024 * 1024
@@ -53,9 +54,13 @@ class MixedInferenceHTTPServer(HTTPServer):
         workers: int = 4,
         max_pending: int = 16,
         max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES,
+        managed_channel_guard: ManagedChannelGuard | None = None,
+        require_managed_session: bool = False,
     ):
         super().__init__(address, MixedInferenceRequestHandler)
         self.service = service
+        self.managed_channel_guard = managed_channel_guard
+        self.require_managed_session = require_managed_session
         self.max_request_bytes = max_request_bytes
         active_workers = max(1, workers)
         self.executor = ThreadPoolExecutor(
@@ -107,6 +112,8 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
             else:
                 raise MIError("Not found", code="not_found", status=404)
             self._write_json(HTTPStatus.OK, response)
+        except ChannelSessionDenied:
+            self._write_json(HTTPStatus.UNAUTHORIZED, {"code": "channel_session_denied", "detail": "managed channel session is not authorized"})
         except MIError as exc:
             self._write_error(exc)
         except BaseException as exc:
@@ -114,8 +121,13 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         try:
-            payload = self._read_json()
             path = _path(self.path)
+            if self.server.require_managed_session:
+                operation = {"/plan": "mi.plan", "/generate": "mi.generate"}.get(path)
+                if operation is None or self.server.managed_channel_guard is None:
+                    raise ChannelSessionDenied("managed channel request is not authorized")
+                self.server.managed_channel_guard.authorize(self.headers, operation=operation, method="POST")
+            payload = self._read_json()
             service = self.server.service
             if path == "/base/load":
                 with service.resource_lock:
