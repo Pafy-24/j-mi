@@ -10,10 +10,19 @@ from typing import Any, Iterable
 
 from ..core.errors import CompositionError, ConfigurationError, MIError
 from ..core.graph import CompositionPlan, PlannedBlock
-from ..core.modeling import ActivatedComposition, LoadedBaseModel, load_base_model, require_torch
+from ..core.identity import verify_local_artifact
+from ..core.modeling import (
+    ActivatedComposition,
+    LoadedBaseModel,
+    load_base_model,
+    require_torch,
+    resolve_device,
+    resolve_dtype,
+)
 from ..core.residency import Footprint, ResidencyBudget, ResidencyManager
 from ..core.registry import FacetRegistry
 from ..core.specs import BaseModelRequest, GENERATION_SCHEMA_VERSION
+from ..core.tensor_metadata import safetensors_tensor_bytes
 from ..rm_integration import residency_budget
 
 
@@ -45,9 +54,29 @@ class MixedInferenceRuntime:
             # A replacement coexists with the healthy runtime while loading.
             # Reserve its local artifact bytes first; bounded deployments fail
             # before construction when the source cannot be sized.
-            self.residency.preflight_staging(
-                [_base_staging_footprint(spec, bounded=_has_bounded_budget(self.residency))]
+            torch = require_torch()
+            target_device = resolve_device(spec.device, torch)
+            target_element_bytes = _requested_element_bytes(
+                spec, torch, bounded=_has_bounded_budget(self.residency)
             )
+            local_source = Path(spec.model_id).expanduser()
+            if local_source.is_dir() and spec.artifact_files:
+                # Verify loader-input closure before the staging calculation or
+                # constructor can allocate unlisted shards/code.
+                verify_local_artifact(
+                    local_source,
+                    spec.artifact_files,
+                    spec.artifact_sha256,
+                    trust_remote_code=spec.trust_remote_code,
+                )
+            self.residency.preflight_staging([
+                _base_staging_footprint(
+                    spec,
+                    target_device=target_device,
+                    target_element_bytes=target_element_bytes,
+                    bounded=_has_bounded_budget(self.residency),
+                )
+            ])
             candidate: LoadedBaseModel | None = None
             try:
                 candidate = load_base_model(spec, load_tokenizer=True)
@@ -238,10 +267,12 @@ class MixedInferenceRuntime:
                         generated = model.generate(**inputs, **generation)
                     generation_elapsed = time.perf_counter() - generation_started
             finally:
-                if previous_training is not None:
-                    base.model.train(previous_training)
-                if admission is not None:
-                    self.residency.release(admission)
+                try:
+                    if previous_training is not None:
+                        base.model.train(previous_training)
+                finally:
+                    if admission is not None:
+                        self.residency.release(admission)
 
             output_ids = generated.sequences if hasattr(generated, "sequences") else generated
 
@@ -394,6 +425,7 @@ class MixedInferenceRuntime:
                 self.registry,
                 manifest,
                 base.device,
+                target_element_bytes=_model_element_bytes(base.model),
                 bounded=_has_bounded_budget(self.residency),
             )
             for manifest in manifests.values()
@@ -462,22 +494,59 @@ def _has_bounded_budget(residency: ResidencyManager) -> bool:
     )
 
 
-def _base_staging_footprint(request: BaseModelRequest, *, bounded: bool) -> Footprint:
-    """Estimate local replacement bytes before creating a second base model."""
+def _requested_element_bytes(
+    request: BaseModelRequest, torch: Any, *, bounded: bool
+) -> int:
+    dtype = resolve_dtype(request.dtype, torch)
+    if dtype is None:
+        if bounded:
+            raise CompositionError(
+                "base_residency_denied: bounded preflight requires an explicit baseModel.dtype"
+            )
+        dtype = torch.float32
+    return int(torch.empty((), dtype=dtype).element_size())
+
+
+def _base_staging_footprint(
+    request: BaseModelRequest,
+    *,
+    target_device: Any,
+    target_element_bytes: int,
+    bounded: bool,
+) -> Footprint:
+    """Account source tensors and target dtype before constructing a replacement."""
     source = Path(request.model_id).expanduser()
-    if source.is_file():
-        size = source.stat().st_size
-    elif source.is_dir():
-        size = sum(item.stat().st_size for item in source.rglob("*") if item.is_file())
-    elif bounded:
-        raise CompositionError(
-            "base_residency_denied: bounded base replacement requires a local artifact size"
+    if not source.is_dir() or not request.artifact_files:
+        if bounded:
+            raise CompositionError(
+                "base_residency_denied: bounded base replacement requires verified local tensor metadata"
+            )
+        return Footprint()
+    source_bytes = 0
+    target_bytes = 0
+    for item in request.artifact_files:
+        relative = str(item.get("path", "")) if isinstance(item, dict) else ""
+        path = (source / relative).resolve()
+        try:
+            path.relative_to(source.resolve())
+        except ValueError as exc:
+            raise CompositionError("base_residency_denied: artifact path escapes local model") from exc
+        if path.suffix.lower() != ".safetensors":
+            continue
+        source_count, target_count = safetensors_tensor_bytes(
+            path, target_element_bytes=target_element_bytes
         )
-    else:
-        size = 0
-    if str(request.device).startswith("cuda"):
-        return Footprint(ram_bytes=size, accelerator_bytes=size)
-    return Footprint(ram_bytes=size)
+        source_bytes += source_count
+        target_bytes += target_count
+    if not source_bytes:
+        if bounded:
+            raise CompositionError(
+                "base_residency_denied: bounded base replacement requires safetensors tensor metadata"
+            )
+        return Footprint()
+    if str(target_device).startswith("cuda"):
+        return Footprint(ram_bytes=source_bytes, accelerator_bytes=target_bytes)
+    return Footprint(ram_bytes=source_bytes + target_bytes)
 
 
 def _facet_staging_footprint(
@@ -485,25 +554,37 @@ def _facet_staging_footprint(
     manifest: Any,
     target_device: Any,
     *,
+    target_element_bytes: int,
     bounded: bool,
 ) -> Footprint:
-    """Reserve serialized facet bytes while its module is staged and placed."""
+    """Account safetensors source and instantiated target tensors before load."""
     artifact = manifest.artifact
-    if artifact is None:
-        return Footprint()
-    size = artifact.size_bytes
-    artifact_path = registry.manifest_path(manifest).parent / artifact.weights
-    if size is None and artifact_path.is_file():
-        size = artifact_path.stat().st_size
-    if size is None:
+    if artifact is None or artifact.format != "safetensors":
         if bounded:
             raise CompositionError(
-                "composition_residency_denied: bounded facet loading requires artifact size"
+                "composition_residency_denied: bounded facet loading requires safetensors tensor metadata"
             )
-        size = 0
+        return Footprint()
+    artifact_path = registry.manifest_path(manifest).parent / artifact.weights
+    try:
+        source_bytes, target_bytes = safetensors_tensor_bytes(
+            artifact_path, target_element_bytes=target_element_bytes
+        )
+    except ConfigurationError as exc:
+        if bounded:
+            raise CompositionError(
+                "composition_residency_denied: bounded facet tensor metadata is unavailable"
+            ) from exc
+        return Footprint()
     if str(target_device).startswith("cuda"):
-        return Footprint(ram_bytes=int(size), accelerator_bytes=int(size))
-    return Footprint(ram_bytes=int(size))
+        return Footprint(ram_bytes=source_bytes, accelerator_bytes=target_bytes)
+    return Footprint(ram_bytes=source_bytes + target_bytes)
+
+
+def _model_element_bytes(model: Any) -> int:
+    for tensor in (*model.parameters(), *model.buffers()):
+        return int(tensor.element_size())
+    raise CompositionError("composition_residency_denied: base has no tensors to size")
 
 
 def _module_footprint(module: Any, target_device: Any) -> Footprint:
@@ -523,11 +604,12 @@ def _module_footprint(module: Any, target_device: Any) -> Footprint:
 def _facet_footprint(facet: Any, target_device: Any) -> Footprint:
     byte_count = 0
     seen: set[int] = set()
-    for parameter in facet.parameters():
-        if id(parameter) in seen:
+    buffers = getattr(facet, "buffers", lambda: ())()
+    for tensor in (*facet.parameters(), *buffers):
+        if id(tensor) in seen:
             continue
-        seen.add(id(parameter))
-        byte_count += int(parameter.numel()) * int(parameter.element_size())
+        seen.add(id(tensor))
+        byte_count += int(tensor.numel()) * int(tensor.element_size())
     if str(target_device).startswith("cuda"):
         return Footprint(accelerator_bytes=byte_count)
     return Footprint(ram_bytes=byte_count)

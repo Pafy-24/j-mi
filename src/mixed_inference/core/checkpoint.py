@@ -36,6 +36,11 @@ class LoadedFacet:
             for block in blocks:
                 yield from block.parameters()
 
+    def buffers(self) -> Iterable[Any]:
+        for blocks in self.blocks.values():
+            for block in blocks:
+                yield from block.buffers()
+
     def named_parameters(self) -> Iterable[tuple[str, Any]]:
         for slot_id, blocks in self.blocks.items():
             for index, block in enumerate(blocks):

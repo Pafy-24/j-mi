@@ -42,14 +42,32 @@ def canonical_artifact_manifest(files: Iterable[dict[str, Any]]) -> str:
     return sha256_json({"schemaVersion": "mi-artifact-files-v1", "files": sorted(normalized, key=lambda item: item["path"])})
 
 
-def verify_local_artifact(root: Path, files: Iterable[dict[str, Any]], expected_sha256: str) -> Identity:
+def verify_local_artifact(
+    root: Path,
+    files: Iterable[dict[str, Any]],
+    expected_sha256: str,
+    *,
+    trust_remote_code: bool = False,
+) -> Identity:
     if not root.is_dir():
         raise ConfigurationError("verified local artifact identity requires a model directory")
     entries = list(files)
+    root = root.resolve()
+    declared = {str(item["path"]).replace("\\", "/") for item in entries}
+    required = _loader_contract_files(root, trust_remote_code=trust_remote_code)
+    missing = sorted(required - declared)
+    if missing:
+        raise CompatibilityError(
+            "base artifact manifest omits loader input(s): " + ", ".join(missing[:5])
+        )
+    extras = sorted(declared - required)
+    if extras:
+        raise ConfigurationError(
+            "base artifact manifest includes non-loader input(s): " + ", ".join(extras[:5])
+        )
     digest = canonical_artifact_manifest(entries)
     if expected_sha256 and digest != expected_sha256.lower():
         raise CompatibilityError("base artifact manifest digest differs from baseModel.artifactSha256")
-    root = root.resolve()
     for item in entries:
         relative = _relative_path(str(item["path"]).replace("\\", "/"))
         candidate = (root / relative).resolve()
@@ -64,6 +82,34 @@ def verify_local_artifact(root: Path, files: Iterable[dict[str, Any]], expected_
         if sha256_file(candidate) != str(item["sha256"]).lower():
             raise CompatibilityError(f"base artifact hash differs: {relative.as_posix()}")
     return Identity(sha256=digest, status="verified", reason="local artifact file manifest verified")
+
+
+def _loader_contract_files(root: Path, *, trust_remote_code: bool) -> set[str]:
+    """Known local AutoModel/AutoTokenizer inputs; never bless an arbitrary subset."""
+    if trust_remote_code:
+        raise ConfigurationError(
+            "verified local artifact identity does not support trustRemoteCode without an RM-approved code attestation"
+        )
+    required: set[str] = set()
+    for name in ("config.json", "model.safetensors", "model.safetensors.index.json"):
+        if (root / name).is_file():
+            required.add(name)
+    index = root / "model.safetensors.index.json"
+    if index.is_file():
+        try:
+            payload = json.loads(index.read_text(encoding="utf-8"))
+            weights = payload.get("weight_map", {})
+            if not isinstance(weights, dict) or not all(isinstance(value, str) for value in weights.values()):
+                raise ValueError("weight_map must map tensor names to shard names")
+            required.update(str(value).replace("\\", "/") for value in weights.values())
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            raise ConfigurationError(f"invalid safetensors index {index}: {exc}") from exc
+    for name in ("tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "added_tokens.json"):
+        if (root / name).is_file():
+            required.add(name)
+    if not required:
+        raise ConfigurationError("local model directory has no recognized loader inputs to verify")
+    return required
 
 
 def tokenizer_identity(tokenizer: Any) -> Identity:
@@ -107,12 +153,16 @@ def _json_value(value: Any) -> Any:
         return value
     if isinstance(value, dict):
         return {str(key): _json_value(item) for key, item in sorted(value.items(), key=lambda item: str(item[0]))}
-    if isinstance(value, (list, tuple, set)):
+    if isinstance(value, (list, tuple)):
         return [_json_value(item) for item in value]
+    if isinstance(value, set):
+        raise ValueError("unordered tokenizer state is not canonical")
     state = getattr(value, "__getstate__", None)
     if callable(state):
         try:
             return {"class": f"{type(value).__module__}.{type(value).__qualname__}", "state": _json_value(state())}
         except (TypeError, ValueError):
             pass
-    return {"class": f"{type(value).__module__}.{type(value).__qualname__}", "value": str(value)}
+    raise ValueError(
+        f"unsupported noncanonical tokenizer value {type(value).__module__}.{type(value).__qualname__}"
+    )

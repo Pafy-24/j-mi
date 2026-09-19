@@ -152,7 +152,10 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         local_model = local_model.resolve()
         if request.artifact_files:
             artifact_identity = verify_local_artifact(
-                local_model, request.artifact_files, request.artifact_sha256
+                local_model,
+                request.artifact_files,
+                request.artifact_sha256,
+                trust_remote_code=request.trust_remote_code,
             )
         model_id = str(local_model)
     if any(key in request.model_kwargs for key in ("device_map", "tp_plan")):

@@ -16,9 +16,11 @@ from mixed_inference.generate.runtime import MixedInferenceRuntime
 
 
 def _files(root):
-    weights = root / "weights.bin"
+    from safetensors.torch import save_file
+
+    weights = root / "model.safetensors"
     config = root / "config.json"
-    weights.write_bytes(b"tiny weights")
+    save_file({"weight": torch.ones(2, dtype=torch.float16)}, str(weights))
     config.write_text('{"layers": 1}', encoding="utf-8")
     return [
         {"path": item.name, "sizeBytes": item.stat().st_size, "sha256": hashlib.sha256(item.read_bytes()).hexdigest()}
@@ -32,11 +34,19 @@ def test_local_artifact_manifest_is_confined_and_verified(tmp_path) -> None:
     identity = verify_local_artifact(tmp_path, files, digest)
     assert identity.status == "verified"
     assert identity.sha256 == digest
-    (tmp_path / "weights.bin").write_bytes(b"changed")
+    (tmp_path / "model.safetensors").write_bytes(b"changed")
     with pytest.raises(CompatibilityError, match="size differs|hash differs"):
         verify_local_artifact(tmp_path, files, digest)
     with pytest.raises(ConfigurationError, match="confined relative"):
         canonical_artifact_manifest([{"path": "../escape", "sizeBytes": 1, "sha256": "0" * 64}])
+    config_only = [item for item in files if item["path"] == "config.json"]
+    with pytest.raises(CompatibilityError, match="omits loader input"):
+        verify_local_artifact(tmp_path, config_only, canonical_artifact_manifest(config_only))
+    note = tmp_path / "README.txt"
+    note.write_text("not a loader input", encoding="utf-8")
+    extra = files + [{"path": note.name, "sizeBytes": note.stat().st_size, "sha256": hashlib.sha256(note.read_bytes()).hexdigest()}]
+    with pytest.raises(ConfigurationError, match="non-loader input"):
+        verify_local_artifact(tmp_path, extra, canonical_artifact_manifest(extra))
 
 
 class _Backend:
@@ -64,6 +74,9 @@ def test_tokenizer_identity_covers_pipeline_and_marks_unsupported_unverified() -
     assert first.status == "verified"
     assert first.sha256 != second.sha256
     assert tokenizer_identity(object()).status == "unverified"
+    unsupported = _Tokenizer('{"normalizer":"nfc"}')
+    unsupported.init_kwargs = {"unordered": {"a", "b"}}
+    assert tokenizer_identity(unsupported).status == "unverified"
 
 
 def test_unverified_request_identity_cannot_satisfy_verified_facet_or_share_cache() -> None:
