@@ -95,6 +95,7 @@ class MixedInferenceRuntime:
             if self.base is not None:
                 self._validate_plan_for_base(plan)
                 result["base"] = self.base.binding.to_dict()
+                result["provenance"] = self._identity_provenance()
                 result["composedLayerCount"] = (
                     self.base.binding.base_layer_count + len(plan.blocks)
                 )
@@ -145,6 +146,9 @@ class MixedInferenceRuntime:
                 return {
                     "loadedFacets": self.registry.loaded(),
                     "composition": plan.to_dict(),
+                    "provenance": self._identity_provenance(
+                        unsafe_legacy_base_binding=allow_model_id_mismatch
+                    ),
                 }
             finally:
                 if admission is not None:
@@ -264,6 +268,9 @@ class MixedInferenceRuntime:
                 "requestedFacets": list(plan.requested),
                 "resolvedFacets": list(plan.resolved),
                 "composition": plan.to_dict(),
+                "provenance": self._identity_provenance(
+                    unsafe_legacy_base_binding=allow_mismatch
+                ),
                 "output": {"text": texts[0]},
                 "usage": {
                     "inputTokens": input_length,
@@ -393,6 +400,22 @@ class MixedInferenceRuntime:
             if not self.registry.is_cached(base, manifest)
         ]
         self.residency.preflight_staging(staged, kv_cache=kv_cache)
+
+    def _identity_provenance(
+        self, *, unsafe_legacy_base_binding: bool = False
+    ) -> dict[str, Any]:
+        base = self._require_base().binding
+        eligible = (
+            base.artifact_identity_status == "verified"
+            and base.tokenizer_identity_status == "verified"
+            and not unsafe_legacy_base_binding
+        )
+        return {
+            "artifactIdentityStatus": base.artifact_identity_status,
+            "tokenizerIdentityStatus": base.tokenizer_identity_status,
+            "unsafeLegacyBaseBinding": unsafe_legacy_base_binding,
+            "comparisonEligible": eligible,
+        }
 
 
 def extract_facet_references(payload: dict[str, Any]) -> list[str]:

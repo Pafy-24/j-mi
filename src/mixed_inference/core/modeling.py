@@ -8,6 +8,7 @@ from typing import Any, Callable
 
 from .errors import CompatibilityError, CompositionError, ConfigurationError
 from .graph import CompositionPlan, PlannedBlock
+from .identity import tokenizer_identity, verify_local_artifact
 from .specs import BaseBinding, BaseModelRequest
 from .util import sha256_json
 from ..rm_integration import apply_memory_budget, managed_device
@@ -42,6 +43,12 @@ class LoadedBaseModel:
             "revision": self.binding.revision,
             "modelType": self.binding.model_type,
             "configSha256": self.binding.config_sha256,
+            "artifactSha256": self.binding.artifact_sha256,
+            "artifactIdentityStatus": self.binding.artifact_identity_status,
+            "tokenizerSha256": self.binding.tokenizer_sha256,
+            "tokenizerIdentityStatus": self.binding.tokenizer_identity_status,
+            "comparisonEligible": self.binding.artifact_identity_status == "verified"
+            and self.binding.tokenizer_identity_status == "verified",
             "layerPath": self.binding.layer_path,
             "baseLayerCount": self.binding.base_layer_count,
             "device": str(self.device),
@@ -140,8 +147,14 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
     dtype = resolve_dtype(request.dtype, torch)
     model_id = request.model_id
     local_model = Path(model_id).expanduser()
+    artifact_identity = None
     if local_model.exists():
-        model_id = str(local_model.resolve())
+        local_model = local_model.resolve()
+        if request.artifact_files:
+            artifact_identity = verify_local_artifact(
+                local_model, request.artifact_files, request.artifact_sha256
+            )
+        model_id = str(local_model)
     if any(key in request.model_kwargs for key in ("device_map", "tp_plan")):
         raise ConfigurationError(
             "MI v1 requires a single-device base model; an RM multi-CUDA lease exposes "
@@ -211,6 +224,7 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
 
     stack = locate_layer_stack(model, request.layer_path)
     model_type = str(getattr(model.config, "model_type", type(model).__name__))
+    tokenizer_identity_value = tokenizer_identity(tokenizer) if tokenizer is not None else None
     binding = BaseBinding(
         # Runtime paths are host-local (and CAS checkout paths differ between
         # cluster and consumer devices). Persist the explicit portable
@@ -221,8 +235,14 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         layer_path=stack.path,
         base_layer_count=len(stack.layers),
         model_type=model_type,
-        artifact_sha256=request.artifact_sha256,
-        tokenizer_sha256=tokenizer_fingerprint(tokenizer) if tokenizer is not None else "",
+        artifact_sha256=artifact_identity.sha256 if artifact_identity is not None else "",
+        tokenizer_sha256=tokenizer_identity_value.sha256 if tokenizer_identity_value is not None else "",
+        artifact_identity_status=(
+            artifact_identity.status if artifact_identity is not None else "unverified"
+        ),
+        tokenizer_identity_status=(
+            tokenizer_identity_value.status if tokenizer_identity_value is not None else "unverified"
+        ),
     )
     return LoadedBaseModel(
         request=request,
@@ -454,9 +474,15 @@ def validate_base_binding(
         problems.append(f"revision {actual.revision!r} != {expected.revision!r}")
     if actual.config_sha256 != expected.config_sha256:
         problems.append("model config hash differs")
-    if expected.artifact_sha256 and actual.artifact_sha256 != expected.artifact_sha256:
+    if expected.artifact_sha256 and (
+        actual.artifact_identity_status != "verified"
+        or actual.artifact_sha256 != expected.artifact_sha256
+    ):
         problems.append("base artifact hash differs")
-    if expected.tokenizer_sha256 and actual.tokenizer_sha256 != expected.tokenizer_sha256:
+    if expected.tokenizer_sha256 and (
+        actual.tokenizer_identity_status != "verified"
+        or actual.tokenizer_sha256 != expected.tokenizer_sha256
+    ):
         problems.append("tokenizer hash differs")
     if actual.layer_path != expected.layer_path:
         problems.append(f"layerPath {actual.layer_path!r} != {expected.layer_path!r}")

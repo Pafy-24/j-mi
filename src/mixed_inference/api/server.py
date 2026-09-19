@@ -145,6 +145,9 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
                     response = service.runtime.load_facets(
                         facets,
                         allow_model_id_mismatch=bool(payload.get("allowModelIdMismatch", False)),
+                        allow_unsafe_legacy_base_binding=bool(
+                            payload.get("allowUnsafeLegacyBaseBinding", False)
+                        ),
                     )
             elif path == "/facets/unload":
                 facets = _facet_list(payload, required=False)

@@ -36,6 +36,7 @@ class BaseModelRequest:
     model_kwargs: dict[str, Any] = field(default_factory=dict)
     tokenizer_kwargs: dict[str, Any] = field(default_factory=dict)
     artifact_sha256: str = ""
+    artifact_files: tuple[dict[str, Any], ...] = ()
 
     @classmethod
     def from_dict(cls, raw: Any) -> "BaseModelRequest":
@@ -76,6 +77,9 @@ class BaseModelRequest:
                 data.get("tokenizerKwargs"), "baseModel.tokenizerKwargs"
             ),
             artifact_sha256=str(data.get("artifactSha256", "")).strip(),
+            artifact_files=tuple(
+                dict(item) for item in require_list(data.get("artifactFiles", []), "baseModel.artifactFiles")
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -91,6 +95,7 @@ class BaseModelRequest:
             "modelKwargs": self.model_kwargs,
             "tokenizerKwargs": self.tokenizer_kwargs,
             "artifactSha256": self.artifact_sha256,
+            "artifactFiles": list(self.artifact_files),
         }
 
 
@@ -124,6 +129,8 @@ class BaseBinding:
     model_type: str = ""
     artifact_sha256: str = ""
     tokenizer_sha256: str = ""
+    artifact_identity_status: str = "unverified"
+    tokenizer_identity_status: str = "unverified"
 
     @classmethod
     def from_dict(cls, raw: Any) -> "BaseBinding":
@@ -145,6 +152,8 @@ class BaseBinding:
             model_type=str(data.get("modelType", "")),
             artifact_sha256=str(data.get("artifactSha256", "")),
             tokenizer_sha256=str(data.get("tokenizerSha256", "")),
+            artifact_identity_status=str(data.get("artifactIdentityStatus", "unverified")),
+            tokenizer_identity_status=str(data.get("tokenizerIdentityStatus", "unverified")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -157,6 +166,8 @@ class BaseBinding:
             "modelType": self.model_type,
             "artifactSha256": self.artifact_sha256,
             "tokenizerSha256": self.tokenizer_sha256,
+            "artifactIdentityStatus": self.artifact_identity_status,
+            "tokenizerIdentityStatus": self.tokenizer_identity_status,
         }
 
 

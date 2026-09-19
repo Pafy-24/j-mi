@@ -30,6 +30,14 @@ def add_base_options(parser: argparse.ArgumentParser, *, required: bool) -> None
     )
     parser.add_argument("--online", action="store_true", help="Allow Hugging Face downloads.")
     parser.add_argument("--trust-remote-code", action="store_true")
+    parser.add_argument(
+        "--artifact-files",
+        help="JSON file containing the confined verified artifact-file manifest.",
+    )
+    parser.add_argument(
+        "--artifact-sha256",
+        help="Canonical SHA-256 of --artifact-files; never accepted without file verification.",
+    )
     parser.add_argument("--model-kwargs", help="JSON object with extra from_pretrained model kwargs.")
     parser.add_argument("--tokenizer-kwargs", help="JSON object with tokenizer kwargs.")
 
@@ -116,6 +124,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_server(load_facet)
     load_facet.add_argument("--facet", "-f", action="append", required=True)
     load_facet.add_argument("--allow-model-id-mismatch", action="store_true")
+    load_facet.add_argument(
+        "--allow-unsafe-legacy-base-binding",
+        action="store_true",
+        help="Required with --allow-model-id-mismatch; marks output comparison-ineligible.",
+    )
 
     unload_facet = subparsers.add_parser("facet-unload", help="Unload server-side facet weights.")
     add_server(unload_facet)

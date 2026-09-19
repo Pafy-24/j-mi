@@ -191,8 +191,10 @@ def _cache_key(base: LoadedBaseModel, manifest: FacetManifest) -> tuple[tuple[st
     binding = base.binding
     identity = (
         binding.artifact_sha256,
+        binding.artifact_identity_status,
         binding.config_sha256,
         binding.tokenizer_sha256,
+        binding.tokenizer_identity_status,
         base.request.dtype,
         str(base.device),
         sha256_json({

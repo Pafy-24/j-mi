@@ -166,6 +166,7 @@ def _dispatch(args: Any) -> int:
                 {
                     "facets": args.facet,
                     "allowModelIdMismatch": args.allow_model_id_mismatch,
+                    "allowUnsafeLegacyBaseBinding": args.allow_unsafe_legacy_base_binding,
                 },
             )
         )
@@ -197,6 +198,11 @@ def _dispatch(args: Any) -> int:
 
 
 def base_request(args: Any) -> BaseModelRequest:
+    artifact_files = []
+    if args.artifact_files:
+        artifact_files = load_json(args.artifact_files)
+        if not isinstance(artifact_files, list):
+            raise ConfigurationError("--artifact-files JSON root must be an array")
     return BaseModelRequest.from_dict(
         {
             "id": args.base_model,
@@ -209,6 +215,8 @@ def base_request(args: Any) -> BaseModelRequest:
             "trustRemoteCode": args.trust_remote_code,
             "modelKwargs": _json_object(args.model_kwargs, "--model-kwargs"),
             "tokenizerKwargs": _json_object(args.tokenizer_kwargs, "--tokenizer-kwargs"),
+            "artifactSha256": args.artifact_sha256 or "",
+            "artifactFiles": artifact_files,
         }
     )
 
