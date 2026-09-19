@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import hashlib
+import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -47,6 +48,58 @@ def test_local_artifact_manifest_is_confined_and_verified(tmp_path) -> None:
     extra = files + [{"path": note.name, "sizeBytes": note.stat().st_size, "sha256": hashlib.sha256(note.read_bytes()).hexdigest()}]
     with pytest.raises(ConfigurationError, match="non-loader input"):
         verify_local_artifact(tmp_path, extra, canonical_artifact_manifest(extra))
+
+
+def test_sharded_safetensors_contract_requires_every_selected_shard(tmp_path) -> None:
+    from safetensors.torch import save_file
+
+    config = tmp_path / "config.json"
+    first = tmp_path / "model-00001-of-00002.safetensors"
+    second = tmp_path / "model-00002-of-00002.safetensors"
+    index = tmp_path / "model.safetensors.index.json"
+    config.write_text("{}", encoding="utf-8")
+    save_file({"one": torch.ones(1)}, str(first))
+    save_file({"two": torch.ones(1)}, str(second))
+    index.write_text(
+        json.dumps({"weight_map": {"one": first.name, "two": second.name}}),
+        encoding="utf-8",
+    )
+    files = [
+        {"path": item.name, "sizeBytes": item.stat().st_size, "sha256": hashlib.sha256(item.read_bytes()).hexdigest()}
+        for item in (config, index, first, second)
+    ]
+    digest = canonical_artifact_manifest(files)
+    assert verify_local_artifact(tmp_path, files, digest).status == "verified"
+    omitted = [item for item in files if item["path"] != second.name]
+    with pytest.raises(CompatibilityError, match="omits loader input"):
+        verify_local_artifact(tmp_path, omitted, canonical_artifact_manifest(omitted))
+
+
+def test_bin_and_loader_selection_overrides_cannot_be_verified(tmp_path) -> None:
+    config = tmp_path / "config.json"
+    binary = tmp_path / "pytorch_model.bin"
+    config.write_text("{}", encoding="utf-8")
+    binary.write_bytes(b"not verified weights")
+    files = [
+        {"path": item.name, "sizeBytes": item.stat().st_size, "sha256": hashlib.sha256(item.read_bytes()).hexdigest()}
+        for item in (config, binary)
+    ]
+    with pytest.raises(ConfigurationError, match="supports only model.safetensors"):
+        verify_local_artifact(tmp_path, files, canonical_artifact_manifest(files))
+    valid = tmp_path / "model.safetensors"
+    from safetensors.torch import save_file
+    save_file({"weight": torch.ones(1)}, str(valid))
+    supported_files = [
+        {"path": item.name, "sizeBytes": item.stat().st_size, "sha256": hashlib.sha256(item.read_bytes()).hexdigest()}
+        for item in (config, valid)
+    ]
+    with pytest.raises(ConfigurationError, match="loader-selection overrides"):
+        verify_local_artifact(
+            tmp_path,
+            supported_files,
+            canonical_artifact_manifest(supported_files),
+            model_kwargs={"use_safetensors": False},
+        )
 
 
 class _Backend:

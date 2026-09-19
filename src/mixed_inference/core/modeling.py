@@ -156,6 +156,8 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
                 request.artifact_files,
                 request.artifact_sha256,
                 trust_remote_code=request.trust_remote_code,
+                model_kwargs=request.model_kwargs,
+                tokenizer_kwargs=request.tokenizer_kwargs,
             )
         model_id = str(local_model)
     if any(key in request.model_kwargs for key in ("device_map", "tp_plan")):

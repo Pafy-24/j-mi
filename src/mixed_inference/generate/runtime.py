@@ -68,6 +68,8 @@ class MixedInferenceRuntime:
                     spec.artifact_files,
                     spec.artifact_sha256,
                     trust_remote_code=spec.trust_remote_code,
+                    model_kwargs=spec.model_kwargs,
+                    tokenizer_kwargs=spec.tokenizer_kwargs,
                 )
             self.residency.preflight_staging([
                 _base_staging_footprint(

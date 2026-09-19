@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -48,13 +49,20 @@ def verify_local_artifact(
     expected_sha256: str,
     *,
     trust_remote_code: bool = False,
+    model_kwargs: dict[str, Any] | None = None,
+    tokenizer_kwargs: dict[str, Any] | None = None,
 ) -> Identity:
     if not root.is_dir():
         raise ConfigurationError("verified local artifact identity requires a model directory")
     entries = list(files)
     root = root.resolve()
     declared = {str(item["path"]).replace("\\", "/") for item in entries}
-    required = _loader_contract_files(root, trust_remote_code=trust_remote_code)
+    required = _loader_contract_files(
+        root,
+        trust_remote_code=trust_remote_code,
+        model_kwargs=model_kwargs or {},
+        tokenizer_kwargs=tokenizer_kwargs or {},
+    )
     missing = sorted(required - declared)
     if missing:
         raise CompatibilityError(
@@ -84,18 +92,31 @@ def verify_local_artifact(
     return Identity(sha256=digest, status="verified", reason="local artifact file manifest verified")
 
 
-def _loader_contract_files(root: Path, *, trust_remote_code: bool) -> set[str]:
+def _loader_contract_files(
+    root: Path,
+    *,
+    trust_remote_code: bool,
+    model_kwargs: dict[str, Any],
+    tokenizer_kwargs: dict[str, Any],
+) -> set[str]:
     """Known local AutoModel/AutoTokenizer inputs; never bless an arbitrary subset."""
     if trust_remote_code:
         raise ConfigurationError(
             "verified local artifact identity does not support trustRemoteCode without an RM-approved code attestation"
         )
-    required: set[str] = set()
-    for name in ("config.json", "model.safetensors", "model.safetensors.index.json"):
-        if (root / name).is_file():
-            required.add(name)
+    unsupported_model_options = {"use_safetensors", "variant", "subfolder", "from_tf", "from_flax", "state_dict"}
+    unsupported_tokenizer_options = {"subfolder", "vocab_file", "merges_file", "tokenizer_file"}
+    if unsupported_model_options.intersection(model_kwargs) or unsupported_tokenizer_options.intersection(tokenizer_kwargs):
+        raise ConfigurationError(
+            "verified local artifact identity does not support loader-selection overrides"
+        )
+    config = root / "config.json"
+    if not config.is_file():
+        raise ConfigurationError("verified local artifact identity requires config.json")
+    required: set[str] = {"config.json"}
     index = root / "model.safetensors.index.json"
     if index.is_file():
+        required.add(index.name)
         try:
             payload = json.loads(index.read_text(encoding="utf-8"))
             weights = payload.get("weight_map", {})
@@ -104,11 +125,25 @@ def _loader_contract_files(root: Path, *, trust_remote_code: bool) -> set[str]:
             required.update(str(value).replace("\\", "/") for value in weights.values())
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
             raise ConfigurationError(f"invalid safetensors index {index}: {exc}") from exc
-    for name in ("tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "added_tokens.json"):
-        if (root / name).is_file():
-            required.add(name)
-    if not required:
-        raise ConfigurationError("local model directory has no recognized loader inputs to verify")
+    elif (root / "model.safetensors").is_file():
+        required.add("model.safetensors")
+    else:
+        raise ConfigurationError(
+            "verified local artifact identity supports only model.safetensors or model.safetensors.index.json"
+        )
+    if (root / "generation_config.json").is_file():
+        required.add("generation_config.json")
+    tokenizer_json = root / "tokenizer.json"
+    legacy_tokenizer_inputs = ("vocab.json", "merges.txt", "vocab.txt", "spiece.model")
+    if tokenizer_json.is_file():
+        required.add("tokenizer.json")
+        for name in ("tokenizer_config.json", "special_tokens_map.json", "added_tokens.json"):
+            if (root / name).is_file():
+                required.add(name)
+    elif any((root / name).is_file() for name in legacy_tokenizer_inputs):
+        raise ConfigurationError(
+            "verified local artifact identity does not support legacy tokenizer file selection"
+        )
     return required
 
 
