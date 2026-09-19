@@ -42,7 +42,7 @@ class MIWorkerService:
                 self.lease = require_lease()
             except ImportError as exc:
                 raise ConfigurationError(
-                    "RM_LEASE_REQUIRED: install jester-resource-manager and launch mi.worker through RM"
+                    "RM_LEASE_REQUIRED: install jester-rm-client and launch mi.worker through RM"
                 ) from exc
         elif os.environ.get("JESTER_RM_LEASE_FILE"):
             try:

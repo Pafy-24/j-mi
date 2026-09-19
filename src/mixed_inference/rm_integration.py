@@ -24,7 +24,7 @@ def require_managed_launch(args: Any) -> Any:
         return require_lease()
     except ImportError as exc:
         raise ConfigurationError(
-            "RM_LEASE_REQUIRED: install jester-resource-manager and launch MI through jester-rm."
+            "RM_LEASE_REQUIRED: install jester-rm-client and launch MI through jester-rm."
         ) from exc
     except Exception as exc:
         code = getattr(exc, "code", "RM_LEASE_REQUIRED")
@@ -37,7 +37,7 @@ def managed_device(requested: str) -> str:
     except ImportError as exc:
         if requested == "managed":
             raise ConfigurationError(
-                "baseModel.device=managed requires the jester-resource-manager client package"
+                "baseModel.device=managed requires the jester-rm-client package"
             ) from exc
         return requested
     try:
