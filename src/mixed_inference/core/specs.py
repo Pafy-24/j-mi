@@ -35,6 +35,7 @@ class BaseModelRequest:
     trust_remote_code: bool = False
     model_kwargs: dict[str, Any] = field(default_factory=dict)
     tokenizer_kwargs: dict[str, Any] = field(default_factory=dict)
+    artifact_sha256: str = ""
 
     @classmethod
     def from_dict(cls, raw: Any) -> "BaseModelRequest":
@@ -74,6 +75,7 @@ class BaseModelRequest:
             tokenizer_kwargs=optional_mapping(
                 data.get("tokenizerKwargs"), "baseModel.tokenizerKwargs"
             ),
+            artifact_sha256=str(data.get("artifactSha256", "")).strip(),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -88,6 +90,7 @@ class BaseModelRequest:
             "trustRemoteCode": self.trust_remote_code,
             "modelKwargs": self.model_kwargs,
             "tokenizerKwargs": self.tokenizer_kwargs,
+            "artifactSha256": self.artifact_sha256,
         }
 
 
@@ -119,6 +122,8 @@ class BaseBinding:
     layer_path: str
     base_layer_count: int
     model_type: str = ""
+    artifact_sha256: str = ""
+    tokenizer_sha256: str = ""
 
     @classmethod
     def from_dict(cls, raw: Any) -> "BaseBinding":
@@ -138,6 +143,8 @@ class BaseBinding:
             layer_path=layer_path,
             base_layer_count=base_layer_count,
             model_type=str(data.get("modelType", "")),
+            artifact_sha256=str(data.get("artifactSha256", "")),
+            tokenizer_sha256=str(data.get("tokenizerSha256", "")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -148,6 +155,8 @@ class BaseBinding:
             "layerPath": self.layer_path,
             "baseLayerCount": self.base_layer_count,
             "modelType": self.model_type,
+            "artifactSha256": self.artifact_sha256,
+            "tokenizerSha256": self.tokenizer_sha256,
         }
 
 

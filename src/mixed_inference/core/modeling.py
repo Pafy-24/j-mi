@@ -91,6 +91,43 @@ def sanitized_model_config(model: Any) -> dict[str, Any]:
     return raw
 
 
+def tokenizer_fingerprint(tokenizer: Any) -> str:
+    """Stable tokenizer compatibility digest without relying on its display name."""
+    vocabulary = getattr(tokenizer, "get_vocab", lambda: {})()
+    special = getattr(tokenizer, "special_tokens_map", {})
+    init_kwargs = dict(getattr(tokenizer, "init_kwargs", {}) or {})
+    for key in ("name_or_path", "_name_or_path"):
+        init_kwargs.pop(key, None)
+    return sha256_json(
+        {
+            "class": f"{type(tokenizer).__module__}.{type(tokenizer).__qualname__}",
+            "vocabulary": _tokenizer_json(dict(sorted(dict(vocabulary).items()))),
+            "specialTokens": _tokenizer_json(special),
+            "initKwargs": _tokenizer_json(init_kwargs),
+        }
+    )
+
+
+def _tokenizer_json(value: Any) -> Any:
+    """Convert tokenizer helper objects (notably AddedToken) to stable JSON."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _tokenizer_json(item) for key, item in sorted(value.items(), key=lambda item: str(item[0]))}
+    if isinstance(value, (list, tuple, set)):
+        return [_tokenizer_json(item) for item in value]
+    state = getattr(value, "__getstate__", None)
+    if callable(state):
+        try:
+            return {
+                "class": f"{type(value).__module__}.{type(value).__qualname__}",
+                "state": _tokenizer_json(state()),
+            }
+        except (TypeError, ValueError):
+            pass
+    return {"class": f"{type(value).__module__}.{type(value).__qualname__}", "value": str(value)}
+
+
 def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -> LoadedBaseModel:
     torch = require_torch()
     try:
@@ -184,6 +221,8 @@ def load_base_model(request: BaseModelRequest, *, load_tokenizer: bool = True) -
         layer_path=stack.path,
         base_layer_count=len(stack.layers),
         model_type=model_type,
+        artifact_sha256=request.artifact_sha256,
+        tokenizer_sha256=tokenizer_fingerprint(tokenizer) if tokenizer is not None else "",
     )
     return LoadedBaseModel(
         request=request,
@@ -415,6 +454,10 @@ def validate_base_binding(
         problems.append(f"revision {actual.revision!r} != {expected.revision!r}")
     if actual.config_sha256 != expected.config_sha256:
         problems.append("model config hash differs")
+    if expected.artifact_sha256 and actual.artifact_sha256 != expected.artifact_sha256:
+        problems.append("base artifact hash differs")
+    if expected.tokenizer_sha256 and actual.tokenizer_sha256 != expected.tokenizer_sha256:
+        problems.append("tokenizer hash differs")
     if actual.layer_path != expected.layer_path:
         problems.append(f"layerPath {actual.layer_path!r} != {expected.layer_path!r}")
     if actual.base_layer_count != expected.base_layer_count:

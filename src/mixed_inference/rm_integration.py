@@ -79,6 +79,44 @@ def apply_memory_budget(torch: Any, device: Any) -> None:
         raise ConfigurationError(f"Cannot apply RM accelerator memory budget: {exc}") from exc
 
 
+def residency_budget() -> dict[str, int]:
+    """Read explicit MI cache limits from the active RM lease/environment.
+
+    This does not discover hardware capacity.  Missing limits stay unbounded
+    and are reported as such rather than being presented as a VRAM guarantee.
+    """
+    import os
+
+    result: dict[str, int] = {}
+    for env_name, result_name in (
+        ("JESTER_MI_RAM_BUDGET_BYTES", "ramBytes"),
+        ("JESTER_MI_OPERATIONAL_MARGIN_BYTES", "operationalMarginBytes"),
+    ):
+        value = os.environ.get(env_name)
+        if value:
+            try:
+                result[result_name] = max(0, int(value))
+            except ValueError as exc:
+                raise ConfigurationError(f"{env_name} must be an integer") from exc
+    try:
+        from jester_rm_client import current_lease
+
+        lease = current_lease(required=None)
+        if lease is not None:
+            accelerator = sum(
+                int(item.get("runtime", {}).get("memoryBudgetBytes") or 0)
+                for item in lease.accelerators
+                if item.get("runtime", {}).get("backend") == "torch.cuda"
+            )
+            if accelerator:
+                result["acceleratorBytes"] = accelerator
+    except ImportError:
+        pass
+    except Exception as exc:
+        raise ConfigurationError(f"invalid_rm_lease: {exc}") from exc
+    return result
+
+
 def start_telemetry() -> Any:
     try:
         from jester_rm_client import start_default_telemetry

@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from .checkpoint import MANIFEST_NAME, LoadedFacet, load_facet
 from .errors import CompatibilityError, MissingDependencyError
 from .graph import CompositionPlan, CompositionResolver
 from .modeling import LoadedBaseModel, validate_base_binding
 from .specs import FacetManifest, FacetReference
-from .util import load_json
+from .util import load_json, sha256_json
 
 
 class FacetRegistry:
     def __init__(self, root: str | Path):
         self.root = Path(root)
         self._manifests: dict[tuple[str, str], tuple[FacetManifest, Path]] = {}
-        self._loaded: dict[tuple[str, str], LoadedFacet] = {}
+        # A facet's bytes are initialized against a concrete base stack.  Never
+        # reuse by name/version alone across base artifact/config/tokenizer,
+        # dtype, device, request configuration, or manifest changes.
+        self._loaded: dict[tuple[tuple[str, ...], str, str, str], LoadedFacet] = {}
         self.refresh()
 
     def refresh(self) -> None:
@@ -37,12 +40,18 @@ class FacetRegistry:
                 manifests[key] = (manifest, manifest_path)
         self._manifests = manifests
         for key in list(self._loaded):
-            if key not in manifests or key not in previous:
+            _, facet_id, version, manifest_digest = key
+            manifest_key = (facet_id, version)
+            if manifest_key not in manifests or manifest_key not in previous:
                 self._loaded.pop(key, None)
                 continue
-            old_manifest, old_path = previous[key]
-            new_manifest, new_path = manifests[key]
-            if old_path != new_path or old_manifest.to_dict() != new_manifest.to_dict():
+            old_manifest, old_path = previous[manifest_key]
+            new_manifest, new_path = manifests[manifest_key]
+            if (
+                old_path != new_path
+                or old_manifest.to_dict() != new_manifest.to_dict()
+                or manifest_digest != _manifest_digest(new_manifest)
+            ):
                 self._loaded.pop(key, None)
 
     def list(self) -> list[dict[str, Any]]:
@@ -55,7 +64,7 @@ class FacetRegistry:
                 "reference": manifest.reference(),
                 "status": manifest.status,
                 "path": str(path.parent),
-                "loaded": key in self._loaded,
+                "loaded": any(cache_key[1:3] == key for cache_key in self._loaded),
                 "requires": list(manifest.dependencies.requires),
                 "slots": len(manifest.slots),
                 "blocks": sum(len(slot.blocks) for slot in manifest.slots),
@@ -95,21 +104,34 @@ class FacetRegistry:
         base: LoadedBaseModel,
         *,
         allow_model_id_mismatch: bool = False,
+        allow_unsafe_legacy_base_binding: bool = False,
+        before_commit: Callable[[dict[str, LoadedFacet]], None] | None = None,
     ) -> tuple[CompositionPlan, dict[str, LoadedFacet]]:
+        if allow_model_id_mismatch and not allow_unsafe_legacy_base_binding:
+            raise CompatibilityError(
+                "allow_model_id_mismatch is an unsafe legacy compatibility bypass; "
+                "set allow_unsafe_legacy_base_binding explicitly"
+            )
         plan, manifests = self.resolve(requested)
         loaded: dict[str, LoadedFacet] = {}
+        staged: dict[tuple[tuple[str, ...], str, str, str], LoadedFacet] = {}
+        # Validate and load every missing dependency before mutating the cache.
+        # If a later artifact fails, a previous facet cannot leak into residency.
         for manifest in manifests.values():
             validate_base_binding(
                 base.binding,
                 manifest.base,
                 allow_model_id_mismatch=allow_model_id_mismatch,
             )
-            key = (manifest.facet_id, manifest.version)
+            key = _cache_key(base, manifest)
             facet = self._loaded.get(key)
             if facet is None:
                 facet = load_facet(self.manifest_path(manifest), base.stack.layers)
-                self._loaded[key] = facet
+                staged[key] = facet
             loaded[manifest.facet_id] = facet
+        if before_commit is not None:
+            before_commit(loaded)
+        self._loaded.update(staged)
         return plan, loaded
 
     def unload(self, facets: Iterable[str] | None = None, *, all_facets: bool = False) -> list[str]:
@@ -126,9 +148,39 @@ class FacetRegistry:
         return sorted(removed)
 
     def loaded(self) -> list[str]:
-        return sorted(facet.manifest.reference() for facet in self._loaded.values())
+        return sorted({facet.manifest.reference() for facet in self._loaded.values()})
+
+    def cache_key(self, base: LoadedBaseModel, facet: LoadedFacet) -> tuple[tuple[str, ...], str, str, str]:
+        return _cache_key(base, facet.manifest)
+
+    def evict_cache_keys(self, keys: Iterable[object]) -> None:
+        for key in keys:
+            if isinstance(key, tuple):
+                self._loaded.pop(key, None)
 
 
 def _version_key(value: str) -> tuple[Any, ...]:
     parts = re.split(r"([0-9]+)", value)
     return tuple(int(part) if part.isdigit() else part.lower() for part in parts)
+
+
+def _manifest_digest(manifest: FacetManifest) -> str:
+    return sha256_json(manifest.to_dict())
+
+
+def _cache_key(base: LoadedBaseModel, manifest: FacetManifest) -> tuple[tuple[str, ...], str, str, str]:
+    binding = base.binding
+    identity = (
+        binding.artifact_sha256,
+        binding.config_sha256,
+        binding.tokenizer_sha256,
+        base.request.dtype,
+        str(base.device),
+        sha256_json({
+            "modelKwargs": base.request.model_kwargs,
+            "tokenizerKwargs": base.request.tokenizer_kwargs,
+            "revision": base.request.revision,
+            "layerPath": binding.layer_path,
+        }),
+    )
+    return (identity, manifest.facet_id, manifest.version, _manifest_digest(manifest))

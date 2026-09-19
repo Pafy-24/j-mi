@@ -11,8 +11,10 @@ from typing import Any, Iterable
 from ..core.errors import CompositionError, ConfigurationError, MIError
 from ..core.graph import CompositionPlan, PlannedBlock
 from ..core.modeling import ActivatedComposition, LoadedBaseModel, load_base_model, require_torch
+from ..core.residency import Footprint, ResidencyBudget, ResidencyManager
 from ..core.registry import FacetRegistry
 from ..core.specs import BaseModelRequest, GENERATION_SCHEMA_VERSION
+from ..rm_integration import residency_budget
 
 
 class MixedInferenceRuntime:
@@ -22,8 +24,16 @@ class MixedInferenceRuntime:
     hardware scheduler and never launches training in a managed serving process.
     """
 
-    def __init__(self, registry: str | Path):
+    def __init__(self, registry: str | Path, *, residency: ResidencyManager | None = None):
         self.registry = FacetRegistry(registry)
+        budget = residency_budget()
+        self.residency = residency or ResidencyManager(
+            ResidencyBudget(
+                ram_bytes=budget.get("ramBytes"),
+                accelerator_bytes=budget.get("acceleratorBytes"),
+                operational_margin_bytes=budget.get("operationalMarginBytes", 0),
+            )
+        )
         self.base: LoadedBaseModel | None = None
         self._lock = threading.RLock()
         self._started_at = time.time()
@@ -32,16 +42,22 @@ class MixedInferenceRuntime:
     def load_base(self, request: BaseModelRequest | dict[str, Any]) -> dict[str, Any]:
         spec = request if isinstance(request, BaseModelRequest) else BaseModelRequest.from_dict(request)
         with self._lock:
-            if self.base is not None:
-                self.unload_base()
-            self.base = load_base_model(spec, load_tokenizer=True)
-            generation_config = getattr(self.base.model, "generation_config", None)
+            # Construct and admit a replacement before discarding a healthy
+            # base/cache. A loading or admission failure leaves the old runtime
+            # coherent and usable.
+            candidate = load_base_model(spec, load_tokenizer=True)
+            candidate_residency = ResidencyManager(self.residency.budget)
+            candidate_residency.reset(base=_module_footprint(candidate.model, candidate.device))
+            generation_config = getattr(candidate.model, "generation_config", None)
             if generation_config is not None and hasattr(generation_config, "max_length"):
                 # MI always supplies max_new_tokens (128 by default). Recent
                 # Transformers versions otherwise treat a model-provided
                 # max_length as a second explicit limit and log a warning for
                 # every request, even though max_new_tokens takes precedence.
                 generation_config.max_length = None
+            self.registry.unload(all_facets=True)
+            self.base = candidate
+            self.residency = candidate_residency
             self.registry.refresh()
             return self.base.summary()
 
@@ -50,6 +66,7 @@ class MixedInferenceRuntime:
             previous = self.base.binding.model_id if self.base is not None else None
             self.registry.unload(all_facets=True)
             self.base = None
+            self.residency.reset()
             gc.collect()
             torch = require_torch()
             if torch.cuda.is_available():
@@ -82,6 +99,7 @@ class MixedInferenceRuntime:
         requested_facets: Iterable[str],
         *,
         allow_model_id_mismatch: bool = False,
+        allow_unsafe_legacy_base_binding: bool = False,
     ) -> dict[str, Any]:
         with self._lock:
             base = self._require_base()
@@ -89,6 +107,7 @@ class MixedInferenceRuntime:
                 requested_facets,
                 base,
                 allow_model_id_mismatch=allow_model_id_mismatch,
+                allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
             )
             self._validate_plan_for_base(plan)
             return {
@@ -116,16 +135,37 @@ class MixedInferenceRuntime:
         with self._lock:
             started = time.perf_counter()
             base = self._require_base()
+            inputs = self._prepare_inputs(request)
             requested = extract_facet_references(request)
             allow_mismatch = bool(request.get("allowModelIdMismatch", False))
+            if allow_mismatch and not bool(request.get("allowUnsafeLegacyBaseBinding", False)):
+                raise ConfigurationError(
+                    "allowModelIdMismatch is an unsafe legacy compatibility bypass; "
+                    "set allowUnsafeLegacyBaseBinding=true explicitly and exclude this request from comparative results"
+                )
+            admission = None
+
+            def admit(loaded_facets: dict[str, Any]) -> None:
+                nonlocal admission
+                requested_footprints = {
+                    self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
+                    for facet in loaded_facets.values()
+                }
+                admission = self.residency.admit(
+                    requested_footprints,
+                    kv_cache=_estimate_kv_cache(base, inputs, request),
+                )
+                self.registry.evict_cache_keys(admission.evicted)
+
             plan, loaded = self.registry.load_resolved(
                 requested,
                 base,
                 allow_model_id_mismatch=allow_mismatch,
+                allow_unsafe_legacy_base_binding=bool(request.get("allowUnsafeLegacyBaseBinding", False)),
+                before_commit=admit,
             )
             self._validate_plan_for_base(plan)
             load_elapsed = time.perf_counter() - started
-            inputs = self._prepare_inputs(request)
             generation = normalize_generation_options(request.get("generation"))
             seed = request.get("seed")
             torch = require_torch()
@@ -150,6 +190,8 @@ class MixedInferenceRuntime:
                     generation_elapsed = time.perf_counter() - generation_started
             finally:
                 model.train(previous_training)
+                if admission is not None:
+                    self.residency.release(admission)
 
             output_ids = generated.sequences if hasattr(generated, "sequences") else generated
 
@@ -220,6 +262,7 @@ class MixedInferenceRuntime:
                 "loadedFacets": self.registry.loaded(),
                 "generationCount": self._generation_count,
                 "memory": memory,
+                "residency": self.residency.snapshot(),
             }
 
     def _prepare_inputs(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -322,6 +365,55 @@ def extract_facet_references(payload: dict[str, Any]) -> list[str]:
     if isinstance(route, dict):
         return extract_facet_references(route)
     return []
+
+
+def _module_footprint(module: Any, target_device: Any) -> Footprint:
+    """Count tensors at their residency target, without querying hardware."""
+    byte_count = 0
+    seen: set[int] = set()
+    for tensor in (*module.parameters(), *module.buffers()):
+        if id(tensor) in seen:
+            continue
+        seen.add(id(tensor))
+        byte_count += int(tensor.numel()) * int(tensor.element_size())
+    if str(target_device).startswith("cuda"):
+        return Footprint(accelerator_bytes=byte_count)
+    return Footprint(ram_bytes=byte_count)
+
+
+def _facet_footprint(facet: Any, target_device: Any) -> Footprint:
+    byte_count = 0
+    seen: set[int] = set()
+    for parameter in facet.parameters():
+        if id(parameter) in seen:
+            continue
+        seen.add(id(parameter))
+        byte_count += int(parameter.numel()) * int(parameter.element_size())
+    if str(target_device).startswith("cuda"):
+        return Footprint(accelerator_bytes=byte_count)
+    return Footprint(ram_bytes=byte_count)
+
+
+def _estimate_kv_cache(base: LoadedBaseModel, inputs: dict[str, Any], request: dict[str, Any]) -> Footprint:
+    """Conservative KV reservation for admission; MI does not reuse it between requests."""
+    generation = normalize_generation_options(request.get("generation"))
+    input_ids = inputs.get("input_ids")
+    batch = int(getattr(input_ids, "shape", [1])[0]) if input_ids is not None else 1
+    prompt_tokens = int(getattr(input_ids, "shape", [1, 0])[-1]) if input_ids is not None else 0
+    config = base.model.config
+    layers = int(getattr(config, "num_hidden_layers", base.binding.base_layer_count) or base.binding.base_layer_count)
+    hidden = int(getattr(config, "hidden_size", 0) or 0)
+    if not hidden or not layers:
+        return Footprint()
+    torch = require_torch()
+    parameter = next(base.model.parameters(), None)
+    element_size = int(parameter.element_size()) if parameter is not None else int(torch.tensor([], dtype=torch.float32).element_size())
+    # K and V, one hidden-state-sized allocation per layer/token.  Architectures
+    # with grouped KV heads reserve at most this simple upper bound.
+    byte_count = 2 * batch * (prompt_tokens + int(generation["max_new_tokens"])) * layers * hidden * element_size
+    if str(base.device).startswith("cuda"):
+        return Footprint(accelerator_bytes=byte_count)
+    return Footprint(ram_bytes=byte_count)
 
 
 def normalize_generation_options(raw: Any) -> dict[str, Any]:
