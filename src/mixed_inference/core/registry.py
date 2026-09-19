@@ -22,7 +22,7 @@ class FacetRegistry:
         self._loaded: dict[tuple[tuple[str, ...], str, str, str], LoadedFacet] = {}
         self.refresh()
 
-    def refresh(self) -> None:
+    def refresh(self) -> tuple[tuple[tuple[str, ...], str, str, str], ...]:
         previous = self._manifests
         manifests: dict[tuple[str, str], tuple[FacetManifest, Path]] = {}
         if self.root.exists():
@@ -39,11 +39,13 @@ class FacetRegistry:
                     )
                 manifests[key] = (manifest, manifest_path)
         self._manifests = manifests
+        invalidated: list[tuple[tuple[str, ...], str, str, str]] = []
         for key in list(self._loaded):
             _, facet_id, version, manifest_digest = key
             manifest_key = (facet_id, version)
             if manifest_key not in manifests or manifest_key not in previous:
                 self._loaded.pop(key, None)
+                invalidated.append(key)
                 continue
             old_manifest, old_path = previous[manifest_key]
             new_manifest, new_path = manifests[manifest_key]
@@ -53,6 +55,8 @@ class FacetRegistry:
                 or manifest_digest != _manifest_digest(new_manifest)
             ):
                 self._loaded.pop(key, None)
+                invalidated.append(key)
+        return tuple(invalidated)
 
     def list(self) -> list[dict[str, Any]]:
         result = []
@@ -106,13 +110,14 @@ class FacetRegistry:
         allow_model_id_mismatch: bool = False,
         allow_unsafe_legacy_base_binding: bool = False,
         before_commit: Callable[[dict[str, LoadedFacet]], None] | None = None,
+        resolved: tuple[CompositionPlan, dict[str, FacetManifest]] | None = None,
     ) -> tuple[CompositionPlan, dict[str, LoadedFacet]]:
         if allow_model_id_mismatch and not allow_unsafe_legacy_base_binding:
             raise CompatibilityError(
                 "allow_model_id_mismatch is an unsafe legacy compatibility bypass; "
                 "set allow_unsafe_legacy_base_binding explicitly"
             )
-        plan, manifests = self.resolve(requested)
+        plan, manifests = resolved or self.resolve(requested)
         loaded: dict[str, LoadedFacet] = {}
         staged: dict[tuple[tuple[str, ...], str, str, str], LoadedFacet] = {}
         # Validate and load every missing dependency before mutating the cache.
@@ -147,11 +152,25 @@ class FacetRegistry:
                 self._loaded.pop(key, None)
         return sorted(removed)
 
+    def cache_keys_for(
+        self, facets: Iterable[str] | None = None, *, all_facets: bool = False
+    ) -> tuple[tuple[tuple[str, ...], str, str, str], ...]:
+        if all_facets:
+            return tuple(self._loaded)
+        requested = {FacetReference.parse(item).facet_id for item in (facets or [])}
+        return tuple(
+            key for key, facet in self._loaded.items()
+            if facet.manifest.facet_id in requested
+        )
+
     def loaded(self) -> list[str]:
         return sorted({facet.manifest.reference() for facet in self._loaded.values()})
 
     def cache_key(self, base: LoadedBaseModel, facet: LoadedFacet) -> tuple[tuple[str, ...], str, str, str]:
         return _cache_key(base, facet.manifest)
+
+    def is_cached(self, base: LoadedBaseModel, manifest: FacetManifest) -> bool:
+        return _cache_key(base, manifest) in self._loaded
 
     def evict_cache_keys(self, keys: Iterable[object]) -> None:
         for key in keys:

@@ -42,12 +42,28 @@ class MixedInferenceRuntime:
     def load_base(self, request: BaseModelRequest | dict[str, Any]) -> dict[str, Any]:
         spec = request if isinstance(request, BaseModelRequest) else BaseModelRequest.from_dict(request)
         with self._lock:
-            # Construct and admit a replacement before discarding a healthy
-            # base/cache. A loading or admission failure leaves the old runtime
-            # coherent and usable.
-            candidate = load_base_model(spec, load_tokenizer=True)
-            candidate_residency = ResidencyManager(self.residency.budget)
-            candidate_residency.reset(base=_module_footprint(candidate.model, candidate.device))
+            # A replacement coexists with the healthy runtime while loading.
+            # Reserve its local artifact bytes first; bounded deployments fail
+            # before construction when the source cannot be sized.
+            self.residency.preflight_staging(
+                [_base_staging_footprint(spec, bounded=_has_bounded_budget(self.residency))]
+            )
+            candidate: LoadedBaseModel | None = None
+            try:
+                candidate = load_base_model(spec, load_tokenizer=True)
+                footprint = _module_footprint(candidate.model, candidate.device)
+                # Reconcile the preflight estimate with actual module bytes
+                # while the old base/cache is still retained.
+                self.residency.preflight_staging([footprint])
+                candidate_residency = ResidencyManager(self.residency.budget)
+                candidate_residency.reset(base=footprint)
+                # Parse and validate registry changes before replacing a usable
+                # base. A refresh failure leaves the existing runtime intact.
+                self.registry.refresh()
+            except BaseException:
+                del candidate
+                gc.collect()
+                raise
             generation_config = getattr(candidate.model, "generation_config", None)
             if generation_config is not None and hasattr(generation_config, "max_length"):
                 # MI always supplies max_new_tokens (128 by default). Recent
@@ -58,7 +74,6 @@ class MixedInferenceRuntime:
             self.registry.unload(all_facets=True)
             self.base = candidate
             self.residency = candidate_residency
-            self.registry.refresh()
             return self.base.summary()
 
     def unload_base(self) -> dict[str, Any]:
@@ -91,7 +106,7 @@ class MixedInferenceRuntime:
 
     def refresh_registry(self) -> dict[str, Any]:
         with self._lock:
-            self.registry.refresh()
+            self.residency.discard(self.registry.refresh())
             return {"facets": self.registry.list()}
 
     def load_facets(
@@ -103,17 +118,37 @@ class MixedInferenceRuntime:
     ) -> dict[str, Any]:
         with self._lock:
             base = self._require_base()
-            plan, _ = self.registry.load_resolved(
-                requested_facets,
-                base,
-                allow_model_id_mismatch=allow_model_id_mismatch,
-                allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
-            )
+            resolved = self.registry.resolve(requested_facets)
+            plan, manifests = resolved
             self._validate_plan_for_base(plan)
-            return {
-                "loadedFacets": self.registry.loaded(),
-                "composition": plan.to_dict(),
-            }
+            self._preflight_facet_staging(base, manifests)
+            admission = None
+
+            def admit(loaded_facets: dict[str, Any]) -> None:
+                nonlocal admission
+                requested_footprints = {
+                    self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
+                    for facet in loaded_facets.values()
+                }
+                admission = self.residency.admit(requested_footprints)
+                self.registry.evict_cache_keys(admission.evicted)
+
+            try:
+                plan, _ = self.registry.load_resolved(
+                    requested_facets,
+                    base,
+                    allow_model_id_mismatch=allow_model_id_mismatch,
+                    allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
+                    before_commit=admit,
+                    resolved=resolved,
+                )
+                return {
+                    "loadedFacets": self.registry.loaded(),
+                    "composition": plan.to_dict(),
+                }
+            finally:
+                if admission is not None:
+                    self.residency.release(admission)
 
     def unload_facets(
         self,
@@ -122,7 +157,9 @@ class MixedInferenceRuntime:
         all_facets: bool = False,
     ) -> dict[str, Any]:
         with self._lock:
+            cache_keys = self.registry.cache_keys_for(facets, all_facets=all_facets)
             removed = self.registry.unload(facets, all_facets=all_facets)
+            self.residency.discard(cache_keys)
             gc.collect()
             torch = require_torch()
             if torch.cuda.is_available():
@@ -144,6 +181,7 @@ class MixedInferenceRuntime:
                     "set allowUnsafeLegacyBaseBinding=true explicitly and exclude this request from comparative results"
                 )
             admission = None
+            previous_training = None
 
             def admit(loaded_facets: dict[str, Any]) -> None:
                 nonlocal admission
@@ -157,30 +195,37 @@ class MixedInferenceRuntime:
                 )
                 self.registry.evict_cache_keys(admission.evicted)
 
-            plan, loaded = self.registry.load_resolved(
-                requested,
-                base,
-                allow_model_id_mismatch=allow_mismatch,
-                allow_unsafe_legacy_base_binding=bool(request.get("allowUnsafeLegacyBaseBinding", False)),
-                before_commit=admit,
-            )
-            self._validate_plan_for_base(plan)
-            load_elapsed = time.perf_counter() - started
-            generation = normalize_generation_options(request.get("generation"))
-            seed = request.get("seed")
-            torch = require_torch()
-            if seed is not None:
-                torch.manual_seed(int(seed))
-                if torch.cuda.is_available():
-                    torch.cuda.manual_seed_all(int(seed))
-
-            def provide(planned: PlannedBlock) -> Any:
-                return loaded[planned.facet].block(planned.slot_id, planned.block_index)
-
-            model = base.model
-            previous_training = model.training
-            model.eval()
             try:
+                resolved = self.registry.resolve(requested)
+                plan, manifests = resolved
+                self._validate_plan_for_base(plan)
+                self._preflight_facet_staging(
+                    base, manifests, kv_cache=_estimate_kv_cache(base, inputs, request)
+                )
+                plan, loaded = self.registry.load_resolved(
+                    requested,
+                    base,
+                    allow_model_id_mismatch=allow_mismatch,
+                    allow_unsafe_legacy_base_binding=bool(request.get("allowUnsafeLegacyBaseBinding", False)),
+                    before_commit=admit,
+                    resolved=resolved,
+                )
+                self._validate_plan_for_base(plan)
+                load_elapsed = time.perf_counter() - started
+                generation = normalize_generation_options(request.get("generation"))
+                seed = request.get("seed")
+                torch = require_torch()
+                if seed is not None:
+                    torch.manual_seed(int(seed))
+                    if torch.cuda.is_available():
+                        torch.cuda.manual_seed_all(int(seed))
+
+                def provide(planned: PlannedBlock) -> Any:
+                    return loaded[planned.facet].block(planned.slot_id, planned.block_index)
+
+                model = base.model
+                previous_training = model.training
+                model.eval()
                 composed_at = time.perf_counter()
                 with ActivatedComposition(base, plan, provide):
                     compose_elapsed = time.perf_counter() - composed_at
@@ -189,7 +234,8 @@ class MixedInferenceRuntime:
                         generated = model.generate(**inputs, **generation)
                     generation_elapsed = time.perf_counter() - generation_started
             finally:
-                model.train(previous_training)
+                if previous_training is not None:
+                    base.model.train(previous_training)
                 if admission is not None:
                     self.residency.release(admission)
 
@@ -329,6 +375,25 @@ class MixedInferenceRuntime:
                     f"{base.binding.base_layer_count}"
                 )
 
+    def _preflight_facet_staging(
+        self,
+        base: LoadedBaseModel,
+        manifests: dict[str, Any],
+        *,
+        kv_cache: Footprint = Footprint(),
+    ) -> None:
+        staged = [
+            _facet_staging_footprint(
+                self.registry,
+                manifest,
+                base.device,
+                bounded=_has_bounded_budget(self.residency),
+            )
+            for manifest in manifests.values()
+            if not self.registry.is_cached(base, manifest)
+        ]
+        self.residency.preflight_staging(staged, kv_cache=kv_cache)
+
 
 def extract_facet_references(payload: dict[str, Any]) -> list[str]:
     direct = payload.get("facets")
@@ -365,6 +430,57 @@ def extract_facet_references(payload: dict[str, Any]) -> list[str]:
     if isinstance(route, dict):
         return extract_facet_references(route)
     return []
+
+
+def _has_bounded_budget(residency: ResidencyManager) -> bool:
+    return (
+        residency.budget.ram_bytes is not None
+        or residency.budget.accelerator_bytes is not None
+    )
+
+
+def _base_staging_footprint(request: BaseModelRequest, *, bounded: bool) -> Footprint:
+    """Estimate local replacement bytes before creating a second base model."""
+    source = Path(request.model_id).expanduser()
+    if source.is_file():
+        size = source.stat().st_size
+    elif source.is_dir():
+        size = sum(item.stat().st_size for item in source.rglob("*") if item.is_file())
+    elif bounded:
+        raise CompositionError(
+            "base_residency_denied: bounded base replacement requires a local artifact size"
+        )
+    else:
+        size = 0
+    if str(request.device).startswith("cuda"):
+        return Footprint(ram_bytes=size, accelerator_bytes=size)
+    return Footprint(ram_bytes=size)
+
+
+def _facet_staging_footprint(
+    registry: FacetRegistry,
+    manifest: Any,
+    target_device: Any,
+    *,
+    bounded: bool,
+) -> Footprint:
+    """Reserve serialized facet bytes while its module is staged and placed."""
+    artifact = manifest.artifact
+    if artifact is None:
+        return Footprint()
+    size = artifact.size_bytes
+    artifact_path = registry.manifest_path(manifest).parent / artifact.weights
+    if size is None and artifact_path.is_file():
+        size = artifact_path.stat().st_size
+    if size is None:
+        if bounded:
+            raise CompositionError(
+                "composition_residency_denied: bounded facet loading requires artifact size"
+            )
+        size = 0
+    if str(target_device).startswith("cuda"):
+        return Footprint(ram_bytes=int(size), accelerator_bytes=int(size))
+    return Footprint(ram_bytes=int(size))
 
 
 def _module_footprint(module: Any, target_device: Any) -> Footprint:

@@ -157,15 +157,24 @@ class ResidencyManager:
                 entry.pins = max(0, entry.pins - 1)
                 entry.last_used = now
 
-    def snapshot(self) -> dict[str, int]:
+    def discard(self, keys: Iterable[Hashable]) -> None:
+        """Remove cache entries whose backing facet was invalidated or unloaded.
+
+        Runtime calls are serialized, so an invalidated entry cannot still be
+        pinned by an in-flight generation when this is invoked.
+        """
+        for key in keys:
+            self._entries.pop(key, None)
+
+    def snapshot(self) -> dict[str, int | None]:
         total = self._total(self._entries)
         return {
             "ramBytes": total.ram_bytes,
             "acceleratorBytes": total.accelerator_bytes,
             "entries": len(self._entries),
             "pinnedEntries": sum(1 for entry in self._entries.values() if entry.pins),
-            "ramBudgetBytes": self.budget.ram_bytes or 0,
-            "acceleratorBudgetBytes": self.budget.accelerator_bytes or 0,
+            "ramBudgetBytes": self.budget.ram_bytes,
+            "acceleratorBudgetBytes": self.budget.accelerator_bytes,
         }
 
     def _total(self, entries: dict[Hashable, _Entry]) -> Footprint:
