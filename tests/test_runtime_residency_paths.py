@@ -15,7 +15,7 @@ from mixed_inference.generate.runtime import MixedInferenceRuntime
 
 def _base() -> LoadedBaseModel:
     model = torch.nn.Linear(1, 1)
-    model.config = SimpleNamespace(num_hidden_layers=1, hidden_size=1)
+    model.config = SimpleNamespace(num_hidden_layers=1, hidden_size=1, num_key_value_heads=1, head_dim=1)
     model.layers = torch.nn.ModuleList([torch.nn.Linear(1, 1)])
     return LoadedBaseModel(
         request=BaseModelRequest("base"),
@@ -48,6 +48,7 @@ def test_generate_releases_admission_when_generation_validation_fails(tmp_path, 
     monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
     monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
+    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
 
     def load_resolved(*_args, before_commit, **_kwargs):
         loaded = {"facet": facet}
@@ -127,6 +128,7 @@ def test_load_facets_admits_cache_then_releases_the_preload_pin(tmp_path, monkey
     monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
     monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
+    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
     monkeypatch.setattr(runtime.registry, "loaded", lambda: ["facet@1"])
 
     def load_resolved(*_args, before_commit, **_kwargs):

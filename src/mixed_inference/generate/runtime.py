@@ -47,6 +47,16 @@ class MixedInferenceRuntime:
         self._lock = threading.RLock()
         self._started_at = time.time()
         self._generation_count = 0
+        # These are logical runtime counters, not accelerator allocator peaks.
+        # Facet footprints are measured from loaded tensors; admission remains an
+        # estimate because framework working allocations are not observable here.
+        self._cache_telemetry = {
+            "hits": 0,
+            "misses": 0,
+            "evictions": 0,
+            "loadedRamBytes": 0,
+            "loadedAcceleratorBytes": 0,
+        }
 
     def load_base(self, request: BaseModelRequest | dict[str, Any]) -> dict[str, Any]:
         spec = request if isinstance(request, BaseModelRequest) else BaseModelRequest.from_dict(request)
@@ -155,6 +165,7 @@ class MixedInferenceRuntime:
             self._validate_plan_for_base(plan)
             self._preflight_facet_staging(base, manifests)
             admission = None
+            cache_telemetry: dict[str, int] = {"hits": 0, "misses": 0, "evictions": 0, "loadedRamBytes": 0, "loadedAcceleratorBytes": 0}
 
             def admit(loaded_facets: dict[str, Any]) -> None:
                 nonlocal admission
@@ -162,7 +173,18 @@ class MixedInferenceRuntime:
                     self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
                     for facet in loaded_facets.values()
                 }
+                cached = {
+                    key: self.registry.is_cached(base, facet.manifest)
+                    for key, facet in ((self.registry.cache_key(base, facet), facet) for facet in loaded_facets.values())
+                }
+                cache_telemetry["hits"] = sum(cached.values())
+                cache_telemetry["misses"] = len(cached) - cache_telemetry["hits"]
+                for key, footprint in requested_footprints.items():
+                    if not cached[key]:
+                        cache_telemetry["loadedRamBytes"] += footprint.ram_bytes
+                        cache_telemetry["loadedAcceleratorBytes"] += footprint.accelerator_bytes
                 admission = self.residency.admit(requested_footprints)
+                cache_telemetry["evictions"] = len(admission.evicted)
                 self.registry.evict_cache_keys(admission.evicted)
 
             try:
@@ -174,12 +196,14 @@ class MixedInferenceRuntime:
                     before_commit=admit,
                     resolved=resolved,
                 )
+                self._record_cache_telemetry(cache_telemetry)
                 return {
                     "loadedFacets": self.registry.loaded(),
                     "composition": plan.to_dict(),
                     "provenance": self._identity_provenance(
                         unsafe_legacy_base_binding=allow_model_id_mismatch
                     ),
+                    "telemetry": _request_telemetry(cache_telemetry, composition_ms=None),
                 }
             finally:
                 if admission is not None:
@@ -204,6 +228,7 @@ class MixedInferenceRuntime:
     def generate(self, request: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(request, dict):
             raise ConfigurationError("Generate request must be a JSON object")
+        _reject_external_cache_state(request)
         with self._lock:
             started = time.perf_counter()
             base = self._require_base()
@@ -218,6 +243,7 @@ class MixedInferenceRuntime:
             admission = None
             previous_training = None
             composition_blocks = 0
+            cache_telemetry: dict[str, int] = {"hits": 0, "misses": 0, "evictions": 0, "loadedRamBytes": 0, "loadedAcceleratorBytes": 0}
 
             def admit(loaded_facets: dict[str, Any]) -> None:
                 nonlocal admission
@@ -225,6 +251,16 @@ class MixedInferenceRuntime:
                     self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
                     for facet in loaded_facets.values()
                 }
+                cached = {
+                    key: self.registry.is_cached(base, facet.manifest)
+                    for key, facet in ((self.registry.cache_key(base, facet), facet) for facet in loaded_facets.values())
+                }
+                cache_telemetry["hits"] = sum(cached.values())
+                cache_telemetry["misses"] = len(cached) - cache_telemetry["hits"]
+                for key, footprint in requested_footprints.items():
+                    if not cached[key]:
+                        cache_telemetry["loadedRamBytes"] += footprint.ram_bytes
+                        cache_telemetry["loadedAcceleratorBytes"] += footprint.accelerator_bytes
                 admission = self.residency.admit(
                     requested_footprints,
                     kv_cache=_estimate_request_footprint(
@@ -235,6 +271,7 @@ class MixedInferenceRuntime:
                         bounded=_has_bounded_budget(self.residency),
                     ),
                 )
+                cache_telemetry["evictions"] = len(admission.evicted)
                 self.registry.evict_cache_keys(admission.evicted)
 
             try:
@@ -311,6 +348,7 @@ class MixedInferenceRuntime:
                 )
             total_elapsed = time.perf_counter() - started
             self._generation_count += 1
+            self._record_cache_telemetry(cache_telemetry)
             response: dict[str, Any] = {
                 "schemaVersion": GENERATION_SCHEMA_VERSION,
                 "requestId": str(request.get("requestId") or uuid.uuid4()),
@@ -334,6 +372,7 @@ class MixedInferenceRuntime:
                     "generation": round(generation_elapsed * 1000, 3),
                     "total": round(total_elapsed * 1000, 3),
                 },
+                "telemetry": _request_telemetry(cache_telemetry, composition_ms=compose_elapsed * 1000),
             }
             if len(texts) > 1:
                 response["output"]["texts"] = texts
@@ -366,7 +405,16 @@ class MixedInferenceRuntime:
                 "generationCount": self._generation_count,
                 "memory": memory,
                 "residency": self.residency.snapshot(),
+                "telemetry": {
+                    "cache": {"status": "measured", **self._cache_telemetry},
+                    "admission": {"status": "estimated", "scope": "logical-cache-and-request-footprints"},
+                    "hardwarePeak": {"status": "unavailable", "reason": "allocator peak telemetry is not qualified by MI"},
+                },
             }
+
+    def _record_cache_telemetry(self, telemetry: dict[str, int]) -> None:
+        for name, value in telemetry.items():
+            self._cache_telemetry[name] += value
 
     def _prepare_inputs(self, request: dict[str, Any]) -> dict[str, Any]:
         base = self._require_base()
@@ -670,46 +718,140 @@ def _estimate_request_footprint(
     composition_blocks: int,
     bounded: bool,
 ) -> Footprint:
-    """Request input plus conservative non-reused KV reservation."""
+    """Reserve request buffers and a non-reusable dynamic KV cache.
+
+    The reservation uses actual attention-KV geometry where available.  A
+    bounded deployment refuses architectures whose geometry is not explicit;
+    ``hidden_size`` is not a valid proxy for grouped-query attention.
+    """
     generation = normalize_generation_options(request.get("generation"))
     input_ids = inputs.get("input_ids")
     batch = int(getattr(input_ids, "shape", [1])[0]) if input_ids is not None else 1
     prompt_tokens = int(getattr(input_ids, "shape", [1, 0])[-1]) if input_ids is not None else 0
     config = base.model.config
     layers = int(getattr(config, "num_hidden_layers", 0) or 0)
-    hidden = int(getattr(config, "hidden_size", 0) or 0)
-    if not hidden or not layers:
+    if not layers:
         if bounded:
             raise CompositionError(
-                "composition_residency_denied: bounded KV admission requires hidden_size and num_hidden_layers"
+                "composition_residency_denied: bounded KV admission requires num_hidden_layers"
             )
         return _input_footprint(inputs, base.device)
     if bounded and layers != base.binding.base_layer_count:
         raise CompositionError(
             "composition_residency_denied: base layer metadata differs from model KV metadata"
         )
+    kv_heads, head_dim = _kv_geometry(config, bounded=bounded)
+    expanded_batch = max(int(generation["num_beams"]), int(generation["num_return_sequences"]))
+    input_footprint = _input_footprint(inputs, base.device, expanded_batch=expanded_batch)
+    cache_profile = generation.get("cache_implementation", "dynamic")
+    if cache_profile == "offloaded" and bounded:
+        raise CompositionError(
+            "composition_residency_denied: bounded MI admission does not qualify offloaded KV caches; both host and accelerator residency are unknown"
+        )
+    if not kv_heads or not head_dim:
+        return input_footprint
     torch = require_torch()
     parameter = next(base.model.parameters(), None)
     element_size = int(parameter.element_size()) if parameter is not None else int(torch.tensor([], dtype=torch.float32).element_size())
-    expanded_batch = max(int(generation["num_beams"]), int(generation["num_return_sequences"]))
-    # K and V, one hidden-state-sized allocation per resolved decoder layer/token.
-    # Using hidden_size is an upper bound for grouped-KV models.
-    byte_count = 2 * batch * expanded_batch * (prompt_tokens + int(generation["max_new_tokens"])) * (layers + composition_blocks) * hidden * element_size
+    # K and V for every base and inserted facet decoder block/token.  The
+    # prompt expansion is represented separately by ``input_footprint``.
+    byte_count = (
+        2 * batch * expanded_batch * (prompt_tokens + int(generation["max_new_tokens"]))
+        * (layers + composition_blocks) * kv_heads * head_dim * element_size
+    )
     if str(base.device).startswith("cuda"):
-        return _input_footprint(inputs, base.device) + Footprint(accelerator_bytes=byte_count)
-    return _input_footprint(inputs, base.device) + Footprint(ram_bytes=byte_count)
+        return input_footprint + Footprint(accelerator_bytes=byte_count)
+    return input_footprint + Footprint(ram_bytes=byte_count)
 
 
-def _input_footprint(inputs: dict[str, Any], target_device: Any) -> Footprint:
+def _kv_geometry(config: Any, *, bounded: bool) -> tuple[int, int]:
+    """Return KV-head geometry without treating hidden size as a KV bound.
+
+    Transformers configurations sometimes omit ``head_dim`` while still
+    declaring enough exact architecture data to derive it: hidden size divided
+    by the declared number of attention heads.  Grouped-KV head count remains
+    separate and is never replaced by hidden size.
+    """
+    def positive_int(value: Any) -> int | None:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed > 0 else None
+
+    attention_heads = positive_int(getattr(config, "num_attention_heads", None))
+    hidden = positive_int(getattr(config, "hidden_size", None))
+    derived_head_dim = (
+        hidden // attention_heads
+        if attention_heads is not None and hidden is not None and hidden % attention_heads == 0
+        else None
+    )
+    declared_kv_heads = getattr(config, "num_key_value_heads", None)
+    declared_head_dim = getattr(config, "head_dim", None)
+    kv_heads = positive_int(declared_kv_heads)
+    head_dim = positive_int(declared_head_dim)
+
+    if declared_kv_heads is not None and kv_heads is None:
+        if bounded:
+            raise CompositionError(
+                "composition_residency_denied: bounded KV admission requires positive num_key_value_heads"
+            )
+        return 0, 0
+    if declared_head_dim is not None and head_dim is None:
+        if bounded:
+            raise CompositionError(
+                "composition_residency_denied: bounded KV admission requires positive head_dim"
+            )
+        return 0, 0
+    if kv_heads is None:
+        kv_heads = attention_heads
+    if head_dim is None:
+        head_dim = derived_head_dim
+    if kv_heads is not None and head_dim is not None:
+        return kv_heads, head_dim
+    if bounded:
+        raise CompositionError(
+            "composition_residency_denied: bounded KV admission requires explicit attention head geometry"
+        )
+    return 0, 0
+
+
+def _input_footprint(
+    inputs: dict[str, Any], target_device: Any, *, expanded_batch: int = 1
+) -> Footprint:
     source_bytes = sum(
         int(tensor.numel()) * int(tensor.element_size())
         for tensor in inputs.values()
         if hasattr(tensor, "numel") and hasattr(tensor, "element_size")
     )
+    # Beam/return-sequence expansion can hold an expanded prompt alongside the
+    # tokenizer result. Count that additional working copy before generation.
+    extra_working_bytes = source_bytes * expanded_batch if expanded_batch > 1 else 0
     if str(target_device).startswith("cuda"):
-        return Footprint(ram_bytes=source_bytes, accelerator_bytes=source_bytes)
-    return Footprint(ram_bytes=source_bytes)
+        return Footprint(ram_bytes=source_bytes, accelerator_bytes=source_bytes * max(1, expanded_batch))
+    return Footprint(ram_bytes=source_bytes + extra_working_bytes)
 
+
+def _reject_external_cache_state(request: dict[str, Any]) -> None:
+    forbidden = {"past_key_values", "pastKeyValues", "cache", "cacheObject", "cache_object"}
+    supplied = sorted(name for name in forbidden if name in request)
+    if supplied:
+        raise ConfigurationError(
+            "MI composition does not accept caller-supplied cache state: " + ", ".join(supplied)
+        )
+
+
+def _request_telemetry(cache: dict[str, int], *, composition_ms: float | None) -> dict[str, Any]:
+    return {
+        "cache": {"status": "measured", **cache},
+        "admission": {"status": "estimated", "scope": "logical-cache-and-request-footprints"},
+        "composition": (
+            {"status": "measured", "milliseconds": round(composition_ms, 3)}
+            if composition_ms is not None
+            else {"status": "unavailable", "reason": "no composition activation occurred"}
+        ),
+        "hardwarePeak": {"status": "unavailable", "reason": "allocator peak telemetry is not qualified by MI"},
+    }
 
 def _move_inputs(inputs: dict[str, Any], target_device: Any) -> dict[str, Any]:
     return {name: tensor.to(target_device) for name, tensor in inputs.items()}
@@ -735,7 +877,20 @@ def normalize_generation_options(raw: Any) -> dict[str, Any]:
     for source, target in aliases.items():
         if source in options:
             options[target] = options.pop(source)
-    cache = options.get("cache_implementation")
+    forbidden_cache_state = {"past_key_values", "pastKeyValues", "cache", "cacheObject", "cache_object"}
+    supplied_cache_state = sorted(name for name in forbidden_cache_state if name in options)
+    if supplied_cache_state:
+        raise ConfigurationError(
+            "generation does not accept caller-supplied cache state: " + ", ".join(supplied_cache_state)
+        )
+    cache = options.get("cache_implementation", "dynamic")
+    if cache is None:
+        cache = "dynamic"
+    if not isinstance(cache, str) or cache not in {"dynamic", "offloaded"}:
+        raise ConfigurationError(
+            "generation.cache_implementation must be dynamic or offloaded for MI composition"
+        )
+    options["cache_implementation"] = cache
     try:
         options["max_new_tokens"] = int(options["max_new_tokens"])
     except (TypeError, ValueError) as exc:
@@ -756,10 +911,5 @@ def normalize_generation_options(raw: Any) -> dict[str, Any]:
     if options["num_beams"] > 1 and options["num_return_sequences"] > options["num_beams"]:
         raise ConfigurationError(
             "generation.num_return_sequences cannot exceed generation.num_beams"
-        )
-    if cache in {"static", "offloaded_static", "quantized"}:
-        raise ConfigurationError(
-            "MI v1 supports the default dynamic cache or offloaded dynamic cache only; "
-            "static/quantized cache plans are not yet compatible with dynamic MI composition"
         )
     return options

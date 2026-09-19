@@ -104,7 +104,7 @@ def test_pin_release_survives_model_train_restore_failure(tmp_path, monkeypatch)
             super().__init__()
             self.weight = torch.nn.Parameter(torch.ones(1))
             self.layers = torch.nn.ModuleList([torch.nn.Linear(1, 1)])
-            self.config = SimpleNamespace(num_hidden_layers=1, hidden_size=1)
+            self.config = SimpleNamespace(num_hidden_layers=1, hidden_size=1, num_key_value_heads=1, head_dim=1)
             self._saw_eval = False
 
         def train(self, mode: bool = True):
@@ -141,6 +141,7 @@ def test_pin_release_survives_model_train_restore_failure(tmp_path, monkeypatch)
     monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
     monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
+    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
     monkeypatch.setattr(
         runtime.registry,
         "load_resolved",
