@@ -23,7 +23,7 @@ from ..core.residency import Footprint, ResidencyBudget, ResidencyManager
 from ..core.registry import FacetRegistry
 from ..core.specs import BaseModelRequest, GENERATION_SCHEMA_VERSION
 from ..core.tensor_metadata import safetensors_tensor_bytes
-from ..rm_integration import residency_budget
+from ..rm_integration import facet_staging_allocation, residency_budget
 
 
 class MixedInferenceRuntime:
@@ -33,29 +33,50 @@ class MixedInferenceRuntime:
     hardware scheduler and never launches training in a managed serving process.
     """
 
-    def __init__(self, registry: str | Path, *, residency: ResidencyManager | None = None):
+    def __init__(
+        self,
+        registry: str | Path,
+        *,
+        residency: ResidencyManager | None = None,
+        staging_directory: str | Path | None = None,
+        staging_limit_bytes: int | None = None,
+    ):
         self.registry = FacetRegistry(registry)
         budget = residency_budget()
-        self.residency = residency or ResidencyManager(
-            ResidencyBudget(
-                ram_bytes=budget.get("ramBytes"),
-                accelerator_bytes=budget.get("acceleratorBytes"),
-                operational_margin_bytes=budget.get("operationalMarginBytes", 0),
+        if residency is not None:
+            _validate_residency_override(residency, budget)
+            self.residency = residency
+        else:
+            self.residency = ResidencyManager(
+                ResidencyBudget(
+                    ram_bytes=budget.get("ramBytes"),
+                    accelerator_bytes=budget.get("acceleratorBytes"),
+                    operational_margin_bytes=budget.get(
+                        "operationalMarginBytes", 0
+                    ),
+                )
             )
-        )
+        self._staging_directory = staging_directory
+        self._staging_limit_bytes = staging_limit_bytes
         self.base: LoadedBaseModel | None = None
         self._lock = threading.RLock()
         self._started_at = time.time()
         self._generation_count = 0
         # These are logical runtime counters, not accelerator allocator peaks.
-        # Facet footprints are measured from loaded tensors; admission remains an
-        # estimate because framework working allocations are not observable here.
+        # Hits/misses count admissions that reached staging, evictions count
+        # removals actually applied, and loaded bytes count entries committed to
+        # the registry even if later generation fails. Partial failed-load bytes
+        # are deliberately unavailable rather than reported as zero.
         self._cache_telemetry = {
             "hits": 0,
             "misses": 0,
             "evictions": 0,
+            "committedEntries": 0,
             "loadedRamBytes": 0,
             "loadedAcceleratorBytes": 0,
+            "loadFailures": 0,
+            "reconcileFailures": 0,
+            "commitFailures": 0,
         }
 
     def load_base(self, request: BaseModelRequest | dict[str, Any]) -> dict[str, Any]:
@@ -161,42 +182,17 @@ class MixedInferenceRuntime:
         with self._lock:
             base = self._require_base()
             resolved = self.registry.resolve(requested_facets)
-            plan, manifests = resolved
+            plan, _ = resolved
             self._validate_plan_for_base(plan)
-            self._preflight_facet_staging(base, manifests)
             admission = None
-            cache_telemetry: dict[str, int] = {"hits": 0, "misses": 0, "evictions": 0, "loadedRamBytes": 0, "loadedAcceleratorBytes": 0}
-
-            def admit(loaded_facets: dict[str, Any]) -> None:
-                nonlocal admission
-                requested_footprints = {
-                    self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
-                    for facet in loaded_facets.values()
-                }
-                cached = {
-                    key: self.registry.is_cached(base, facet.manifest)
-                    for key, facet in ((self.registry.cache_key(base, facet), facet) for facet in loaded_facets.values())
-                }
-                cache_telemetry["hits"] = sum(cached.values())
-                cache_telemetry["misses"] = len(cached) - cache_telemetry["hits"]
-                for key, footprint in requested_footprints.items():
-                    if not cached[key]:
-                        cache_telemetry["loadedRamBytes"] += footprint.ram_bytes
-                        cache_telemetry["loadedAcceleratorBytes"] += footprint.accelerator_bytes
-                admission = self.residency.admit(requested_footprints)
-                cache_telemetry["evictions"] = len(admission.evicted)
-                self.registry.evict_cache_keys(admission.evicted)
-
             try:
-                plan, _ = self.registry.load_resolved(
+                plan, _, admission, cache_telemetry = self._stage_and_admit_facets(
                     requested_facets,
                     base,
                     allow_model_id_mismatch=allow_model_id_mismatch,
                     allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
-                    before_commit=admit,
                     resolved=resolved,
                 )
-                self._record_cache_telemetry(cache_telemetry)
                 return {
                     "loadedFacets": self.registry.loaded(),
                     "composition": plan.to_dict(),
@@ -242,60 +238,23 @@ class MixedInferenceRuntime:
                 )
             admission = None
             previous_training = None
-            composition_blocks = 0
-            cache_telemetry: dict[str, int] = {"hits": 0, "misses": 0, "evictions": 0, "loadedRamBytes": 0, "loadedAcceleratorBytes": 0}
-
-            def admit(loaded_facets: dict[str, Any]) -> None:
-                nonlocal admission
-                requested_footprints = {
-                    self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
-                    for facet in loaded_facets.values()
-                }
-                cached = {
-                    key: self.registry.is_cached(base, facet.manifest)
-                    for key, facet in ((self.registry.cache_key(base, facet), facet) for facet in loaded_facets.values())
-                }
-                cache_telemetry["hits"] = sum(cached.values())
-                cache_telemetry["misses"] = len(cached) - cache_telemetry["hits"]
-                for key, footprint in requested_footprints.items():
-                    if not cached[key]:
-                        cache_telemetry["loadedRamBytes"] += footprint.ram_bytes
-                        cache_telemetry["loadedAcceleratorBytes"] += footprint.accelerator_bytes
-                admission = self.residency.admit(
-                    requested_footprints,
-                    kv_cache=_estimate_request_footprint(
-                        base,
-                        inputs,
-                        request,
-                        composition_blocks=composition_blocks,
-                        bounded=_has_bounded_budget(self.residency),
-                    ),
-                )
-                cache_telemetry["evictions"] = len(admission.evicted)
-                self.registry.evict_cache_keys(admission.evicted)
-
             try:
                 resolved = self.registry.resolve(requested)
-                plan, manifests = resolved
+                plan, _ = resolved
                 self._validate_plan_for_base(plan)
-                composition_blocks = len(plan.blocks)
-                self._preflight_facet_staging(
+                kv_cache = _estimate_request_footprint(
                     base,
-                    manifests,
-                    kv_cache=_estimate_request_footprint(
-                        base,
-                        inputs,
-                        request,
-                        composition_blocks=composition_blocks,
-                        bounded=_has_bounded_budget(self.residency),
-                    ),
+                    inputs,
+                    request,
+                    composition_blocks=len(plan.blocks),
+                    bounded=_has_bounded_budget(self.residency),
                 )
-                plan, loaded = self.registry.load_resolved(
+                plan, loaded, admission, cache_telemetry = self._stage_and_admit_facets(
                     requested,
                     base,
+                    kv_cache=kv_cache,
                     allow_model_id_mismatch=allow_mismatch,
                     allow_unsafe_legacy_base_binding=bool(request.get("allowUnsafeLegacyBaseBinding", False)),
-                    before_commit=admit,
                     resolved=resolved,
                 )
                 self._validate_plan_for_base(plan)
@@ -348,7 +307,6 @@ class MixedInferenceRuntime:
                 )
             total_elapsed = time.perf_counter() - started
             self._generation_count += 1
-            self._record_cache_telemetry(cache_telemetry)
             response: dict[str, Any] = {
                 "schemaVersion": GENERATION_SCHEMA_VERSION,
                 "requestId": str(request.get("requestId") or uuid.uuid4()),
@@ -406,7 +364,15 @@ class MixedInferenceRuntime:
                 "memory": memory,
                 "residency": self.residency.snapshot(),
                 "telemetry": {
-                    "cache": {"status": "measured", **self._cache_telemetry},
+                    "cache": {
+                        "status": "measured",
+                        "scope": "admissions-reaching-staging-and-successfully-committed-cache-bytes",
+                        **self._cache_telemetry,
+                        "failedLoadBytes": {
+                            "status": "unavailable",
+                            "reason": "partially constructed facets are discarded before their complete footprint can be reconciled",
+                        },
+                    },
                     "admission": {"status": "estimated", "scope": "logical-cache-and-request-footprints"},
                     "hardwarePeak": {"status": "unavailable", "reason": "allocator peak telemetry is not qualified by MI"},
                 },
@@ -499,6 +465,136 @@ class MixedInferenceRuntime:
         ]
         self.residency.preflight_staging(staged, kv_cache=kv_cache)
 
+    def _stage_and_admit_facets(
+        self,
+        requested_facets: Iterable[str],
+        base: LoadedBaseModel,
+        *,
+        kv_cache: Footprint = Footprint(),
+        allow_model_id_mismatch: bool = False,
+        allow_unsafe_legacy_base_binding: bool = False,
+        resolved: tuple[CompositionPlan, dict[str, Any]] | None = None,
+    ) -> tuple[CompositionPlan, dict[str, Any], Any, dict[str, int]]:
+        """Validate, evict, stage and commit one coherent facet admission."""
+        resolved = resolved or self.registry.resolve(requested_facets)
+        plan, manifests = resolved
+        self._validate_plan_for_base(plan)
+        # Verify the complete dependency/artifact closure before constructing
+        # the first block. Header-based sizing below is also allocation-free.
+        validated_sizes = self.registry.validate_resolved(
+            base,
+            manifests,
+            allow_model_id_mismatch=allow_model_id_mismatch,
+            allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
+        )
+        requested_footprints: dict[Any, Footprint] = {}
+        cache_hits: dict[Any, bool] = {}
+        for manifest in manifests.values():
+            key = self.registry.cache_key_for_manifest(base, manifest)
+            requested_footprints[key] = _facet_resident_footprint(base, manifest)
+            cache_hits[key] = self.registry.is_cached(base, manifest)
+        missing = [
+            manifest for manifest in manifests.values()
+            if not cache_hits[self.registry.cache_key_for_manifest(base, manifest)]
+        ]
+        snapshots = {}
+        staging_request = None
+        try:
+            if missing:
+                allocation = facet_staging_allocation(
+                    local_root=self._staging_directory,
+                    local_limit_bytes=self._staging_limit_bytes,
+                )
+                required_snapshot_bytes = sum(
+                    validated_sizes[manifest.facet_id] for manifest in missing
+                )
+                staging_request = allocation.create_request(required_snapshot_bytes)
+                snapshots = self.registry.snapshot_artifacts(
+                    missing,
+                    validated_sizes=validated_sizes,
+                    destination_directory=staging_request.directory,
+                )
+            staging_footprints: dict[Any, Footprint] = {}
+            for manifest in missing:
+                key = self.registry.cache_key_for_manifest(base, manifest)
+                staging_footprints[key] = _facet_staging_footprint(
+                    base,
+                    self.registry,
+                    manifest,
+                    bounded=_has_bounded_budget(self.residency),
+                    artifact_path=snapshots[manifest.facet_id].path,
+                )
+
+            prepared = self.residency.prepare_admission(
+                requested_footprints,
+                staging=staging_footprints,
+                kv_cache=kv_cache,
+            )
+            applied = self.residency.apply_admission(prepared)
+            # These inactive evictions are deliberate and remain coherent if a
+            # later load fails; restoring them would require another allocation.
+            self.registry.evict_cache_keys(prepared.evicted)
+            cache_event = {
+                "hits": sum(cache_hits.values()),
+                "misses": len(cache_hits) - sum(cache_hits.values()),
+                "evictions": len(prepared.evicted),
+            }
+            try:
+                staged = self.registry.stage_resolved(
+                    requested_facets,
+                    base,
+                    allow_model_id_mismatch=allow_model_id_mismatch,
+                    allow_unsafe_legacy_base_binding=allow_unsafe_legacy_base_binding,
+                    resolved=resolved,
+                    identities_validated=True,
+                    artifact_snapshots=snapshots,
+                )
+            except BaseException:
+                self.residency.cancel_admission(applied)
+                self._record_cache_telemetry({**cache_event, "loadFailures": 1})
+                raise
+            try:
+                actual_footprints = {
+                    self.registry.cache_key(base, facet): _facet_footprint(facet, base.device)
+                    for facet in staged.loaded.values()
+                }
+                admission = self.residency.commit_admission(applied, actual_footprints)
+            except BaseException:
+                self.residency.cancel_admission(applied)
+                self._record_cache_telemetry({**cache_event, "reconcileFailures": 1})
+                raise
+            try:
+                self.registry.commit_staged(staged)
+            except BaseException:
+                # Roll back only this request's new entries and pins. Existing
+                # hits must remain reusable; planned inactive evictions remain.
+                self.residency.rollback(admission)
+                self._record_cache_telemetry({**cache_event, "commitFailures": 1})
+                raise
+            telemetry = {
+                **cache_event,
+                "loadedRamBytes": sum(
+                    footprint.ram_bytes
+                    for key, footprint in actual_footprints.items()
+                    if not cache_hits[key]
+                ),
+                "loadedAcceleratorBytes": sum(
+                    footprint.accelerator_bytes
+                    for key, footprint in actual_footprints.items()
+                    if not cache_hits[key]
+                ),
+            }
+            self._record_cache_telemetry({
+                **telemetry,
+                "committedEntries": len(staged.staged),
+            })
+            return staged.plan, staged.loaded, admission, telemetry
+        finally:
+            for snapshot in snapshots.values():
+                snapshot.close()
+            if staging_request is not None:
+                staging_request.close()
+
     def _identity_provenance(
         self, *, unsafe_legacy_base_binding: bool = False
     ) -> dict[str, Any]:
@@ -514,6 +610,27 @@ class MixedInferenceRuntime:
             "unsafeLegacyBaseBinding": unsafe_legacy_base_binding,
             "comparisonEligible": eligible,
         }
+
+
+def _validate_residency_override(
+    residency: ResidencyManager,
+    configured: dict[str, int],
+) -> None:
+    """Reject an injected manager that bypasses an explicit RM/env ceiling."""
+    for configured_name, budget_name in (
+        ("ramBytes", "ram_bytes"),
+        ("acceleratorBytes", "accelerator_bytes"),
+    ):
+        ceiling = configured.get(configured_name)
+        if ceiling is None:
+            continue
+        actual = getattr(residency.budget, budget_name)
+        if actual is None or actual > ceiling:
+            raise ConfigurationError(
+                "injected residency manager must declare "
+                f"{budget_name} at or below the active resource ceiling "
+                f"({actual!r} > {ceiling})"
+            )
 
 
 def extract_facet_references(payload: dict[str, Any]) -> list[str]:
@@ -621,6 +738,7 @@ def _facet_staging_footprint(
     manifest: Any,
     *,
     bounded: bool,
+    artifact_path: Path | None = None,
 ) -> Footprint:
     """Account safetensors source and instantiated target tensors before load."""
     artifact = manifest.artifact
@@ -630,7 +748,9 @@ def _facet_staging_footprint(
                 "composition_residency_denied: bounded facet loading requires safetensors tensor metadata"
             )
         return Footprint()
-    artifact_path = registry.manifest_path(manifest).parent / artifact.weights
+    artifact_path = artifact_path or (
+        registry.manifest_path(manifest).parent / artifact.weights
+    )
     try:
         source_bytes, header_target_bytes = safetensors_tensor_bytes(
             artifact_path, target_element_bytes=_model_element_bytes(base.model)
@@ -646,6 +766,14 @@ def _facet_staging_footprint(
     if str(base.device).startswith("cuda"):
         return Footprint(ram_bytes=source_bytes, accelerator_bytes=target_bytes)
     return Footprint(ram_bytes=source_bytes + target_bytes)
+
+
+def _facet_resident_footprint(base: LoadedBaseModel, manifest: Any) -> Footprint:
+    """Exact target tensor bound derived without constructing the facet."""
+    target_bytes = _facet_clone_target_bytes(base, manifest)
+    if str(base.device).startswith("cuda"):
+        return Footprint(accelerator_bytes=target_bytes)
+    return Footprint(ram_bytes=target_bytes)
 
 
 def _model_element_bytes(model: Any) -> int:

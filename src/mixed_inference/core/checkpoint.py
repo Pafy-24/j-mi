@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 import tempfile
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -49,6 +50,18 @@ class LoadedFacet:
                     yield f"{prefix}.{name}", parameter
 
 
+@dataclass(frozen=True)
+class ArtifactFileSnapshot:
+    path: Path
+    size_bytes: int
+
+    def close(self) -> None:
+        try:
+            self.path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def materialize_facet(manifest: FacetManifest, base_layers: Any) -> LoadedFacet:
     blocks: dict[str, list[Any]] = {}
     reports: dict[str, list[InitializationReport]] = {}
@@ -73,24 +86,45 @@ def materialize_facet(manifest: FacetManifest, base_layers: Any) -> LoadedFacet:
     )
 
 
-def load_facet(directory_or_manifest: str | Path, base_layers: Any) -> LoadedFacet:
+def load_facet(
+    directory_or_manifest: str | Path,
+    base_layers: Any,
+    *,
+    expected_manifest: FacetManifest | None = None,
+    artifact_snapshot: ArtifactFileSnapshot | None = None,
+) -> LoadedFacet:
     source = Path(directory_or_manifest)
     manifest_path = source if source.is_file() else source / MANIFEST_NAME
     manifest = FacetManifest.from_dict(load_json(manifest_path))
+    if expected_manifest is not None and manifest.to_dict() != expected_manifest.to_dict():
+        raise CompatibilityError(
+            f"Facet manifest changed after resolution: {manifest_path}"
+        )
     if manifest.artifact is None:
         raise CompatibilityError(f"Facet manifest has no artifact: {manifest_path}")
     artifact_path = manifest_path.parent / manifest.artifact.weights
-    if not artifact_path.exists():
-        raise CompatibilityError(f"Facet weights do not exist: {artifact_path}")
-    if manifest.artifact.sha256:
-        actual_hash = sha256_file(artifact_path)
-        if actual_hash != manifest.artifact.sha256:
-            raise CompatibilityError(
-                f"Facet weight hash mismatch for {manifest.reference()}: "
-                f"{actual_hash} != {manifest.artifact.sha256}"
-            )
+    if artifact_snapshot is not None:
+        snapshot = artifact_snapshot
+        verify_artifact_file(
+            snapshot.path,
+            expected_sha256=manifest.artifact.sha256,
+            expected_size=snapshot.size_bytes,
+        )
+        load_path = snapshot.path
+    else:
+        # Compatibility path for direct registry callers. The bounded runtime
+        # always supplies an owned snapshot; this path only verifies then reads
+        # the source in place and does not claim filesystem snapshot isolation.
+        verify_artifact_file(
+            artifact_path,
+            expected_sha256=manifest.artifact.sha256,
+            expected_size=manifest.artifact.size_bytes,
+        )
+        load_path = artifact_path
+    # Bounded callers verify manifest identity and the exact owned artifact
+    # snapshot before a decoder block is materialized.
     loaded = materialize_facet(manifest, base_layers)
-    state = _load_state(artifact_path, manifest.artifact.format)
+    state = _load_state(load_path, manifest.artifact.format)
     consumed: set[str] = set()
     for slot in manifest.slots:
         for index, spec in enumerate(slot.blocks):
@@ -119,6 +153,96 @@ def load_facet(directory_or_manifest: str | Path, base_layers: Any) -> LoadedFac
         )
     loaded.directory = manifest_path.parent
     return loaded
+
+
+def verify_artifact_file(
+    path: Path,
+    *,
+    expected_sha256: str,
+    expected_size: int | None = None,
+) -> int:
+    """Hash one opened artifact handle without allocating its payload."""
+    if not path.is_file():
+        raise CompatibilityError(f"Facet weights do not exist: {path}")
+    digest = hashlib.sha256()
+    copied = 0
+    with path.open("rb") as stream:
+        size = os.fstat(stream.fileno()).st_size
+        if expected_size is not None and size != expected_size:
+            raise CompatibilityError(
+                f"Facet weight size mismatch: {size} != {expected_size}"
+            )
+        while chunk := stream.read(1024 * 1024):
+            copied += len(chunk)
+            if copied > size:
+                raise CompatibilityError(
+                    "Facet weights grew while their identity was verified"
+                )
+            digest.update(chunk)
+    if copied != size:
+        raise CompatibilityError(
+            f"Facet weights changed size while verified: {copied} != {size}"
+        )
+    if expected_sha256 and digest.hexdigest() != expected_sha256:
+        raise CompatibilityError(
+            f"Facet weight hash mismatch: {digest.hexdigest()} != {expected_sha256}"
+        )
+    return size
+
+
+def snapshot_artifact_file(
+    path: Path,
+    *,
+    expected_sha256: str,
+    expected_size: int,
+    destination_directory: Path,
+) -> ArtifactFileSnapshot:
+    """Copy one verified artifact into a caller-owned bounded directory."""
+    if not path.is_file():
+        raise CompatibilityError(f"Facet weights do not exist: {path}")
+    if isinstance(expected_size, bool) or not isinstance(expected_size, int) or expected_size < 0:
+        raise CompatibilityError("Facet snapshot size must be a non-negative integer")
+    destination_directory.mkdir(parents=False, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix="mi-facet-", suffix=path.suffix, dir=destination_directory
+    )
+    os.close(fd)
+    temporary = Path(temporary_name)
+    digest = hashlib.sha256()
+    copied = 0
+    try:
+        with path.open("rb") as source, temporary.open("wb") as target:
+            size = os.fstat(source.fileno()).st_size
+            if size != expected_size:
+                raise CompatibilityError(
+                    f"Facet weight size mismatch: {size} != {expected_size}"
+                )
+            while copied < expected_size:
+                chunk = source.read(min(1024 * 1024, expected_size - copied))
+                if not chunk:
+                    break
+                copied += len(chunk)
+                digest.update(chunk)
+                target.write(chunk)
+            if source.read(1):
+                raise CompatibilityError(
+                    "Facet weights grew while the validated snapshot was copied"
+                )
+        if copied != expected_size:
+            raise CompatibilityError(
+                f"Facet weights changed size while copied: {copied} != {expected_size}"
+            )
+        if expected_sha256 and digest.hexdigest() != expected_sha256:
+            raise CompatibilityError(
+                f"Facet weight hash mismatch: {digest.hexdigest()} != {expected_sha256}"
+            )
+        return ArtifactFileSnapshot(path=temporary, size_bytes=copied)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def save_facet(
@@ -150,6 +274,7 @@ def save_facet(
         weights=DEFAULT_WEIGHTS_NAME,
         format="safetensors",
         sha256=sha256_file(weights_path),
+        size_bytes=weights_path.stat().st_size,
     )
     manifest = replace(facet.manifest, slots=tuple(rewritten_slots), artifact=artifact)
     atomic_write_json(output / MANIFEST_NAME, manifest.to_dict())

@@ -92,6 +92,7 @@ def test_managed_cuda_trains_and_generates_a_tiny_facet(
     ).hexdigest()
     effective = tmp_path / "runtime" / "config" / "effective.json"
     effective.parent.mkdir(parents=True)
+    (tmp_path / "runtime" / "run").mkdir(parents=True)
     effective.write_text(
         json.dumps(
             {
@@ -108,6 +109,19 @@ def test_managed_cuda_trains_and_generates_a_tiny_facet(
                     "telemetryToken": "test-token",
                     "bindings": [
                         {
+                            "resourceId": "memory",
+                            "runtime": {"ramBytes": 2 * 1024**3, "swapBytes": 0},
+                            "enforcement": {"memory": "hard"},
+                        },
+                        {
+                            "resourceId": "storage",
+                            "runtime": {
+                                "rootPath": str(tmp_path),
+                                "quotaBytes": 2 * 1024**3,
+                            },
+                            "enforcement": {"quota": "reservation"},
+                        },
+                        {
                             "resourceId": f"gpu-nvidia-{cuda_uuid.lower()}",
                             "runtime": {
                                 "kind": "gpu",
@@ -118,7 +132,10 @@ def test_managed_cuda_trains_and_generates_a_tiny_facet(
                             },
                         }
                     ],
-                    "paths": {"run": str(tmp_path / "runtime" / "run")},
+                    "paths": {
+                        "root": str(tmp_path / "runtime"),
+                        "run": str(tmp_path / "runtime" / "run"),
+                    },
                 },
             }
         ),

@@ -6,6 +6,7 @@ availability or launch devices; RM remains the authority for resource leases.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from threading import RLock
 from time import monotonic
 from typing import Hashable, Iterable
 
@@ -77,6 +78,26 @@ class _Entry:
 class Admission:
     evicted: tuple[Hashable, ...]
     pinned: tuple[Hashable, ...]
+    created: tuple[Hashable, ...] = ()
+
+
+@dataclass(frozen=True)
+class AdmissionPlan:
+    """Immutable admission decision tied to one residency snapshot."""
+
+    owner: object
+    snapshot_version: int
+    requested: tuple[tuple[Hashable, Footprint], ...]
+    staging: tuple[tuple[Hashable, Footprint], ...]
+    kv_cache: Footprint
+    evicted: tuple[Hashable, ...]
+
+
+@dataclass(frozen=True)
+class AppliedAdmissionPlan:
+    plan: AdmissionPlan
+    applied_version: int
+    reservation: object
 
 
 class ResidencyManager:
@@ -86,15 +107,19 @@ class ResidencyManager:
         self.budget = budget or ResidencyBudget()
         self._base = Footprint()
         self._entries: dict[Hashable, _Entry] = {}
+        self._version = 0
+        self._owner = object()
+        self._active_reservation: object | None = None
+        self._lock = RLock()
 
     def reset(self, *, base: Footprint = Footprint()) -> None:
-        proposed = base + Footprint(
-            ram_bytes=self.budget.operational_margin_bytes,
-            accelerator_bytes=self.budget.operational_margin_bytes,
-        )
-        self._ensure_within_budget(proposed)
-        self._base = base
-        self._entries.clear()
+        with self._lock:
+            proposed = base + self._margin()
+            self._ensure_within_budget(proposed)
+            self._base = base
+            self._entries.clear()
+            self._active_reservation = None
+            self._version += 1
 
     def preflight_staging(self, staged: Iterable[Footprint], *, kv_cache: Footprint = Footprint()) -> None:
         """Fail closed if loading new bytes could exceed the declared peak.
@@ -102,10 +127,185 @@ class ResidencyManager:
         Existing cache entries stay resident until all facet files load, so
         they are deliberately included here rather than assumed evictable.
         """
-        total = self._total(self._entries) + kv_cache + self._margin()
-        for footprint in staged:
-            total = total + footprint
-        self._ensure_within_budget(total)
+        with self._lock:
+            total = self._total(self._entries) + kv_cache + self._margin()
+            for footprint in staged:
+                total = total + footprint
+            self._ensure_within_budget(total)
+
+    def prepare_admission(
+        self,
+        requested: dict[Hashable, Footprint],
+        *,
+        staging: dict[Hashable, Footprint] | None = None,
+        kv_cache: Footprint = Footprint(),
+    ) -> AdmissionPlan:
+        """Plan final residency and pre-allocation peak without mutating state.
+
+        ``staging`` contains the source-plus-target peak for missing requested
+        entries.  Existing request hits remain resident and are protected.
+        Inactive entries may be selected for eviction before staging begins.
+        """
+        with self._lock:
+            staged = dict(staging or {})
+            unknown = set(staged) - set(requested)
+            if unknown:
+                raise ValueError("staging entries must be part of the requested set")
+            projected = {
+                key: _Entry(entry.footprint, entry.last_used, entry.pins)
+                for key, entry in self._entries.items()
+            }
+            missing: dict[Hashable, Footprint] = {}
+            for key, footprint in requested.items():
+                entry = projected.get(key)
+                if entry is None:
+                    missing[key] = footprint
+                elif entry.footprint != footprint:
+                    raise CompositionError(
+                        "composition_residency_denied: resident facet footprint changed under the same cache identity"
+                    )
+            for key in staged:
+                if key in projected:
+                    raise ValueError("staging footprint supplied for an existing cache entry")
+                final = requested[key]
+                peak = staged[key]
+                if (
+                    peak.ram_bytes < final.ram_bytes
+                    or peak.accelerator_bytes < final.accelerator_bytes
+                ):
+                    raise ValueError(
+                        "staging footprint must include the requested resident footprint"
+                    )
+
+            protected = set(requested)
+            evicted: list[Hashable] = []
+            while not self._plan_fits(projected, missing, staged, kv_cache):
+                candidates = [
+                    (entry.last_used, str(key), key)
+                    for key, entry in projected.items()
+                    if key not in protected and entry.pins == 0
+                ]
+                if not candidates:
+                    raise CompositionError(
+                        "composition_residency_denied: base, requested or pinned facets, staging peak, KV cache and operational margin exceed budget"
+                    )
+                _, _, key = min(candidates)
+                projected.pop(key)
+                evicted.append(key)
+            return AdmissionPlan(
+                owner=self._owner,
+                snapshot_version=self._version,
+                requested=tuple(requested.items()),
+                staging=tuple(staged.items()),
+                kv_cache=kv_cache,
+                evicted=tuple(evicted),
+            )
+
+    def apply_admission(self, plan: AdmissionPlan) -> AppliedAdmissionPlan:
+        """Apply only the planned inactive evictions after a version check."""
+        with self._lock:
+            self._require_owner(plan)
+            self._require_version(plan.snapshot_version)
+            if self._active_reservation is not None:
+                raise CompositionError(
+                    "composition_residency_busy: another admission is being staged"
+                )
+            for key in plan.evicted:
+                entry = self._entries.get(key)
+                if entry is None or entry.pins or key in dict(plan.requested):
+                    raise CompositionError(
+                        "composition_residency_stale: planned eviction no longer matches residency state"
+                    )
+            for key in plan.evicted:
+                self._entries.pop(key)
+            reservation = object()
+            self._active_reservation = reservation
+            # Applying a plan is itself a state transition even without an
+            # eviction: it exclusively reserves the staging window.
+            self._version += 1
+            return AppliedAdmissionPlan(
+                plan=plan,
+                applied_version=self._version,
+                reservation=reservation,
+            )
+
+    def commit_admission(
+        self,
+        applied: AppliedAdmissionPlan,
+        actual: dict[Hashable, Footprint],
+    ) -> Admission:
+        """Pin a fully staged request after reconciling actual tensor bytes."""
+        with self._lock:
+            self._require_owner(applied.plan)
+            if self._active_reservation is not applied.reservation:
+                raise CompositionError(
+                    "composition_residency_stale: applied admission is no longer reserved"
+                )
+            try:
+                self._require_version(applied.applied_version)
+                expected = dict(applied.plan.requested)
+                if set(actual) != set(expected):
+                    raise CompositionError(
+                        "composition_residency_denied: staged facets differ from the prepared request"
+                    )
+                for key, footprint in actual.items():
+                    estimate = expected[key]
+                    if (
+                        footprint.ram_bytes > estimate.ram_bytes
+                        or footprint.accelerator_bytes > estimate.accelerator_bytes
+                    ):
+                        raise CompositionError(
+                            "composition_residency_denied: actual facet footprint exceeds the pre-allocation bound"
+                        )
+
+                projected = {
+                    key: _Entry(entry.footprint, entry.last_used, entry.pins)
+                    for key, entry in self._entries.items()
+                }
+                now = monotonic()
+                created: list[Hashable] = []
+                for key, footprint in actual.items():
+                    entry = projected.get(key)
+                    if entry is None:
+                        projected[key] = _Entry(footprint=footprint, last_used=now)
+                        created.append(key)
+                    elif entry.footprint != footprint:
+                        raise CompositionError(
+                            "composition_residency_denied: resident facet footprint changed during staging"
+                        )
+                if not self._fits(
+                    self._total(projected) + applied.plan.kv_cache + self._margin()
+                ):
+                    raise CompositionError(
+                        "composition_residency_denied: reconciled facets, KV cache and operational margin exceed budget"
+                    )
+                self._entries = projected
+                for key in actual:
+                    entry = self._entries[key]
+                    entry.last_used = now
+                    entry.pins += 1
+                return Admission(
+                    evicted=applied.plan.evicted,
+                    pinned=tuple(actual),
+                    created=tuple(created),
+                )
+            finally:
+                self._active_reservation = None
+                self._version += 1
+
+    def cancel_admission(self, applied: AppliedAdmissionPlan) -> None:
+        """Release a staging reservation after load/reconciliation failure."""
+        with self._lock:
+            self._require_owner(applied.plan)
+            if self._active_reservation is applied.reservation:
+                self._active_reservation = None
+                self._version += 1
+                return
+            if self._active_reservation is None:
+                return
+            raise CompositionError(
+                "composition_residency_stale: another admission owns the staging reservation"
+            )
 
     def admit(
         self,
@@ -113,49 +313,38 @@ class ResidencyManager:
         *,
         kv_cache: Footprint = Footprint(),
     ) -> Admission:
-        """Pin requested entries or fail without changing cache state."""
-        requested_keys = tuple(requested)
-        projected = dict(self._entries)
-        now = monotonic()
-        for key, footprint in requested.items():
-            entry = projected.get(key)
-            if entry is None:
-                projected[key] = _Entry(footprint=footprint, last_used=now)
-            elif entry.footprint != footprint:
-                # A manifest/dtype change under an old key is never reusable.
-                projected[key] = _Entry(footprint=footprint, last_used=now, pins=entry.pins)
-
-        protected = set(requested_keys)
-        evicted: list[Hashable] = []
-        while not self._fits(self._total(projected) + kv_cache + self._margin()):
-            candidates = [
-                (entry.last_used, str(key), key)
-                for key, entry in projected.items()
-                if key not in protected and entry.pins == 0
-            ]
-            if not candidates:
-                raise CompositionError(
-                    "composition_residency_denied: base, pinned facets, KV cache and operational margin exceed budget"
-                )
-            _, _, key = min(candidates)
-            projected.pop(key)
-            evicted.append(key)
-
-        # Commit only after full admission succeeded.
-        self._entries = projected
-        for key in requested_keys:
-            entry = self._entries[key]
-            entry.last_used = now
-            entry.pins += 1
-        return Admission(evicted=tuple(evicted), pinned=requested_keys)
+        """Compatibility helper for callers without a separate staging phase."""
+        plan = self.prepare_admission(requested, kv_cache=kv_cache)
+        applied = self.apply_admission(plan)
+        return self.commit_admission(applied, requested)
 
     def release(self, admission: Admission) -> None:
-        now = monotonic()
-        for key in admission.pinned:
-            entry = self._entries.get(key)
-            if entry is not None:
-                entry.pins = max(0, entry.pins - 1)
-                entry.last_used = now
+        with self._lock:
+            now = monotonic()
+            changed = False
+            for key in admission.pinned:
+                entry = self._entries.get(key)
+                if entry is not None:
+                    entry.pins = max(0, entry.pins - 1)
+                    entry.last_used = now
+                    changed = True
+            if changed:
+                self._version += 1
+
+    def rollback(self, admission: Admission) -> None:
+        """Undo a failed registry commit without restoring prior evictions."""
+        with self._lock:
+            created = set(admission.created)
+            now = monotonic()
+            for key in admission.pinned:
+                if key in created:
+                    self._entries.pop(key, None)
+                    continue
+                entry = self._entries.get(key)
+                if entry is not None:
+                    entry.pins = max(0, entry.pins - 1)
+                    entry.last_used = now
+            self._version += 1
 
     def discard(self, keys: Iterable[Hashable]) -> None:
         """Remove cache entries whose backing facet was invalidated or unloaded.
@@ -163,19 +352,51 @@ class ResidencyManager:
         Runtime calls are serialized, so an invalidated entry cannot still be
         pinned by an in-flight generation when this is invoked.
         """
-        for key in keys:
-            self._entries.pop(key, None)
+        with self._lock:
+            changed = False
+            for key in keys:
+                changed = self._entries.pop(key, None) is not None or changed
+            if changed:
+                self._version += 1
 
     def snapshot(self) -> dict[str, int | None]:
-        total = self._total(self._entries)
-        return {
-            "ramBytes": total.ram_bytes,
-            "acceleratorBytes": total.accelerator_bytes,
-            "entries": len(self._entries),
-            "pinnedEntries": sum(1 for entry in self._entries.values() if entry.pins),
-            "ramBudgetBytes": self.budget.ram_bytes,
-            "acceleratorBudgetBytes": self.budget.accelerator_bytes,
-        }
+        with self._lock:
+            total = self._total(self._entries)
+            return {
+                "ramBytes": total.ram_bytes,
+                "acceleratorBytes": total.accelerator_bytes,
+                "entries": len(self._entries),
+                "pinnedEntries": sum(1 for entry in self._entries.values() if entry.pins),
+                "ramBudgetBytes": self.budget.ram_bytes,
+                "acceleratorBudgetBytes": self.budget.accelerator_bytes,
+            }
+
+    def _plan_fits(
+        self,
+        retained: dict[Hashable, _Entry],
+        missing: dict[Hashable, Footprint],
+        staged: dict[Hashable, Footprint],
+        kv_cache: Footprint,
+    ) -> bool:
+        common = self._total(retained) + kv_cache + self._margin()
+        final = common
+        peak = common
+        for key, footprint in missing.items():
+            final = final + footprint
+            peak = peak + staged.get(key, footprint)
+        return self._fits(final) and self._fits(peak)
+
+    def _require_version(self, expected: int) -> None:
+        if self._version != expected:
+            raise CompositionError(
+                "composition_residency_stale: admission plan no longer matches residency state"
+            )
+
+    def _require_owner(self, plan: AdmissionPlan) -> None:
+        if plan.owner is not self._owner:
+            raise CompositionError(
+                "composition_residency_stale: admission plan belongs to another residency manager"
+            )
 
     def _total(self, entries: dict[Hashable, _Entry]) -> Footprint:
         total = self._base

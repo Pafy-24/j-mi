@@ -138,17 +138,15 @@ def test_pin_release_survives_model_train_restore_failure(tmp_path, monkeypatch)
     plan = CompositionPlan(requested=("facet",), resolved=("facet@1",), blocks=())
     facet = Facet()
     monkeypatch.setattr(runtime.registry, "resolve", lambda _requested: (plan, {"facet": object()}))
-    monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
-    monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
-    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
-    monkeypatch.setattr(
-        runtime.registry,
-        "load_resolved",
-        lambda *_args, before_commit, **_kwargs: (
-            before_commit({"facet": facet}) or (plan, {"facet": facet})
-        ),
-    )
+
+    def stage_and_admit(*_args, **_kwargs):
+        admission = runtime.residency.admit({"facet-cache": Footprint(ram_bytes=4)})
+        return plan, {"facet": facet}, admission, {
+            "hits": 0, "misses": 1, "evictions": 0,
+            "loadedRamBytes": 4, "loadedAcceleratorBytes": 0,
+        }
+
+    monkeypatch.setattr(runtime, "_stage_and_admit_facets", stage_and_admit)
     monkeypatch.setattr(
         runtime, "_prepare_inputs", lambda _request: {"input_ids": torch.ones((1, 1), dtype=torch.long)}
     )

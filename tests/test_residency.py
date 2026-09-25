@@ -57,8 +57,9 @@ def test_registry_stages_all_loads_before_cache_mutation(tmp_path, monkeypatch) 
     plan = type("Plan", (), {})()
     monkeypatch.setattr(registry, "resolve", lambda _requested: (plan, {"one": one, "two": two}))
     monkeypatch.setattr("mixed_inference.core.registry.validate_base_binding", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(registry, "validate_resolved", lambda *_args, **_kwargs: None)
 
-    def load(path, _layers):
+    def load(path, _layers, **_kwargs):
         if path is tmp_path:
             # use manifest identity to fail deterministically on the second call
             load.calls += 1
@@ -79,6 +80,85 @@ def test_registry_stages_all_loads_before_cache_mutation(tmp_path, monkeypatch) 
     with pytest.raises(CompositionError, match="second facet failed"):
         registry.load_resolved(["one", "two"], base)
     assert registry._loaded == {}
+
+
+def test_staging_plan_evicts_inactive_before_allocation_and_is_version_fenced() -> None:
+    manager = ResidencyManager(ResidencyBudget(ram_bytes=70, operational_margin_bytes=10))
+    manager.reset(base=Footprint(ram_bytes=20))
+    old = manager.admit({"old": Footprint(ram_bytes=30)})
+    manager.release(old)
+
+    plan = manager.prepare_admission(
+        {"new": Footprint(ram_bytes=30)},
+        staging={"new": Footprint(ram_bytes=40)},
+    )
+    assert plan.evicted == ("old",)
+    applied = manager.apply_admission(plan)
+    admission = manager.commit_admission(applied, {"new": Footprint(ram_bytes=30)})
+    assert admission.evicted == ("old",)
+    manager.release(admission)
+    assert manager.snapshot()["entries"] == 1
+
+    stale = manager.prepare_admission({"next": Footprint(ram_bytes=20)})
+    touched = manager.admit({"new": Footprint(ram_bytes=30)})
+    manager.release(touched)
+    before = manager.snapshot()
+    with pytest.raises(CompositionError, match="composition_residency_stale"):
+        manager.apply_admission(stale)
+    assert manager.snapshot() == before
+
+    commit_manager = ResidencyManager(ResidencyBudget(ram_bytes=100))
+    commit_manager.reset(base=Footprint(ram_bytes=10))
+    held = commit_manager.admit({"held": Footprint(ram_bytes=20)})
+    commit_plan = commit_manager.prepare_admission({"request": Footprint(ram_bytes=20)})
+    commit_applied = commit_manager.apply_admission(commit_plan)
+    commit_manager.release(held)
+    before_commit = commit_manager.snapshot()
+    with pytest.raises(CompositionError, match="composition_residency_stale"):
+        commit_manager.commit_admission(
+            commit_applied, {"request": Footprint(ram_bytes=20)}
+        )
+    assert commit_manager.snapshot() == before_commit
+
+
+def test_registry_commit_rollback_preserves_preexisting_hit() -> None:
+    manager = ResidencyManager(ResidencyBudget(ram_bytes=100))
+    manager.reset(base=Footprint(ram_bytes=10))
+    hit = manager.admit({"hit": Footprint(ram_bytes=20)})
+    manager.release(hit)
+    prepared = manager.prepare_admission(
+        {"hit": Footprint(ram_bytes=20), "miss": Footprint(ram_bytes=30)},
+        staging={"miss": Footprint(ram_bytes=40)},
+    )
+    applied = manager.apply_admission(prepared)
+    request = manager.commit_admission(
+        applied,
+        {"hit": Footprint(ram_bytes=20), "miss": Footprint(ram_bytes=30)},
+    )
+    manager.rollback(request)
+    snapshot = manager.snapshot()
+    assert snapshot["entries"] == 1
+    assert snapshot["pinnedEntries"] == 0
+    assert snapshot["ramBytes"] == 30
+
+
+def test_admission_plan_cannot_cross_residency_manager_boundary() -> None:
+    first = ResidencyManager(ResidencyBudget(ram_bytes=100))
+    second = ResidencyManager(ResidencyBudget(ram_bytes=100))
+    first.reset(base=Footprint(ram_bytes=10))
+    second.reset(base=Footprint(ram_bytes=10))
+    foreign = first.prepare_admission({"facet": Footprint(ram_bytes=20)})
+    before = second.snapshot()
+    with pytest.raises(CompositionError, match="another residency manager"):
+        second.apply_admission(foreign)
+    assert second.snapshot() == before
+
+    active_plan = first.prepare_admission({"first": Footprint(ram_bytes=20)})
+    active = first.apply_admission(active_plan)
+    overlapping = first.prepare_admission({"second": Footprint(ram_bytes=20)})
+    with pytest.raises(CompositionError, match="composition_residency_busy"):
+        first.apply_admission(overlapping)
+    first.cancel_admission(active)
 
 
 def test_base_binding_includes_artifact_and_tokenizer_identity() -> None:

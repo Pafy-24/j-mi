@@ -133,7 +133,11 @@ class EndToEndTests(unittest.TestCase):
                 "resumed-trained-weights",
             )
 
-            runtime = MixedInferenceRuntime(root / "facets")
+            runtime = MixedInferenceRuntime(
+                root / "facets",
+                staging_directory=root / "mi-staging",
+                staging_limit_bytes=4_000_000,
+            )
             runtime.load_base(config["baseModel"])
             generated = runtime.generate(
                 {

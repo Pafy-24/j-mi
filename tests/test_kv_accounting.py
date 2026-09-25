@@ -89,7 +89,7 @@ def test_runtime_rejects_expanded_kv_profile_before_facet_load(tmp_path, monkeyp
         "_prepare_inputs",
         lambda _request: {"input_ids": torch.ones((2, 3), dtype=torch.long)},
     )
-    with pytest.raises(CompositionError, match="base_residency_denied"):
+    with pytest.raises(CompositionError, match="composition_residency_denied"):
         runtime.generate(
             {"prompt": "x", "facets": ["facet"], "generation": {"max_new_tokens": 5, "num_beams": 4}}
         )

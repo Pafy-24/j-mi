@@ -45,17 +45,15 @@ def test_generate_releases_admission_when_generation_validation_fails(tmp_path, 
     plan = CompositionPlan(requested=("facet",), resolved=("facet@1",), blocks=())
     facet = _Facet()
     monkeypatch.setattr(runtime.registry, "resolve", lambda _requested: (plan, {"facet": object()}))
-    monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
-    monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
-    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
 
-    def load_resolved(*_args, before_commit, **_kwargs):
-        loaded = {"facet": facet}
-        before_commit(loaded)
-        return plan, loaded
+    def stage_and_admit(*_args, **_kwargs):
+        admission = runtime.residency.admit({"facet-cache": Footprint(ram_bytes=8)})
+        return plan, {"facet": facet}, admission, {
+            "hits": 0, "misses": 1, "evictions": 0,
+            "loadedRamBytes": 8, "loadedAcceleratorBytes": 0,
+        }
 
-    monkeypatch.setattr(runtime.registry, "load_resolved", load_resolved)
+    monkeypatch.setattr(runtime, "_stage_and_admit_facets", stage_and_admit)
     monkeypatch.setattr(
         runtime,
         "_prepare_inputs",
@@ -125,18 +123,16 @@ def test_load_facets_admits_cache_then_releases_the_preload_pin(tmp_path, monkey
     plan = CompositionPlan(requested=("facet",), resolved=("facet@1",), blocks=())
     facet = _Facet()
     monkeypatch.setattr(runtime.registry, "resolve", lambda _requested: (plan, {"facet": object()}))
-    monkeypatch.setattr(runtime, "_preflight_facet_staging", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(runtime.registry, "cache_key", lambda *_args: "facet-cache")
-    monkeypatch.setattr(runtime.registry, "evict_cache_keys", lambda _keys: None)
-    monkeypatch.setattr(runtime.registry, "is_cached", lambda *_args: False)
     monkeypatch.setattr(runtime.registry, "loaded", lambda: ["facet@1"])
 
-    def load_resolved(*_args, before_commit, **_kwargs):
-        loaded = {"facet": facet}
-        before_commit(loaded)
-        return plan, loaded
+    def stage_and_admit(*_args, **_kwargs):
+        admission = runtime.residency.admit({"facet-cache": Footprint(ram_bytes=8)})
+        return plan, {"facet": facet}, admission, {
+            "hits": 0, "misses": 1, "evictions": 0,
+            "loadedRamBytes": 8, "loadedAcceleratorBytes": 0,
+        }
 
-    monkeypatch.setattr(runtime.registry, "load_resolved", load_resolved)
+    monkeypatch.setattr(runtime, "_stage_and_admit_facets", stage_and_admit)
     result = runtime.load_facets(["facet"])
     assert result["loadedFacets"] == ["facet@1"]
     assert runtime.residency.snapshot()["entries"] == 1
