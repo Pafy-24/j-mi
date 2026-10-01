@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "jester-component-manifest-v2",
+  "id": "mi",
+  "version": "0.1.0",
+  "capabilities": [
+    {
+      "capability": {
+        "id": "mi.generate",
+        "version": "1",
+        "contractSha256": "a5b1cb8c4652063e221d0976ef492b69ce1037617208cbd999e86d58e630e552",
+        "concurrency": {"sharing": "dedicated-only", "maxConcurrentRequests": 1}
+      },
+      "configurationSchemaResourceId": "mi.serve.configuration-schema.v1",
+      "configurationDefaultsResourceId": "mi.serve.configuration-defaults.v1",
+      "capabilityContractResourceId": "mi.generate.capability.v1",
+      "adapterMappingResourceId": "mi.serve.adapter-mapping.v1"
+    },
+    {
+      "capability": {
+        "id": "mi.plan",
+        "version": "1",
+        "contractSha256": "0e9e2252277ac9d179661eb16393aa7de18c229165f3e5cdc46bbfcca16ac237",
+        "concurrency": {"sharing": "dedicated-only", "maxConcurrentRequests": 1}
+      },
+      "configurationSchemaResourceId": "mi.serve.configuration-schema.v1",
+      "configurationDefaultsResourceId": "mi.serve.configuration-defaults.v1",
+      "capabilityContractResourceId": "mi.plan.capability.v1",
+      "adapterMappingResourceId": "mi.serve.adapter-mapping.v1"
+    }
+  ],
+  "resources": [
+    {
+      "id": "mi.generate.capability.v1",
+      "kind": "capability-contract",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-generate-capability-v1.json",
+      "sha256": "a5b1cb8c4652063e221d0976ef492b69ce1037617208cbd999e86d58e630e552"
+    },
+    {
+      "id": "mi.plan.capability.v1",
+      "kind": "capability-contract",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-plan-capability-v1.json",
+      "sha256": "0e9e2252277ac9d179661eb16393aa7de18c229165f3e5cdc46bbfcca16ac237"
+    },
+    {
+      "id": "mi.serve.configuration-schema.v1",
+      "kind": "configuration-schema",
+      "mediaType": "application/schema+json",
+      "installedPath": "resources/mi-serve-configuration-v1.schema.json",
+      "sha256": "398291b717ddd7a9dbcada7b36b95bc131ba1746c6908d0a0a5825843d8a864b"
+    },
+    {
+      "id": "mi.serve.configuration-defaults.v1",
+      "kind": "configuration-defaults",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-serve-configuration-defaults-v1.json",
+      "sha256": "e9209263572e9c2b134a89df2f26888372a90d8be8317f7ad424fb8d0823000b"
+    },
+    {
+      "id": "mi.serve.adapter-mapping.v1",
+      "kind": "adapter-mapping",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-serve-adapter-mapping-v1.json",
+      "sha256": "6371f8e121e5c31703d1ea78bed9a05a17d6b51d5edfa0fc5611d57af800dbd2"
+    }
+  ],
+  "compatibility": []
+}

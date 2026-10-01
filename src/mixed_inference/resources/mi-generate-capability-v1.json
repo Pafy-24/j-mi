@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "jester-capability-contract-v1",
+  "id": "mi.generate",
+  "version": "1",
+  "transport": "http-json",
+  "method": "POST",
+  "paths": ["/generate"],
+  "channelOperation": "mi.generate"
+}

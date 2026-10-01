@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jester:mi:serve-configuration:v1",
+  "title": "MI serve configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseModel", "facetRegistry", "workers", "maxRequestBytes"],
+  "properties": {
+    "baseModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset", "artifactFiles", "artifactSha256", "canonicalId", "revision", "layerPath", "dtype"],
+      "properties": {
+        "asset": {"$ref": "#/$defs/assetRef"},
+        "artifactFiles": {"$ref": "#/$defs/assetRef"},
+        "artifactSha256": {"type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])"},
+        "canonicalId": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^(?![A-Za-z]:)(?![./\\\\])(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|(?![\\s\\S])))[A-Za-z0-9][A-Za-z0-9._/+@:-]{0,255}(?![\\s\\S])"},
+        "revision": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}(?![\\s\\S])"},
+        "layerPath": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*(?![\\s\\S])"},
+        "dtype": {"enum": ["float32", "float16", "bfloat16"]}
+      }
+    },
+    "facetRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset"],
+      "properties": {"asset": {"$ref": "#/$defs/assetRef"}}
+    },
+    "workers": {"type": "integer", "const": 1},
+    "maxRequestBytes": {"type": "integer", "minimum": 1024, "maximum": 2097152}
+  },
+  "$defs": {
+    "assetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sha256"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}(?![\\s\\S])"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}(?![\\s\\S])"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])"}
+      }
+    }
+  }
+}

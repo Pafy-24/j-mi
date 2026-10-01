@@ -32,3 +32,6 @@ py-modules = ["mi"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["mixed_inference*"]
+
+[tool.setuptools.package-data]
+mixed_inference = ["resources/*.json"]

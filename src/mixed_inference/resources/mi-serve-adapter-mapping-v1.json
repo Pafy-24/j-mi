@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "jester-adapter-mapping-v1",
+  "id": "mi.serve",
+  "version": "1",
+  "adapter": "mi.serve",
+  "assetRoles": {
+    "baseModel": {"payloadRef": "/baseModel/asset", "materialization": "directory", "argument": "--base-model"},
+    "baseArtifactFiles": {"payloadRef": "/baseModel/artifactFiles", "materialization": "file", "argument": "--artifact-files"},
+    "facetRegistry": {"payloadRef": "/facetRegistry/asset", "materialization": "directory", "argument": "--registry"}
+  },
+  "arguments": [
+    {"flag": "--base-model", "source": "resolvedAssetPath", "role": "baseModel"},
+    {"flag": "--base-identity", "source": "payload", "pointer": "/baseModel/canonicalId"},
+    {"flag": "--revision", "source": "payload", "pointer": "/baseModel/revision"},
+    {"flag": "--layer-path", "source": "payload", "pointer": "/baseModel/layerPath"},
+    {"flag": "--dtype", "source": "payload", "pointer": "/baseModel/dtype"},
+    {"flag": "--artifact-files", "source": "resolvedAssetPath", "role": "baseArtifactFiles"},
+    {"flag": "--artifact-sha256", "source": "payload", "pointer": "/baseModel/artifactSha256"},
+    {"flag": "--registry", "source": "resolvedAssetPath", "role": "facetRegistry"},
+    {"flag": "--workers", "source": "payload", "pointer": "/workers"},
+    {"flag": "--max-request-bytes", "source": "payload", "pointer": "/maxRequestBytes"}
+  ],
+  "environment": {},
+  "additionalArguments": false
+}

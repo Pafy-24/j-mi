@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "jester-capability-contract-v1",
+  "id": "mi.plan",
+  "version": "1",
+  "transport": "http-json",
+  "method": "POST",
+  "paths": ["/plan"],
+  "channelOperation": "mi.plan"
+}
