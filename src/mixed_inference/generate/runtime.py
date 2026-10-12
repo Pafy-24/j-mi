@@ -264,9 +264,7 @@ class MixedInferenceRuntime:
                 seed = request.get("seed")
                 torch = require_torch()
                 if seed is not None:
-                    torch.manual_seed(int(seed))
-                    if _uses_cuda(base) and torch.cuda.is_available():
-                        torch.cuda.manual_seed_all(int(seed))
+                    _seed_for_base(torch, base, int(seed))
 
                 def provide(planned: PlannedBlock) -> Any:
                     return loaded[planned.facet].block(planned.slot_id, planned.block_index)
@@ -813,6 +811,17 @@ def _tensor_bytes(module: Any) -> int:
 
 def _uses_cuda(base: LoadedBaseModel | None) -> bool:
     return base is not None and str(base.device).startswith("cuda")
+
+
+def _seed_for_base(torch: Any, base: LoadedBaseModel, seed: int) -> None:
+    if str(base.device) == "cpu":
+        # torch.manual_seed fans out to CUDA/MPS/XPU runtime hooks.  A CPU-bound
+        # process only needs the CPU default generator.
+        torch.default_generator.manual_seed(seed)
+        return
+    torch.manual_seed(seed)
+    if _uses_cuda(base) and torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def _module_footprint(module: Any, target_device: Any) -> Footprint:

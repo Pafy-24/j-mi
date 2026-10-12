@@ -21,6 +21,9 @@ class _CudaProbe:
     def device_count(self):
         return 2
 
+    def empty_cache(self):
+        self.empty_cache_calls = getattr(self, "empty_cache_calls", 0) + 1
+
 
 class _Registry:
     root = "facets"
@@ -34,12 +37,18 @@ class _Registry:
     def unload(self, *args, **kwargs):
         return []
 
+    def cache_keys_for(self, *args, **kwargs):
+        return []
+
 
 class _Residency:
     def snapshot(self):
         return {}
 
     def reset(self):
+        return None
+
+    def discard(self, keys):
         return None
 
 
@@ -73,6 +82,42 @@ def test_cpu_runtime_unload_does_not_probe_cuda(monkeypatch) -> None:
     runtime = _cpu_runtime(monkeypatch)
 
     assert runtime.unload_base() == {"unloaded": "cpu-base"}
+
+
+def test_cpu_runtime_facet_unload_does_not_probe_cuda(monkeypatch) -> None:
+    runtime = _cpu_runtime(monkeypatch)
+
+    assert runtime.unload_facets(all_facets=True) == {"unloadedFacets": [], "loadedFacets": []}
+
+
+def test_cpu_seed_uses_only_default_generator() -> None:
+    from mixed_inference.generate.runtime import _seed_for_base
+
+    seeded = []
+    torch = SimpleNamespace(
+        default_generator=SimpleNamespace(manual_seed=lambda value: seeded.append(value)),
+        manual_seed=lambda value: (_ for _ in ()).throw(AssertionError("global seed must not run")),
+        cuda=_CudaMustNotBeProbed(),
+    )
+
+    _seed_for_base(torch, SimpleNamespace(device="cpu"), 17)
+
+    assert seeded == [17]
+
+
+def test_cuda_unload_keeps_cuda_cleanup(monkeypatch) -> None:
+    from mixed_inference.generate import runtime as runtime_module
+
+    cuda = _CudaProbe()
+    monkeypatch.setattr(runtime_module, "require_torch", lambda: SimpleNamespace(cuda=cuda))
+    runtime = _cpu_runtime(monkeypatch)
+    monkeypatch.setattr(runtime_module, "require_torch", lambda: SimpleNamespace(cuda=cuda))
+    runtime.base.device = "cuda:0"
+
+    runtime.unload_base()
+
+    assert cuda.availability_calls == 1
+    assert cuda.empty_cache_calls == 1
 
 
 def test_cpu_bound_worker_capabilities_do_not_probe_cuda(monkeypatch) -> None:
