@@ -141,12 +141,13 @@ class MixedInferenceRuntime:
     def unload_base(self) -> dict[str, Any]:
         with self._lock:
             previous = self.base.binding.model_id if self.base is not None else None
+            release_cuda = _uses_cuda(self.base)
             self.registry.unload(all_facets=True)
             self.base = None
             self.residency.reset()
             gc.collect()
             torch = require_torch()
-            if torch.cuda.is_available():
+            if release_cuda and torch.cuda.is_available():
                 torch.cuda.empty_cache()
             return {"unloaded": previous}
 
@@ -217,7 +218,7 @@ class MixedInferenceRuntime:
             self.residency.discard(cache_keys)
             gc.collect()
             torch = require_torch()
-            if torch.cuda.is_available():
+            if _uses_cuda(self.base) and torch.cuda.is_available():
                 torch.cuda.empty_cache()
             return {"unloadedFacets": removed, "loadedFacets": self.registry.loaded()}
 
@@ -264,7 +265,7 @@ class MixedInferenceRuntime:
                 torch = require_torch()
                 if seed is not None:
                     torch.manual_seed(int(seed))
-                    if torch.cuda.is_available():
+                    if _uses_cuda(base) and torch.cuda.is_available():
                         torch.cuda.manual_seed_all(int(seed))
 
                 def provide(planned: PlannedBlock) -> Any:
@@ -344,7 +345,7 @@ class MixedInferenceRuntime:
         with self._lock:
             torch = require_torch()
             memory: dict[str, Any] = {}
-            if torch.cuda.is_available():
+            if _uses_cuda(self.base) and torch.cuda.is_available():
                 memory = {
                     "cudaAllocatedBytes": int(torch.cuda.memory_allocated()),
                     "cudaReservedBytes": int(torch.cuda.memory_reserved()),
@@ -808,6 +809,10 @@ def _tensor_bytes(module: Any) -> int:
             seen.add(id(tensor))
             total += int(tensor.numel()) * int(tensor.element_size())
     return total
+
+
+def _uses_cuda(base: LoadedBaseModel | None) -> bool:
+    return base is not None and str(base.device).startswith("cuda")
 
 
 def _module_footprint(module: Any, target_device: Any) -> Footprint:

@@ -78,6 +78,7 @@ class MIWorkerService:
 
     def capabilities(self) -> dict[str, Any]:
         discovered: list[dict[str, Any]] = []
+        effective_backend = os.environ.get("JESTER_RM_DEVICE_BACKEND")
         try:
             import torch
 
@@ -91,7 +92,10 @@ class MIWorkerService:
                     "hardwareVerified": True,
                 }
             )
-            if torch.cuda.is_available():
+            # RM has already performed host discovery and bound this worker.
+            # A CPU-bound worker must not initialize another accelerator runtime
+            # merely to report capabilities that it cannot allocate under its lease.
+            if effective_backend != "cpu" and torch.cuda.is_available():
                 discovered.append(
                     {
                         "backend": "torch.cuda",
