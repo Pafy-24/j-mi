@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "jester-mi-cpu-vertical-preparation-v1",
+  "status": "offline-only-user-approval-required",
+  "baseModel": {
+    "canonicalId": "Qwen/Qwen2.5-1.5B-Instruct",
+    "revision": "main",
+    "dtype": "bfloat16",
+    "device": "managed",
+    "layerPath": "model.layers",
+    "asset": {
+      "id": "qwen2.5-1.5b-instruct",
+      "version": "2026.10.12",
+      "sha256": "17eca20be0dc7099db78e03edfb75bd9f060c6a29f9c6dd22540bf31a4584d66"
+    },
+    "artifactFiles": {
+      "id": "qwen2.5-1.5b-instruct.files",
+      "version": "2026.10.12",
+      "sha256": "501a7e29596c225926dd04f4a06923b7a014b377b3ab66a3696d305052ded08e"
+    },
+    "artifactSha256": "7f8b34632910df9fc87f5924ee695fb59770ff50a5857d073a2ae8e14a92bee0"
+  },
+  "facetRegistry": {
+    "asset": {
+      "id": "qwen-smoke-facets",
+      "version": "2026.08.23",
+      "sha256": "76a4697c781169b2057d1a7d495dd7497b31eaaba26e96d0e6a024892541bff4"
+    },
+    "requestedFacets": ["coder.python@smoke-2026-08-23"],
+    "expectedResolvedFacets": [
+      "coder@smoke-2026-08-23",
+      "coder.python@smoke-2026-08-23"
+    ]
+  },
+  "requestTemplate": {
+    "schemaVersion": "mi-generate-v1",
+    "prompt": "Write a Python function that returns the sum of two integers.",
+    "generation": {"max_new_tokens": 16, "do_sample": false},
+    "seed": 42
+  },
+  "resources": {
+    "backend": "cpu",
+    "processorCount": 1,
+    "quotaMillicores": 1000,
+    "ramBytes": 8589934592,
+    "operationalMarginBytes": 1073741824,
+    "swapBytes": 0,
+    "storageQuotaBytes": 21474836480,
+    "accelerators": [],
+    "fallbackAllowed": false,
+    "maxConcurrentRequests": 1,
+    "maxPendingRequests": 0
+  },
+  "sequence": [
+    {"name": "cold", "distinctEngineRun": true, "sameMiInstance": true, "expectedCache": {"hits": 0, "misses": 2}},
+    {"name": "warm", "distinctEngineRun": true, "sameMiInstance": true, "onlyAfterColdSuccess": true, "expectedCache": {"hits": 2, "misses": 0}}
+  ],
+  "betweenRequests": {
+    "materializations": 0,
+    "installs": 0,
+    "processStarts": 0,
+    "baseLoads": 0,
+    "registryRefreshes": 0,
+    "runtimeTreeVerifications": 0
+  },
+  "runtimeBundle": {
+    "id": "jester-mi-cpu-cp313-win-amd64-20261013-06",
+    "contentDigest": "a0347312a0483dd31aa1ad141d4a17d911be35d9fcc5feebe6b7ed15698b56f3",
+    "manifestSha256": "d487592b1e918d967cb8450e55fc8a8136ddf437fdf00e0c1a84bcb41e058bab",
+    "reuseWithoutRebuild": true
+  }
+}
