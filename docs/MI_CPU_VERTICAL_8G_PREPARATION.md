@@ -137,3 +137,36 @@ empty RM process inventories, exact leases durably released, owned process and
 listener absence, zero active leases, and clean SQLite. Any unavailable check,
 forced cleanup, identity drift, fallback, or deadline exhaustion is terminal
 failure or `cleanup-uncertain`, never success.
+
+## Recovered handoff — 13.10.2026
+
+The current control-plane candidate is
+`.jester-runtime/rm-594a8ba-resources-20261013-01`, built from Core commit
+`594a8bae5cdde1aaad337fe8f7d377c6bde82bff`, with bundle content digest
+`36d897a3fae667ee735991cb29ca396be727e21d4e821e8b13397cb86f105b8f`
+and manifest SHA-256
+`8c60a72d52e7f78ef6607dad294854214b954a11168482e0744a4a575a0cd63f`.
+The unchanged MI bundle06 and candidate.2 envelope retain the identities above:
+inner content `a0347312...`, inner manifest `d487592b...`, descriptor
+`b7baf46e...`, and outer content/closure `7453b4c4...`.
+
+No additional MI or Engine contract defect was found in the offline recovery.
+The next required offline operation, after the active LSR run is terminal, is a
+single current-RM ArtifactStore import plus installed-reader verification of
+candidate.2. It must derive the exact CAS `runtimeRootDigest`; it must not
+rebuild bundle06 or its wrapper. The existing bootstrap input still requires
+that digest plus the current RM root/id/content/Core commit, recorder log,
+fresh host/epoch and CPU/memory/storage fingerprints, exact processor and
+storage-pool identities, immediate 8 GiB capacity result, and the reviewed
+absolute-supervisor invocation. Those values must feed the existing v5
+collector; a new collector is not needed.
+
+The lifecycle v2 runner is preserved and tested, but no complete v2 manifest
+currently exists. After MI-specific CPU qualification, its manifest must pin
+the resulting qualification and approval, full materialization/binding,
+Engine project/configuration/compile/run bodies, distinct cold/warm ids and
+idempotency keys, current file hashes, and absent receipt/journal paths. The
+first MI bootstrap remains a separate 8 GiB workload. The LSR 2 GiB + Engine
+1 GiB + MI 8 GiB composite is 11 GiB and is not admissible under the latest
+reported approximately 9.7 GB availability; no combined-vertical claim is
+made without new capacity evidence.
