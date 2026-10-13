@@ -67,5 +67,28 @@
     "contentDigest": "a0347312a0483dd31aa1ad141d4a17d911be35d9fcc5feebe6b7ed15698b56f3",
     "manifestSha256": "d487592b1e918d967cb8450e55fc8a8136ddf437fdf00e0c1a84bcb41e058bab",
     "reuseWithoutRebuild": true
+  },
+  "runtimeEnvelope": {
+    "plan": "DOCS/implementation-evidence/2026-10-13/mi-outer-envelope-plan-06.candidate.json",
+    "planSha256": "58e5279f97c7bea398b995bd0bec412b98f3e8f82fb5e5744e22eb462ee5b6d2",
+    "artifactId": "mi-runtime-cpu-cp313-win-amd64",
+    "artifactVersion": "2026.10.13-candidate.2",
+    "innerBundleRebuildAllowed": false,
+    "wrapperBuildRequiresNoCompetingHardwareProbe": true
+  },
+  "capacityGate": {
+    "separateMiFirst": true,
+    "exactPreflightImmediatelyBeforeEffects": true,
+    "combinedRequestedBytes": 11811160064,
+    "combinedComponents": {"lsrBytes": 2147483648, "engineBytes": 1073741824, "miBytes": 8589934592},
+    "latestReportedAvailableApproxBytes": 9700000000,
+    "compositeAdmissibleClaim": false,
+    "rmMayRefuse": true
+  },
+  "unprovenUntilLive": {
+    "cpuBfloat16OperatorSupport": true,
+    "cpuLatency": true,
+    "observedRssWithinLease": true,
+    "inferenceOutput": true
   }
 }

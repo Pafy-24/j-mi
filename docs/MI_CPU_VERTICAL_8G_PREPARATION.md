@@ -53,6 +53,18 @@ facets plus the same margin is 4,722,744,320 bytes before the bounded request
 buffers and KV cache. These are admission bounds from immutable safetensors
 headers, not observed RSS and not live qualification evidence.
 
+BF16 operator support and useful CPU latency remain unproven on the target
+host. A successful static admission calculation cannot be promoted to CPU
+qualification, inference success, or a performance claim.
+
+The intended combined leases are LSR 2 GiB, Engine 1 GiB, and MI 8 GiB: 11 GiB
+before RM/control-plane overhead. The latest reported available capacity is
+about 9.7 GB, so the composite must not be described as presently admissible.
+The first MI probe is therefore separate and requires an exact capacity
+preflight immediately before effects. RM/CDCA may still refuse it. A later
+combined vertical needs capacity evidence or a separately approved resource
+change; the MI plan does not weaken any lease.
+
 ## Fixed requests and expected evidence
 
 The Engine request template is fixed without `facets`:
@@ -99,6 +111,13 @@ reference must replace the older 2026-10-12 MI artifact in the lifecycle
 manifest. A current CPU qualification and an authenticated approval bound to
 that exact artifact, 8 GiB policy, host epoch, and evidence digest are also
 required.
+
+Static envelope review confirms plan06 points at bundle06, content digest
+`a0347312...`, manifest `d487592b...`, Components commit `a34027b8...`, and the
+same MI v1 capability contracts. Building this wrapper is justified only to
+produce the RM `RuntimeArtifact` identity; it must copy/re-envelope the existing
+bundle without rebuilding wheels or the inner bundle. It should not run during
+another hardware probe because it performs large local I/O.
 
 The live command remains the reviewed lifecycle runner with its effect gate:
 
