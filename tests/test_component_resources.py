@@ -3,9 +3,6 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
-import os
-import sys
-from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -119,20 +116,3 @@ def test_capability_paths_match_managed_server_authorization_source() -> None:
     for contract in contracts:
         assert contract["method"] == "POST"
         assert f'"{contract["paths"][0]}": "{contract["channelOperation"]}"' in source
-
-
-@pytest.mark.skipif(os.environ.get("JESTER_MI_INSTALLED_RESOURCE_PROOF") != "1", reason="isolated wheel proof only")
-def test_installed_resources_without_importing_mi_or_torch() -> None:
-    assert "mixed_inference" not in sys.modules and "torch" not in sys.modules
-    distribution = metadata.distribution("jester-mixed-inference")
-    package_root = Path(distribution.locate_file("mixed_inference")).resolve()
-    manifest = ComponentManifest.model_validate(_json(package_root / "resources" / "component-manifest.json"))
-    assert "mixed_inference" not in sys.modules and "torch" not in sys.modules
-    installed = {str(item).replace("\\", "/") for item in distribution.files or ()}
-    for resource in manifest.resources:
-        relative = f"mixed_inference/{resource.installed_path}"
-        assert relative in installed
-        path = Path(distribution.locate_file(relative)).resolve()
-        assert path.is_relative_to(package_root)
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == resource.sha256
-    assert "mixed_inference" not in sys.modules and "torch" not in sys.modules

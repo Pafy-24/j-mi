@@ -1,5 +1,11 @@
 # MI CPU vertical preparation (8 GiB)
 
+> Historical preparation record. The transitional bundle and launch procedure
+> below are retired by the 2026-10-20 target architecture. Retained digests,
+> resource bounds and acceptance criteria document the experiment; they are not
+> the current deployment instructions. New deployments require native artifacts
+> and the compatible runtime contract.
+
 Status: offline preparation only. This document does not authorize a service,
 lease, model load, inference, or hardware probe.
 
