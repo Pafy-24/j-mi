@@ -7,6 +7,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from jester_sdk_runtime.lifecycle import telemetry_session
+
 from .api.server import serve
 from .args import build_parser
 from .core.errors import ConfigurationError, MIError
@@ -33,20 +35,16 @@ def main(argv: list[str] | None = None) -> int:
     if not args.command:
         parser.print_help()
         return 0
-    telemetry = None
     try:
         require_managed_launch(args)
-        telemetry = start_telemetry()
-        return _dispatch(args)
+        with telemetry_session(start_telemetry):
+            return _dispatch(args)
     except MIError as exc:
         print(f"MI error [{exc.code}]: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
         print("Interrupted.", file=sys.stderr)
         return 130
-    finally:
-        if telemetry is not None:
-            telemetry.close()
 
 
 def _dispatch(args: Any) -> int:

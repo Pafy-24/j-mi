@@ -39,3 +39,16 @@ Documentația se află în [docs](docs), iar contractele în [schemas](schemas).
 - XLA/TPU nu este `hardwareVerified` fără test real;
 - compoziția generate este serializată în interiorul unei instanțe pentru
   consistența mutării reversibile a blocurilor.
+
+## Shared SDK runtime
+
+Managed-channel validation is shared through `jester_sdk_runtime`; the existing
+component CLI/API and resource checks remain in place. Native builds include
+this support as compiled code. Recipients of the standard Engine Native Blocks
+do not install the authoring SDK separately.
+
+Source development and build hosts require the matching SDK runtime sources
+(`JesterWorkspace/jester-sdk/src` on the development import path), plus Core
+and its RM client. See the [SDK documentation](../../../../jester-sdk/README.md)
+and [workspace build recipes](../../../../compile/README.md). This is a build
+dependency, not a new runtime package installation step.

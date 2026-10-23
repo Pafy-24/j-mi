@@ -8,6 +8,8 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
+from jester_sdk_runtime.lifecycle import start_telemetry
+
 from .core.errors import ConfigurationError
 
 
@@ -358,15 +360,6 @@ def _require_active_lease(lease: Any) -> None:
         raise ConfigurationError(
             "invalid_rm_lease: managed MI requires an active RM lease"
         )
-
-
-def start_telemetry() -> Any:
-    try:
-        from jester_rm_client import start_default_telemetry
-
-        return start_default_telemetry()
-    except Exception:
-        return None
 
 
 def is_managed() -> bool:
