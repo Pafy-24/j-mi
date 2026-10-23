@@ -113,7 +113,7 @@ def test_managed_staging_refuses_relative_lease_paths(tmp_path, monkeypatch) -> 
         facet_staging_allocation()
 
 
-def test_managed_operations_require_active_lease(tmp_path, monkeypatch) -> None:
+def test_reserved_lease_allows_bootstrap_budget_but_not_facet_staging(tmp_path, monkeypatch) -> None:
     root = tmp_path / "instance"
     run = root / "run"
     run.mkdir(parents=True)
@@ -122,8 +122,23 @@ def test_managed_operations_require_active_lease(tmp_path, monkeypatch) -> None:
     _activate(monkeypatch, lease)
     with pytest.raises(ConfigurationError, match="active RM lease"):
         facet_staging_allocation()
-    with pytest.raises(ConfigurationError, match="active RM lease"):
+    assert residency_budget()["ramBytes"] == 4096
+    runtime = MixedInferenceRuntime(tmp_path / "facets")
+    assert runtime.residency is not None
+    monkeypatch.setenv("JESTER_MI_RAM_BUDGET_BYTES", "4097")
+    with pytest.raises(ConfigurationError, match="cannot exceed"):
         residency_budget()
+
+
+@pytest.mark.parametrize("state", ("released", "expired", "revoked", "failed", None))
+def test_bootstrap_budget_rejects_non_admitted_lease(tmp_path, monkeypatch, state) -> None:
+    lease = _lease(tmp_path, tmp_path)
+    lease.lease["state"] = state
+    _activate(monkeypatch, lease)
+    with pytest.raises(ConfigurationError, match="reserved or active RM lease"):
+        residency_budget()
+    with pytest.raises(ConfigurationError, match="active RM lease"):
+        facet_staging_allocation()
 
 
 def test_staging_usage_scan_fails_closed_on_unreadable_subtree(

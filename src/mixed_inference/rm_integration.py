@@ -278,10 +278,12 @@ def apply_memory_budget(torch: Any, device: Any) -> None:
 
 
 def residency_budget() -> dict[str, int]:
-    """Read explicit MI cache limits from the active RM lease/environment.
+    """Read explicit MI cache limits from the admitted RM lease/environment.
 
     This does not discover hardware capacity. Unmanaged processes may remain
     unbounded; a managed process requires the exact RM memory binding.
+    RMA starts services under a reserved lease and activates it after health
+    succeeds. Reading its budget during bootstrap does not authorize operations.
     """
     import os
 
@@ -299,7 +301,10 @@ def residency_budget() -> dict[str, int]:
 
         lease = current_lease(required=None)
         if lease is not None:
-            _require_active_lease(lease)
+            if lease.lease.get("state") not in {"reserved", "active"}:
+                raise ConfigurationError(
+                    "invalid_rm_lease: MI budget requires a reserved or active RM lease"
+                )
             memory = [
                 binding
                 for binding in lease.bindings
