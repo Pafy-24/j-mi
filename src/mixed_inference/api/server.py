@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+from jester_sdk_runtime.http import BoundedHTTPServer, RequestBodyError, read_json_body, write_json_response
+from jester_sdk_runtime.standalone_launch import local_guard
 
 from ..core.errors import ConfigurationError, MIError
 from ..core.specs import BaseModelRequest
@@ -45,7 +48,7 @@ class MixedInferenceService:
             self.runtime.unload_base()
 
 
-class MixedInferenceHTTPServer(HTTPServer):
+class MixedInferenceHTTPServer(BoundedHTTPServer):
     def __init__(
         self,
         address: tuple[str, int],
@@ -57,39 +60,12 @@ class MixedInferenceHTTPServer(HTTPServer):
         managed_channel_guard: ManagedChannelGuard | None = None,
         require_managed_session: bool = False,
     ):
-        super().__init__(address, MixedInferenceRequestHandler)
+        super().__init__(address, MixedInferenceRequestHandler, workers=workers,
+                         max_pending=max_pending, thread_name="mi-http")
         self.service = service
         self.managed_channel_guard = managed_channel_guard
         self.require_managed_session = require_managed_session
         self.max_request_bytes = max_request_bytes
-        active_workers = max(1, workers)
-        self.executor = ThreadPoolExecutor(
-            max_workers=active_workers,
-            thread_name_prefix="mi-http",
-        )
-        self.request_slots = threading.BoundedSemaphore(active_workers + max(0, max_pending))
-
-    def process_request(self, request: Any, client_address: Any) -> None:
-        self.request_slots.acquire()
-        try:
-            self.executor.submit(self._process_request, request, client_address)
-        except BaseException:
-            self.request_slots.release()
-            self.shutdown_request(request)
-            raise
-
-    def _process_request(self, request: Any, client_address: Any) -> None:
-        try:
-            self.finish_request(request, client_address)
-        except Exception:
-            self.handle_error(request, client_address)
-        finally:
-            self.shutdown_request(request)
-            self.request_slots.release()
-
-    def server_close(self) -> None:
-        super().server_close()
-        self.executor.shutdown(wait=True, cancel_futures=True)
 
 
 class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
@@ -183,20 +159,16 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
         return
 
     def _read_json(self) -> Any:
-        raw_length = self.headers.get("Content-Length", "0") or "0"
         try:
-            length = int(raw_length)
-        except (TypeError, ValueError) as exc:
-            raise ConfigurationError("Content-Length must be an integer") from exc
-        if length <= 0:
-            raise ConfigurationError("Missing JSON body")
-        if length > self.server.max_request_bytes:
-            raise MIError(
-                f"JSON body exceeds {self.server.max_request_bytes} bytes",
-                code="request_too_large",
-                status=413,
-            )
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+            return read_json_body(self, max_bytes=self.server.max_request_bytes)
+        except RequestBodyError as exc:
+            if exc.reason == "too_large":
+                raise MIError(
+                    f"JSON body exceeds {self.server.max_request_bytes} bytes",
+                    code="request_too_large", status=413,
+                ) from exc
+            message = "Content-Length must be an integer" if exc.reason == "invalid_length" else "Missing JSON body"
+            raise ConfigurationError(message) from exc
 
     def _write_error(self, error: MIError) -> None:
         self._write_json(
@@ -222,12 +194,7 @@ class MixedInferenceRequestHandler(BaseHTTPRequestHandler):
         )
 
     def _write_json(self, status: int | HTTPStatus, payload: Any) -> None:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(int(status))
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        write_json_response(self, status, payload)
 
 
 def _path(value: str) -> str:
@@ -291,6 +258,13 @@ def serve(
     max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES,
     allow_custom_training_classes: bool = False,
 ) -> None:
+    managed = is_managed()
+    try:
+        if managed and os.environ.get("JESTER_STANDALONE_CONTEXT"):
+            raise PermissionError("standalone context cannot replace a managed launch")
+        guard = guard_from_managed_environment() if managed else local_guard(host=host, port=port)
+    except PermissionError as exc:
+        raise ConfigurationError("component launch context is not authorized") from exc
     service = MixedInferenceService(
         registry,
         jobs_directory=jobs_directory,
@@ -300,15 +274,9 @@ def serve(
     if base_model is not None:
         with service.resource_lock:
             service.runtime.load_base(base_model)
-    managed = is_managed()
-    try:
-        guard = guard_from_managed_environment() if managed else None
-    except ChannelSessionDenied as exc:
-        service.close()
-        raise ConfigurationError("managed channel context is required") from exc
     server = MixedInferenceHTTPServer(
         (host, port), service, workers=workers, max_request_bytes=max_request_bytes,
-        managed_channel_guard=guard, require_managed_session=managed,
+        managed_channel_guard=guard, require_managed_session=managed or guard is not None,
     )
     print(f"Jester MI component 2/5 ready on http://{host}:{port}")
     try:

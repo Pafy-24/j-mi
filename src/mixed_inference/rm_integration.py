@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from jester_sdk_runtime.lifecycle import start_telemetry
+from jester_sdk_runtime.launch import ManagedLaunchError, require_execution_launch
 
 from .core.errors import ConfigurationError
 
@@ -217,16 +217,10 @@ def require_managed_launch(args: Any) -> Any:
     if not command_requires_rm(args):
         return None
     try:
-        from jester_rm_client import require_lease
-
-        return require_lease()
-    except ImportError as exc:
-        raise ConfigurationError(
-            "RM_LEASE_REQUIRED: install jester-rm-client and launch MI through jester-rm."
-        ) from exc
-    except Exception as exc:
-        code = getattr(exc, "code", "RM_LEASE_REQUIRED")
-        raise ConfigurationError(f"{code}: {exc}") from exc
+        return require_execution_launch()
+    except ManagedLaunchError as exc:
+        message = "install jester-rm-client and launch MI through jester-rm." if exc.client_unavailable else str(exc)
+        raise ConfigurationError(f"{exc.code}: {message}") from exc
 
 
 def managed_device(requested: str) -> str:

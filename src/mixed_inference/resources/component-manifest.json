@@ -8,7 +8,10 @@
         "id": "mi.generate",
         "version": "1",
         "contractSha256": "a5b1cb8c4652063e221d0976ef492b69ce1037617208cbd999e86d58e630e552",
-        "concurrency": {"sharing": "dedicated-only", "maxConcurrentRequests": 1}
+        "concurrency": {
+          "sharing": "dedicated-only",
+          "maxConcurrentRequests": 1
+        }
       },
       "configurationSchemaResourceId": "mi.serve.configuration-schema.v1",
       "configurationDefaultsResourceId": "mi.serve.configuration-defaults.v1",
@@ -20,12 +23,30 @@
         "id": "mi.plan",
         "version": "1",
         "contractSha256": "0e9e2252277ac9d179661eb16393aa7de18c229165f3e5cdc46bbfcca16ac237",
-        "concurrency": {"sharing": "dedicated-only", "maxConcurrentRequests": 1}
+        "concurrency": {
+          "sharing": "dedicated-only",
+          "maxConcurrentRequests": 1
+        }
       },
       "configurationSchemaResourceId": "mi.serve.configuration-schema.v1",
       "configurationDefaultsResourceId": "mi.serve.configuration-defaults.v1",
       "capabilityContractResourceId": "mi.plan.capability.v1",
       "adapterMappingResourceId": "mi.serve.adapter-mapping.v1"
+    },
+    {
+      "capability": {
+        "id": "mi.worker",
+        "version": "1",
+        "contractSha256": "24adf9ebe28f97596f41d9426f8f0e6b0e80449b4eab0097788571d0cbbaa3d7",
+        "concurrency": {
+          "sharing": "dedicated-only",
+          "maxConcurrentRequests": 1
+        }
+      },
+      "configurationSchemaResourceId": "mi.worker.configuration-schema.v1",
+      "configurationDefaultsResourceId": "mi.worker.configuration-defaults.v1",
+      "capabilityContractResourceId": "mi.worker.capability.v1",
+      "adapterMappingResourceId": "mi.worker.adapter-mapping.v1"
     }
   ],
   "resources": [
@@ -63,6 +84,34 @@
       "mediaType": "application/json",
       "installedPath": "resources/mi-serve-adapter-mapping-v1.json",
       "sha256": "6371f8e121e5c31703d1ea78bed9a05a17d6b51d5edfa0fc5611d57af800dbd2"
+    },
+    {
+      "id": "mi.worker.configuration-schema.v1",
+      "kind": "configuration-schema",
+      "mediaType": "application/schema+json",
+      "installedPath": "resources/mi-worker-configuration-v1.schema.json",
+      "sha256": "91e1556fb053be7728bab4ce7b2823ca64807c5ffa117a3e8fbba79c683a2344"
+    },
+    {
+      "id": "mi.worker.configuration-defaults.v1",
+      "kind": "configuration-defaults",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-worker-configuration-defaults-v1.json",
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    {
+      "id": "mi.worker.adapter-mapping.v1",
+      "kind": "adapter-mapping",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-worker-adapter-mapping-v1.json",
+      "sha256": "00088db091eccbad6b6992f5b33616996dd558cf9fdb2170d8de5bc9a593efbb"
+    },
+    {
+      "id": "mi.worker.capability.v1",
+      "kind": "capability-contract",
+      "mediaType": "application/json",
+      "installedPath": "resources/mi-worker-capability-v1.json",
+      "sha256": "24adf9ebe28f97596f41d9426f8f0e6b0e80449b4eab0097788571d0cbbaa3d7"
     }
   ],
   "compatibility": []

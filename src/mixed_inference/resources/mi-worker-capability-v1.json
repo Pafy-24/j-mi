@@ -1,0 +1,11 @@
+{
+  "id": "mi.worker",
+  "version": "1",
+  "transport": "http-json+binary",
+  "description": "RM-managed persistent gradient worker. Trainer owns sessions, optimizer, scheduler and rounds; startup configuration is empty.",
+  "operations": [
+    {"operation": "health", "method": "GET", "path": "/v1/health"},
+    {"operation": "capabilities", "method": "GET", "path": "/v1/capabilities"},
+    {"operation": "sessions", "method": "POST", "path": "/v1/sessions"}
+  ]
+}

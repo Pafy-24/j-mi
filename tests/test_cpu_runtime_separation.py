@@ -75,7 +75,7 @@ def _cpu_runtime(monkeypatch):
 def test_cpu_runtime_health_does_not_probe_cuda(monkeypatch) -> None:
     runtime = _cpu_runtime(monkeypatch)
 
-    assert runtime.health()["memory"] == {}
+    assert runtime.health()["memory"] == {"status": "external", "authority": "RMA"}
 
 
 def test_cpu_runtime_unload_does_not_probe_cuda(monkeypatch) -> None:

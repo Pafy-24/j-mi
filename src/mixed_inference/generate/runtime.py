@@ -341,13 +341,6 @@ class MixedInferenceRuntime:
 
     def health(self) -> dict[str, Any]:
         with self._lock:
-            torch = require_torch()
-            memory: dict[str, Any] = {}
-            if _uses_cuda(self.base) and torch.cuda.is_available():
-                memory = {
-                    "cudaAllocatedBytes": int(torch.cuda.memory_allocated()),
-                    "cudaReservedBytes": int(torch.cuda.memory_reserved()),
-                }
             return {
                 "service": "Jester Mixed Inference",
                 "component": 2,
@@ -360,7 +353,7 @@ class MixedInferenceRuntime:
                 "availableFacets": self.registry.list(),
                 "loadedFacets": self.registry.loaded(),
                 "generationCount": self._generation_count,
-                "memory": memory,
+                "memory": {"status": "external", "authority": "RMA"},
                 "residency": self.residency.snapshot(),
                 "telemetry": {
                     "cache": {

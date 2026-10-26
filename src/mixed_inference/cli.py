@@ -7,7 +7,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from jester_sdk_runtime.lifecycle import telemetry_session
 
 from .api.server import serve
 from .args import build_parser
@@ -17,7 +16,7 @@ from .core.registry import FacetRegistry
 from .core.specs import BaseModelRequest
 from .core.util import atomic_write_json, load_json
 from .generate.runtime import MixedInferenceRuntime
-from .rm_integration import require_managed_launch, start_telemetry
+from .rm_integration import require_managed_launch
 from .worker.server import serve_worker
 from .worker.service import MIWorkerService
 
@@ -37,8 +36,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         require_managed_launch(args)
-        with telemetry_session(start_telemetry):
-            return _dispatch(args)
+        return _dispatch(args)
     except MIError as exc:
         print(f"MI error [{exc.code}]: {exc}", file=sys.stderr)
         return 2
