@@ -41,7 +41,7 @@ def test_manifest_binds_exact_resources_and_dedicated_capabilities() -> None:
     manifest = ComponentManifest.model_validate(_json(RESOURCE_ROOT / "component-manifest.json"))
     assert (manifest.id, manifest.version) == ("mi", "0.1.0")
     assert component_identity(manifest).manifest_sha256 == manifest.semantic_sha256
-    assert {item.capability.id for item in manifest.capabilities} == {"mi.generate", "mi.plan"}
+    assert {item.capability.id for item in manifest.capabilities} == {"mi.generate", "mi.plan", "mi.worker"}
     assert all(item.capability.concurrency.sharing == "dedicated-only" for item in manifest.capabilities)
     assert all(item.capability.concurrency.max_concurrent_requests == 1 for item in manifest.capabilities)
     for resource in manifest.resources:

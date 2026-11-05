@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "jester-core>=0.2.0,<0.3",
   "jester-rm-client>=0.1,<1",
+  "jester-sdk-runtime>=0.1,<1",
   "torch>=2.2,<3",
   "transformers>=4.51,<5",
   "accelerate>=1,<2",

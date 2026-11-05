@@ -81,7 +81,7 @@ def test_managed_cuda_trains_and_generates_a_tiny_facet(
         encoding="utf-8",
     )
 
-    instance = {"metadata": {"id": "mi-cuda-smoke"}}
+    instance = {"metadata": {"id": "mi-cuda-smoke"}, "spec": {}, "generation": 1}
     config_hash = hashlib.sha256(
         json.dumps(
             instance,

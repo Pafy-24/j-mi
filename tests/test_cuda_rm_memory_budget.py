@@ -25,7 +25,7 @@ def test_managed_cuda_binding_allocates_on_visible_gpu(tmp_path: Path, monkeypat
     torch = pytest.importorskip("torch")
     if not torch.cuda.is_available():
         pytest.skip("CUDA-enabled PyTorch and a GPU are required")
-    instance = {"metadata": {"id": "cuda-smoke"}}
+    instance = {"metadata": {"id": "cuda-smoke"}, "spec": {}, "generation": 1}
     config_hash = hashlib.sha256(
         json.dumps(instance, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -72,7 +72,7 @@ def test_managed_cuda_binding_allocates_on_visible_gpu(tmp_path: Path, monkeypat
     monkeypatch.setenv("JESTER_RM_DEVICE_ID", f"gpu-nvidia-{uuid.lower()}")
     current_lease(required=True, refresh=True)
     device = torch.device(managed_device("managed"))
-    apply_torch_memory_budget(torch, device)
+    apply_memory_budget(torch, device)
     tensor = torch.ones((256, 256), device=device)
     assert tensor.device.type == "cuda"
     del tensor
